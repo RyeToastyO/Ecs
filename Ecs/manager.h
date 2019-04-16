@@ -31,6 +31,9 @@ public:
     void DestroyImmediate (Entity entity);
 
     template<typename T>
+    bool HasComponent (Entity entity) const;
+
+    template<typename T>
     T * FindComponent (Entity entity) const;
 
     template<typename T, typename...Args>

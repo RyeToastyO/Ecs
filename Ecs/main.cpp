@@ -174,6 +174,9 @@ void TestFindingComponents () {
     Entity entityB = mgr->CreateEntityImmediate(test::health::Current{ 20 }, test::health::Max{ 200 });
     Entity entityC = mgr->CreateEntityImmediate(test::health::Current{ 30 });
 
+    EXPECT_TRUE(mgr->HasComponent<test::health::Max>(entityA));
+    EXPECT_FALSE(mgr->HasComponent<test::health::IsDead>(entityA));
+
     auto current = mgr->FindComponent<test::health::Current>(entityA);
     EXPECT_TRUE(current != nullptr);
     EXPECT_TRUE(current && current->Value == 10);
@@ -193,6 +196,7 @@ void TestFindingComponents () {
 
     current = mgr->FindComponent<test::health::Current>(entityA);
     EXPECT_FALSE(current != nullptr);
+    EXPECT_FALSE(mgr->HasComponent<test::health::Current>(entityA));
 
     currentB = mgr->FindComponent<test::health::Current>(entityB);
     EXPECT_TRUE(currentB && currentB->Value == 20);

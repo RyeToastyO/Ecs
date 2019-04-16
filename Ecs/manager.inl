@@ -29,6 +29,14 @@ Entity Manager::CreateEntityImmediate (T component, Args...args) {
 }
 
 template<typename T>
+bool Manager::HasComponent (Entity entity) const {
+    if (!Exists(entity))
+        return false;
+    const auto & entityData = m_entityData[entity.index];
+    return entityData.chunk->GetComposition().Has<T>();
+}
+
+template<typename T>
 T * Manager::FindComponent (Entity entity) const {
     if (!Exists(entity))
         return nullptr;
