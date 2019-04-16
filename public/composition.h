@@ -1,8 +1,9 @@
 #pragma once
 
-#include "component.h"
-
+#include <cstdint>
 #include <functional>
+
+#include "component.h"
 
 // This can be large during development.
 // Once you actually know your shipping component count,

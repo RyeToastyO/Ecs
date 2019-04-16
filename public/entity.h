@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "component.h"
 
 namespace ecs {

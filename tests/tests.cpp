@@ -1,8 +1,6 @@
-#include "pch.h"
+#include "../public/ecs.h"
 
-#include "ecs.h"
-#include "composition.h"
-
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 

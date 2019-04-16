@@ -1,6 +1,4 @@
-#include "pch.h"
-
-#include "entity.h"
+#include "../public/entity.h"
 
 namespace ecs {
 

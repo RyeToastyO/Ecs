@@ -1,6 +1,6 @@
-#include "pch.h"
+#include "../public/composition.h"
 
-#include "composition.h"
+#include "hash.h"
 
 namespace ecs {
 
@@ -58,7 +58,7 @@ ComponentInfo ComponentFlags::GetComponentInfo () const {
 size_t ComponentFlags::GetHash () const {
     size_t hash = 0;
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i)
-        hash_combine(hash, flags[i]);
+        HashCombine(hash, flags[i]);
     return hash;
 }
 

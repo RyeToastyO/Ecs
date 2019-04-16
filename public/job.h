@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include <vector>
+
 #include "chunk.h"
 #include "entity.h"
 
@@ -134,11 +137,11 @@ private:
 
 private:
     uint32_t m_currentIndex = 0;
-    ARRAY(Chunk *) m_chunks;
+    std::vector<Chunk *> m_chunks;
 
-    ARRAY(IComponentAccess *) m_dataAccess;
+    std::vector<IComponentAccess *> m_dataAccess;
 
-    ARRAY(ComponentFlags) m_any;
+    std::vector<ComponentFlags> m_any;
     ComponentFlags m_exclude;
     ComponentFlags m_required;
 
@@ -149,7 +152,7 @@ private:
 };
 
 // This strategy of registration doesn't support multiple managers
-const ARRAY(Job *) & GetRegisteredJobs ();
+const std::vector<Job *> & GetRegisteredJobs ();
 JobId RegisterJob (Job * job);
 
 #define REGISTER_ECS_JOB(type)              \

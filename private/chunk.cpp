@@ -1,6 +1,7 @@
-#include "pch.h"
+#include "../public/chunk.h"
 
-#include "chunk.h"
+#include <algorithm>
+#include <cassert>
 
 namespace ecs {
 

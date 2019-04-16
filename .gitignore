@@ -3,6 +3,11 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Visual Studio Solution/Project files
+*.sln
+*.vcxproj
+*.vcxproj.filters
+
 # User-specific files
 *.rsuser
 *.suo
@@ -37,11 +42,6 @@ bld/
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/
-
-# Visual Studio Solution/Project files
-*.sln
-*.vcxproj
-*.vcxproj.filters
 
 # MSTest test Results
 [Tt]est[Rr]esult*/

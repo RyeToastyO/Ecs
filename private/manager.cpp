@@ -1,6 +1,4 @@
-#include "pch.h"
-
-#include "manager.h"
+#include "../public/manager.h"
 
 namespace ecs {
 

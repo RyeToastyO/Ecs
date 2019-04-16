@@ -1,6 +1,6 @@
-#include "pch.h"
+#include "../public/component.h"
 
-#include "component.h"
+#include <unordered_map>
 
 namespace ecs {
 
@@ -10,7 +10,7 @@ ComponentId AllocateComponentId () {
     return s_componentId++;
 }
 
-DICTIONARY(ComponentId, size_t) s_componentSizes;
+std::unordered_map<ComponentId, size_t> s_componentSizes;
 
 size_t GetComponentSize (ComponentId id) {
     return s_componentSizes.find(id)->second;

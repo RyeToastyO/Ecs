@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include <type_traits>
+
 namespace ecs {
 
 typedef uint32_t ComponentId;

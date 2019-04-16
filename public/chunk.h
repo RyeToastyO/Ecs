@@ -1,8 +1,14 @@
 #pragma once
 
+#include <cstdint>
+#include <unordered_map>
+#include <vector>
+
 #include "composition.h"
 
 namespace ecs {
+
+typedef uint8_t byte_t;
 
 struct ComponentArray {
     byte_t * m_data;
@@ -50,4 +56,4 @@ private: // Helpers
 
 }
 
-#include "chunk.inl"
+#include "inline/chunk.inl"

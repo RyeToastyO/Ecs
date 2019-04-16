@@ -1,6 +1,4 @@
-#include "pch.h"
-
-#include "job.h"
+#include "../public/job.h"
 
 namespace ecs {
 
@@ -74,8 +72,8 @@ void Job::Run (float dt) {
 
 // Registration
 JobId s_jobId = 0;
-ARRAY(Job *) s_registeredJobs;
-const ARRAY(Job *) & GetRegisteredJobs () {
+std::vector<Job *> s_registeredJobs;
+const std::vector<Job *> & GetRegisteredJobs () {
     return s_registeredJobs;
 }
 

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdint>
+#include <unordered_map>
+#include <vector>
+
 #include "chunk.h"
 #include "entity.h"
 #include "job.h"
@@ -44,10 +48,10 @@ public:
     void Update (float dt);
 
 private:
-    ARRAY(EntityData) m_entityData;
-    ARRAY(uint32_t) m_freeList;
-    ARRAY(Job *) m_jobs;
-    DICTIONARY(ComponentFlags, Chunk*) m_chunks;
+    std::vector<EntityData> m_entityData;
+    std::vector<uint32_t> m_freeList;
+    std::vector<Job *> m_jobs;
+    std::unordered_map<ComponentFlags, Chunk*> m_chunks;
 
 private:
     Entity CreateEntityImmediateInternal (ComponentFlags composition);
@@ -62,4 +66,4 @@ private:
 
 } // namespace ecs
 
-#include "manager.inl"
+#include "inline/manager.inl"
