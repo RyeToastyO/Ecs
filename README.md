@@ -1,6 +1,39 @@
 # Ecs
 Entity Component System - A data-oriented solution for storing and processing state
 
+## Current Usage
+```C++
+struct HealthCurrent {
+    ECS_COMPONENT();
+    float Value;
+};
+DEFINE_ECS_COMPONENT(HealthCurrent);
+
+struct HealthRegen {
+    ECS_COMPONENT();
+    float Value;
+};
+
+struct RegenJob : public Job {
+    ECS_WRITE(HealthCurrent, Current);
+    ECS_READ(HealthRegen, Regen);
+
+    void ForEach (float dt) override {
+        Current->Value += Regen * dt;
+    }
+};
+REGISTER_ECS_JOB(RegenJob);
+
+int main () {
+    Manager mgr;
+    Entity a = mgr->CreateEntity(HealthCurrent{10}, HealthRegen{1});
+    mgr->Update(1 /* dt */);
+
+    cout << mgr->FindComponent<HealthCurrent>(a)->Value;
+    /* 11 */
+}
+```
+
 ## Current Features
 - Creation/destruction of entities
 - Adding/setting/removing components
