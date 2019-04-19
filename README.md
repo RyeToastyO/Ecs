@@ -40,6 +40,7 @@ int main () {
   - ReadOther/WriteOther (locks components but doesn't affect filtering)
 
 ## TODO
+- Convert to header-only for easier integration
 - Queued composition changes
 - Singleton Components
 - Job ordering control
