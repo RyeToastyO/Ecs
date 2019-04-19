@@ -1,6 +1,12 @@
-#include "../public/composition.h"
+#include "../helpers/hash.h"
 
-#include "hash.h"
+namespace std {
+    template <> struct hash<::ecs::ComponentFlags> {
+        size_t operator() (const ::ecs::ComponentFlags & flags) const {
+            return flags.GetHash();
+        }
+    };
+};
 
 namespace ecs {
 
@@ -41,6 +47,22 @@ ComponentFlags::ComponentFlags () {
 
 void ComponentFlags::Clear () {
     memset(flags, 0, COMPONENT_FLAG_DATA_COUNT * sizeof(ComponentFlagDataType));
+}
+
+template<typename T, typename...Args>
+void ComponentFlags::ClearFlags () {
+    const auto id = GetComponentId<T>();
+    flags[id / COMPONENT_FLAG_DATA_BITS] &= ~(static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS);
+    if constexpr (sizeof...(Args) > 0)
+        ClearFlags<Args...>();
+}
+
+template<typename T, typename...Args>
+void ComponentFlags::SetFlags () {
+    const auto id = GetComponentId<T>();
+    flags[id / COMPONENT_FLAG_DATA_BITS] |= static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS;
+    if constexpr (sizeof...(Args) > 0)
+        SetFlags<Args...>();
 }
 
 ComponentInfo ComponentFlags::GetComponentInfo () const {

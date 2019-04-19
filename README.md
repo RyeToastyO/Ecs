@@ -3,6 +3,8 @@ Entity Component System - A data-oriented solution for storing and processing st
 
 ## Current Usage
 ```C++
+#include "ecs/ecs.h"
+
 struct HealthCurrent {
     float Value;
 };
@@ -23,7 +25,7 @@ REGISTER_ECS_JOB(RegenJob);
 
 int main () {
     Manager mgr;
-    Entity a = mgr->CreateEntity(HealthCurrent{10}, HealthRegen{1});
+    Entity a = mgr->CreateEntityImmediate(HealthCurrent{10}, HealthRegen{1});
     mgr->Update(1 /* dt */);
 
     cout << mgr->FindComponent<HealthCurrent>(a)->Value;
@@ -40,7 +42,6 @@ int main () {
   - ReadOther/WriteOther (locks components but doesn't affect filtering)
 
 ## TODO
-- Convert to header-only for easier integration
 - Queued composition changes
 - Singleton Components
 - Job ordering control

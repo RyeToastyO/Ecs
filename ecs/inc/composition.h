@@ -40,20 +40,10 @@ struct ComponentFlags {
     void Clear ();
 
     template<typename T, typename...Args>
-    void ClearFlags () {
-        const auto id = GetComponentId<T>();
-        flags[id / COMPONENT_FLAG_DATA_BITS] &= ~(static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS);
-        if constexpr (sizeof...(Args) > 0)
-            ClearFlags<Args...>();
-    }
+	void ClearFlags();
 
     template<typename T, typename...Args>
-    void SetFlags () {
-        const auto id = GetComponentId<T>();
-        flags[id / COMPONENT_FLAG_DATA_BITS] |= static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS;
-        if constexpr (sizeof...(Args) > 0)
-            SetFlags<Args...>();
-    }
+	void SetFlags();
 
     ComponentInfo GetComponentInfo () const;
     ComponentFlagIterator GetIterator () const;
@@ -75,10 +65,4 @@ private:
 
 } // namespace ecs
 
-namespace std {
-    template <> struct hash<::ecs::ComponentFlags> {
-        size_t operator() (const ::ecs::ComponentFlags & flags) const {
-            return flags.GetHash();
-        }
-    };
-};
+#include "inline/composition.inl"

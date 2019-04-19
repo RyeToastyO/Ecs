@@ -1,4 +1,4 @@
-#include "../public/ecs.h"
+#include "../ecs/ecs.h"
 
 #include <algorithm>
 #include <chrono>
@@ -49,11 +49,6 @@ void TestEntityComparison () {
     EXPECT_TRUE((Entity{ 1, 1 }) == (Entity{ 1, 1 }));
 }
 
-void TestEntityInvalid () {
-    EXPECT_TRUE(Entity() == Entity::kInvalid);
-    EXPECT_FALSE((Entity{ 1, 1 }) == Entity::kInvalid);
-}
-
 void TestEntityCreationDestruction () {
     Manager * mgr = new Manager();
 
@@ -61,7 +56,6 @@ void TestEntityCreationDestruction () {
     {
         Entity entity = mgr->CreateEntityImmediate();
 
-        EXPECT_FALSE(entity == Entity::kInvalid);
         EXPECT_TRUE(mgr->Exists(entity));
 
         mgr->DestroyImmediate(entity);
@@ -321,7 +315,6 @@ void TestJobSpeed () {
 int main () {
     TestAssumptions();
     TestEntityComparison();
-    TestEntityInvalid();
     TestEntityCreationDestruction();
     TestComponentFlags();
     TestFindingComponents();

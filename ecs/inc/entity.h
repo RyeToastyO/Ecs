@@ -11,8 +11,8 @@ struct Entity {
     uint32_t generation = 0;
 
     bool operator== (const Entity & rhs) const;
-
-    static const Entity kInvalid;
 };
 
 }
+
+#include "inline/entity.inl"

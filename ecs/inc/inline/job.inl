@@ -1,19 +1,6 @@
-#pragma once
-
-#include <cstdint>
-#include <vector>
-
-#include "chunk.h"
-#include "entity.h"
-
 namespace ecs {
 
-struct Job;
-class Manager;
-
-typedef uint32_t JobId;
-
-// Interface
+// Component Access
 struct IComponentAccess {
     IComponentAccess (Job & job) : m_job(job) {}
     virtual void ApplyTo (ComponentFlags &) = 0;
@@ -54,14 +41,12 @@ struct Any : public CompositionAccess<T, Args...> {
     Any (Job & job) : CompositionAccess<T, Args...>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddAny(this); }
 };
-#define ECS_ANY(...) Any<__VA_ARGS__> __any##__LINE__ = Any<__VA_ARGS__>(*this);
 
 template<typename T, typename...Args>
 struct Exclude : public CompositionAccess<T, Args...> {
     Exclude (Job & job) : CompositionAccess<T, Args...>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddExclude(this); }
 };
-#define ECS_EXCLUDE(...) Exclude<__VA_ARGS__> __exclude##__LINE__ = Exclude<__VA_ARGS__>(*this);
 
 template<typename T>
 struct Read : public DataComponentAccess<T> {
@@ -70,9 +55,6 @@ struct Read : public DataComponentAccess<T> {
     const T & operator* () const { return this->m_componentArray[this->m_job.GetCurrentIndex()]; }
     const T * operator-> () const { return this->m_componentArray + this->m_job.GetCurrentIndex(); }
 };
-#define ECS_READ(type, name)                                                                        \
-Read<type> name = Read<type>(*this);                                                                \
-static_assert(!std::is_empty<type>(), "Cannot read access an empty/tag component, use ECS_REQUIRE");
 
 template<typename T>
 struct ReadOther : public LookupComponentAccess<T> {
@@ -80,16 +62,12 @@ struct ReadOther : public LookupComponentAccess<T> {
     void OnCreate () override { this->m_job.AddReadOther(this); }
     const T * operator[] (Entity entity) const { return this->m_job.GetManager().FindComponent<T>(entity); }
 };
-#define ECS_READ_OTHER(type, name)                                                                              \
-ReadOther<type> name = ReadOther<type>(*this);                                                                  \
-static_assert(!std::is_empty<type>(), "Cannot read access an empty/tag component, use HasComponent<T>(entity)");
 
 template<typename T, typename...Args>
 struct Require : public CompositionAccess<T, Args...> {
     Require (Job & job) : CompositionAccess<T, Args...>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddRequire(this); }
 };
-#define ECS_REQUIRE(...) Require<__VA_ARGS__> __require##__LINE__ = Require<__VA_ARGS__>(*this);
 
 template<typename T>
 struct Write : public DataComponentAccess<T> {
@@ -98,9 +76,6 @@ struct Write : public DataComponentAccess<T> {
     T & operator* () const { return this->m_componentArray[this->m_job.GetCurrentIndex()]; }
     T * operator-> () const { return this->m_componentArray + this->m_job.GetCurrentIndex(); }
 };
-#define ECS_WRITE(type, name)                                                                           \
-Write<type> name = Write<type>(*this);                                                                  \
-static_assert(!std::is_empty<type>(), "Cannot write access an empty/tag component, use ECS_REQUIRE");
 
 template<typename T>
 struct WriteOther : public LookupComponentAccess<T> {
@@ -108,55 +83,86 @@ struct WriteOther : public LookupComponentAccess<T> {
     void OnCreate () override { this->m_job.AddWriteOther(this); }
     T * operator[] (Entity entity) const { return this->m_job.GetManager().FindComponent<T>(entity); }
 };
-#define ECS_WRITE_OTHER(type, name)                                                                                 \
-WriteOther<type> name = WriteOther<type>(*this);                                                                    \
-static_assert(!std::is_empty<type>(), "Cannot write access an empty/tag component, use HasComponent<T>(entity)");
 
-// Job base class
-struct Job {
-    void OnChunkAdded (Chunk * chunk);
-    void OnRegistered (Manager * manager);
-
-    void AddAny (IComponentAccess * access);
-    void AddExclude (IComponentAccess * access);
-    void AddRead (IComponentAccess * access);
-    void AddReadOther (IComponentAccess * access);
-    void AddRequire (IComponentAccess * access);
-    void AddWrite (IComponentAccess * access);
-    void AddWriteOther (IComponentAccess * access);
-
-    uint32_t GetCurrentIndex () const { return m_currentIndex; }
-    Manager & GetManager () const { return *m_manager; }
-
-public:
-    virtual void Run (float dt);
-    virtual void ForEach (float dt) {}
-
-private:
-    bool IsValid (const Chunk * chunk) const;
-
-private:
-    uint32_t m_currentIndex = 0;
-    std::vector<Chunk *> m_chunks;
-
-    std::vector<IComponentAccess *> m_dataAccess;
-
-    std::vector<ComponentFlags> m_any;
-    ComponentFlags m_exclude;
-    ComponentFlags m_required;
-
-    ComponentFlags m_read;
-    ComponentFlags m_write;
-
-    Manager * m_manager = nullptr;
-};
-
-// This strategy of registration doesn't support multiple managers
-const std::vector<Job *> & GetRegisteredJobs ();
-JobId RegisterJob (Job * job);
-
-#define REGISTER_ECS_JOB(type)              \
-type s_##type;                              \
-JobId s_##type##Id = RegisterJob(&s_##type);
-
+// Job
+void Job::AddAny (IComponentAccess * access) {
+    ComponentFlags any;
+    access->ApplyTo(any);
+    m_any.push_back(any);
 }
+
+void Job::AddExclude (IComponentAccess * access) {
+    access->ApplyTo(m_exclude);
+}
+
+void Job::AddRead (IComponentAccess * access) {
+    access->ApplyTo(m_read);
+    access->ApplyTo(m_required);
+    m_dataAccess.push_back(access);
+}
+
+void Job::AddReadOther (IComponentAccess * access) {
+    access->ApplyTo(m_read);
+}
+
+void Job::AddRequire (IComponentAccess * access) {
+    access->ApplyTo(m_required);
+}
+
+void Job::AddWrite (IComponentAccess * access) {
+    access->ApplyTo(m_write);
+    access->ApplyTo(m_required);
+    m_dataAccess.push_back(access);
+}
+
+void Job::AddWriteOther (IComponentAccess * access) {
+    access->ApplyTo(m_write);
+}
+
+void Job::OnChunkAdded (Chunk * chunk) {
+    if (!IsValid(chunk))
+        return;
+    m_chunks.push_back(chunk);
+}
+
+void Job::OnRegistered (Manager * manager) {
+    m_manager = manager;
+    m_chunks.clear();
+}
+
+bool Job::IsValid (const Chunk * chunk) const {
+    const auto & composition = chunk->GetComposition();
+    if (!composition.HasAll(m_required))
+        return false;
+    if (!composition.HasNone(m_exclude))
+        return false;
+    for (const auto & any : m_any) {
+        if (!composition.HasAny(any))
+            return false;
+    }
+    return true;
+}
+
+void Job::Run (float dt) {
+    for (auto chunk : m_chunks) {
+        for (auto dataAccess : m_dataAccess)
+            dataAccess->UpdateChunk(chunk);
+        for (m_currentIndex = 0; m_currentIndex < chunk->GetCount(); ++m_currentIndex)
+            ForEach(dt);
+    }
+}
+
+// Registration
+static std::vector<Job *> & GetRegisteredJobs () {
+    static std::vector<Job *> s_registeredJobs;
+    return s_registeredJobs;
+}
+
+typedef uint32_t JobId;
+static JobId RegisterJob (Job * job) {
+    static JobId s_jobId = 0;
+    GetRegisteredJobs().push_back(job);
+    return s_jobId++;
+}
+
+} // namespace ecs
