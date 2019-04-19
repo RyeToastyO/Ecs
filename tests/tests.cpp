@@ -319,7 +319,7 @@ void TestJobSpeed () {
     double maxRatio = 2.0;
     EXPECT_FALSE(elapsedJob.count() > elapsedBenchmark.count() * maxRatio);
     if (elapsedJob.count() > elapsedBenchmark.count() * maxRatio)
-        std::cout << "  " << elapsedJob.count() * 1000 << " vs " << elapsedBenchmark.count() * 1000 << " (" << 100 * elapsedJob.count() / elapsedBenchmark.count() << "%)" << std::endl;
+        std::cout << "  " << elapsedJob.count() * 1000 << "ms vs " << elapsedBenchmark.count() * 1000 << "ms (" << 100 * elapsedJob.count() / elapsedBenchmark.count() << "%)" << std::endl;
 
     delete mgr;
 }
