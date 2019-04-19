@@ -7,7 +7,7 @@ T * Chunk::Find () {
     if (std::is_empty<T>())
         return m_composition.Has<T>() ? reinterpret_cast<T*>(m_componentMemory) : nullptr;
 
-    auto iter = m_componentArrays.find(T::GetId());
+    auto iter = m_componentArrays.find(GetComponentId<T>());
     if (iter == m_componentArrays.end())
         return nullptr;
     return iter->second.As<T>();

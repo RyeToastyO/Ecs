@@ -7,8 +7,6 @@
 namespace ecs {
 
 struct Entity {
-    ECS_COMPONENT();
-
     uint32_t index = 0;
     uint32_t generation = 0;
 

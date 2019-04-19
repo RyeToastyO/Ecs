@@ -4,13 +4,10 @@ Entity Component System - A data-oriented solution for storing and processing st
 ## Current Usage
 ```C++
 struct HealthCurrent {
-    ECS_COMPONENT();
     float Value;
 };
-DEFINE_ECS_COMPONENT(HealthCurrent);
 
 struct HealthRegen {
-    ECS_COMPONENT();
     float Value;
 };
 
@@ -47,7 +44,6 @@ int main () {
 - Singleton Components
 - Job ordering control
 - Multi-threading
-- Attempt to get rid of need for ECS_COMPONENT() macro
 - Improve/replace ComponentFlags
 - Add support for custom allocators
 

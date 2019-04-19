@@ -5,15 +5,11 @@
 
 #include "component.h"
 
-// This can be large during development.
-// Once you actually know your shipping component count,
-// this should be set to it to speed up ComponentFlags
-const auto MAX_ECS_COMPONENTS = 256;
+namespace ecs {
+
 typedef uint64_t ComponentFlagDataType;
 const auto COMPONENT_FLAG_DATA_BITS = sizeof(ComponentFlagDataType) * 8;
 const auto COMPONENT_FLAG_DATA_COUNT = ((MAX_ECS_COMPONENTS - 1 + COMPONENT_FLAG_DATA_BITS) / COMPONENT_FLAG_DATA_BITS);
-
-namespace ecs {
 
 struct ComponentFlags;
 
@@ -45,14 +41,16 @@ struct ComponentFlags {
 
     template<typename T, typename...Args>
     void ClearFlags () {
-        flags[T::GetId() / COMPONENT_FLAG_DATA_BITS] &= ~(static_cast<ComponentFlagDataType>(1) << T::GetId() % COMPONENT_FLAG_DATA_BITS);
+        const auto id = GetComponentId<T>();
+        flags[id / COMPONENT_FLAG_DATA_BITS] &= ~(static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS);
         if constexpr (sizeof...(Args) > 0)
             ClearFlags<Args...>();
     }
 
     template<typename T, typename...Args>
     void SetFlags () {
-        flags[T::GetId() / COMPONENT_FLAG_DATA_BITS] |= static_cast<ComponentFlagDataType>(1) << T::GetId() % COMPONENT_FLAG_DATA_BITS;
+        const auto id = GetComponentId<T>();
+        flags[id / COMPONENT_FLAG_DATA_BITS] |= static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS;
         if constexpr (sizeof...(Args) > 0)
             SetFlags<Args...>();
     }
@@ -66,7 +64,7 @@ struct ComponentFlags {
 
     bool Has (ComponentId id) const;
     template<typename T>
-    bool Has () const { return Has(T::GetId()); }
+    bool Has () const { return Has(GetComponentId<T>()); }
 
     size_t GetHash () const;
     bool operator== (const ComponentFlags & rhs) const;

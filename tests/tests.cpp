@@ -12,26 +12,19 @@ int s_errorCount = 0;
 // Test components
 namespace test { namespace health {
 
-ECS_TAG_COMPONENT(IsDead);
-DEFINE_ECS_COMPONENT(IsDead);
+struct IsDead {};
 
 struct Current {
-    ECS_COMPONENT();
     float Value = 0;
 };
-DEFINE_ECS_COMPONENT(Current);
 
 struct Max {
-    ECS_COMPONENT();
     float Value = 0;
 };
-DEFINE_ECS_COMPONENT(Max);
 
 struct Regen {
-    ECS_COMPONENT();
     float Value = 0;
 };
-DEFINE_ECS_COMPONENT(Regen);
 
 }} // namespace test::health
 
