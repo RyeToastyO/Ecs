@@ -10,7 +10,7 @@ T * Chunk::Find () {
     auto iter = m_componentArrays.find(GetComponentId<T>());
     if (iter == m_componentArrays.end())
         return nullptr;
-    return iter->second.As<T>();
+    return reinterpret_cast<T*>(iter->second);
 }
 
 template<typename T>

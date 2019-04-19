@@ -10,14 +10,6 @@ namespace ecs {
 
 typedef uint8_t byte_t;
 
-struct ComponentArray {
-    byte_t * m_data;
-    size_t m_componentSize;
-
-    template<typename T>
-    T * As () { return reinterpret_cast<T*>(m_data); }
-};
-
 struct Chunk {
     Chunk (const ComponentFlags & composition);
     ~Chunk ();
@@ -39,8 +31,8 @@ struct Chunk {
     void RemoveEntity (uint32_t index);
 
 private: // Data
-    std::unordered_map<ComponentId, ComponentArray> m_componentArrays;
-    void * m_componentMemory = nullptr;
+    std::unordered_map<ComponentId, byte_t*> m_componentArrays;
+    byte_t * m_componentMemory = nullptr;
 
     uint32_t m_count = 0;
     uint32_t m_capacity = 0;
