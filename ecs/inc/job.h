@@ -30,6 +30,7 @@ private:
     std::vector<Chunk *> m_chunks;
 
     std::vector<IComponentAccess *> m_dataAccess;
+    std::vector<IComponentAccess *> m_singletonAccess;
 
     std::vector<ComponentFlags> m_requireAny;
     ComponentFlags m_exclude;
@@ -52,6 +53,9 @@ private:
     void AddRead (IComponentAccess * access);
     template<typename T> friend struct ReadOther;
     void AddReadOther (IComponentAccess * access);
+    template<typename T> friend struct SingletonComponentAccess;
+    template<typename T> friend struct ReadSingleton;
+    void AddReadSingleton (IComponentAccess * access);
     template<typename T, typename...Args> friend struct Require;
     void AddRequire (IComponentAccess * access);
     template<typename T, typename...Args> friend struct RequireAny;
@@ -60,6 +64,8 @@ private:
     void AddWrite (IComponentAccess * access);
     template<typename T> friend struct WriteOther;
     void AddWriteOther (IComponentAccess * access);
+    template<typename T> friend struct WriteSingleton;
+    void AddWriteSingleton (IComponentAccess * access);
 };
 
 // Register job for updates
@@ -83,6 +89,10 @@ ReadOther<componentType> variableName = ReadOther<componentType>(*this);        
 static_assert(!std::is_empty<componentType>(), "Cannot read access an empty/tag component, use HasComponent<T>(entity)");   \
 static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entity>::value, "ReadOther Entity doesn't even make sense");
 
+#define ECS_READ_SINGLETON(componentType, variableName)                             \
+ReadSingleton<componentType> variableName = ReadSingleton<componentType>(*this);    \
+static_assert(std::is_base_of<ISingletonComponent, componentType>::value, "Must inherit ISingletonComponent to be read in this way");
+
 #define ECS_REQUIRE(...) Require<__VA_ARGS__> __require##__LINE__ = Require<__VA_ARGS__>(*this);
 #define ECS_REQUIRE_ANY(...) RequireAny<__VA_ARGS__> __requireAny##__LINE__ = RequireAny<__VA_ARGS__>(*this);
 
@@ -95,6 +105,10 @@ static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entit
 WriteOther<componentType> variableName = WriteOther<componentType>(*this);                                                  \
 static_assert(!std::is_empty<componentType>(), "Cannot write access an empty/tag component, use HasComponent<T>(entity)");  \
 static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entity>::value, "Don't write to Entity, you will break everything");
+
+#define ECS_WRITE_SINGLETON(componentType, variableName)                            \
+WriteSingleton<componentType> variableName = WriteSingleton<componentType>(*this);  \
+static_assert(std::is_base_of<ISingletonComponent, componentType>::value, "Must inherit ISingletonComponent to be written in this way");
 
 }
 

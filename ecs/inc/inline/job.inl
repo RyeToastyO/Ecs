@@ -6,6 +6,7 @@ struct IComponentAccess {
     virtual void ApplyTo (ComponentFlags &) = 0;
     virtual void OnCreate () = 0;
     virtual void UpdateChunk (Chunk *) {}
+    virtual void UpdateManager () {}
 
 protected:
     Job & m_job;
@@ -35,6 +36,16 @@ struct LookupComponentAccess : public IComponentAccess {
     void ApplyTo (ComponentFlags & flags) override { flags.SetFlags<T>(); }
 };
 
+template<typename T>
+struct SingletonComponentAccess : public IComponentAccess {
+    static_assert(std::is_base_of<ISingletonComponent, T>::value, "Can only access components that inherit ISingletonComponent");
+    SingletonComponentAccess (Job & job) : IComponentAccess(job) {}
+    void ApplyTo (ComponentFlags & flags) override { flags.SetFlags<T>(); }
+    void UpdateManager () override { m_singletonComponent = this->m_job.m_manager->template GetSingletonComponent<T>(); }
+protected:
+    T * m_singletonComponent = nullptr;
+};
+
 // Actual component access
 template<typename T, typename...Args>
 struct Exclude : public CompositionAccess<T, Args...> {
@@ -54,7 +65,15 @@ template<typename T>
 struct ReadOther : public LookupComponentAccess<T> {
     ReadOther (Job & job) : LookupComponentAccess<T>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddReadOther(this); }
-    const T * operator[] (Entity entity) const { return this->m_job.m_manager.FindComponent<T>(entity); }
+    const T * operator[] (Entity entity) const { return this->m_job.m_manager->FindComponent<T>(entity); }
+};
+
+template<typename T>
+struct ReadSingleton : public SingletonComponentAccess<T> {
+    ReadSingleton (Job & job) : SingletonComponentAccess<T>(job) { OnCreate(); }
+    void OnCreate () override { this->m_job.AddReadSingleton(this); }
+    const T & operator* () const { return this->m_singletonComponent; }
+    const T * operator-> () const { return this->m_singletonComponent; }
 };
 
 template<typename T, typename...Args>
@@ -81,7 +100,15 @@ template<typename T>
 struct WriteOther : public LookupComponentAccess<T> {
     WriteOther (Job & job) : LookupComponentAccess<T>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddWriteOther(this); }
-    T * operator[] (Entity entity) const { return this->m_job.m_manager.FindComponent<T>(entity); }
+    T * operator[] (Entity entity) const { return this->m_job.m_manager->FindComponent<T>(entity); }
+};
+
+template<typename T>
+struct WriteSingleton : public SingletonComponentAccess<T> {
+    WriteSingleton (Job & job) : SingletonComponentAccess<T>(job) { OnCreate(); }
+    void OnCreate () override { this->m_job.AddWriteSingleton(this); }
+    T & operator* () const { return this->m_singletonComponent; }
+    T * operator-> () const { return this->m_singletonComponent; }
 };
 
 // Job
@@ -97,6 +124,11 @@ void Job::AddRead (IComponentAccess * access) {
 
 void Job::AddReadOther (IComponentAccess * access) {
     access->ApplyTo(m_read);
+}
+
+void Job::AddReadSingleton (IComponentAccess * access) {
+    access->ApplyTo(m_read);
+    m_singletonAccess.push_back(access);
 }
 
 void Job::AddRequire (IComponentAccess * access) {
@@ -119,6 +151,11 @@ void Job::AddWriteOther (IComponentAccess * access) {
     access->ApplyTo(m_write);
 }
 
+void Job::AddWriteSingleton (IComponentAccess * access) {
+    access->ApplyTo(m_write);
+    m_singletonAccess.push_back(access);
+}
+
 template<typename T>
 bool Job::HasComponent (Entity entity) const {
     return m_manager.HasComponent<T>(entity);
@@ -133,6 +170,9 @@ void Job::OnChunkAdded (Chunk * chunk) {
 void Job::OnRegistered (Manager * manager) {
     m_manager = manager;
     m_chunks.clear();
+
+    for (auto singletonAccess : m_singletonAccess)
+        singletonAccess->UpdateManager();
 }
 
 bool Job::IsValid (const Chunk * chunk) const {

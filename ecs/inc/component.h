@@ -14,6 +14,10 @@ namespace ecs {
 
 typedef uint32_t ComponentId;
 
+struct ISingletonComponent {
+    virtual ~ISingletonComponent () {}
+};
+
 struct ComponentRegistry {
     static std::unordered_map<ComponentId, size_t> & GetComponentSizeMap ();
     static ComponentId & GetComponentCounter ();

@@ -26,6 +26,10 @@ struct Regen {
     float Value = 0;
 };
 
+struct Total : ISingletonComponent {
+    float Value = 0;
+};
+
 }} // namespace test::health
 
 // Helpers
@@ -278,6 +282,59 @@ void TestJob () {
     delete mgr;
 }
 
+struct SingletonWrite : public Job {
+    ECS_WRITE_SINGLETON(test::health::Total, Total);
+    ECS_READ(test::health::Current, Current);
+
+    void Run (float dt) override {
+        Total->Value = 0.0f;
+        Job::Run(dt);
+    }
+
+    void ForEach (float dt) override {
+        Total->Value += Current->Value;
+    }
+};
+REGISTER_ECS_JOB(SingletonWrite);
+
+struct SingletonRead : public Job {
+    ECS_READ_SINGLETON(test::health::Total, Total);
+    ECS_READ(test::health::Current, Current);
+
+    float total;
+
+    void Run (float dt) override {
+        total = 0.0f;
+        Job::Run(dt);
+        EXPECT_TRUE(Total->Value == total);
+    }
+
+    void ForEach (float dt) override {
+        total += Current->Value;
+    }
+};
+REGISTER_ECS_JOB(SingletonRead);
+
+void TestSingletonComponents () {
+    Manager mgr;
+
+    auto total = mgr.GetSingletonComponent<test::health::Total>();
+    EXPECT_TRUE(total && total->Value == 0.0f);
+
+    Entity a = mgr.CreateEntityImmediate(test::health::Current{ 10 });
+    mgr.CreateEntityImmediate(test::health::Current{ 20 }, test::health::Max{ 200 });
+
+    mgr.Update(1.0f);
+
+    EXPECT_TRUE(total && total->Value == 30.0f);
+
+    mgr.FindComponent<test::health::Current>(a)->Value = 5.0f;
+
+    mgr.Update(1.0f);
+
+    EXPECT_TRUE(total && total->Value == 25.0f);
+}
+
 void TestJobSpeed () {
     Manager * mgr = new Manager();
 
@@ -287,9 +344,14 @@ void TestJobSpeed () {
     for (uint32_t i = 0; i < entityCount; ++i)
         mgr->CreateEntityImmediate(test::health::Current{ 0 }, test::health::Max{ 1000 }, test::health::Regen{ 1.0f });
 
+    // Manually register and run a job so we don't include
+    // global test jobs and skew our timing results
+    HealthRegen speedJob;
+    mgr->RegisterJob(&speedJob);
+
     auto start = std::chrono::system_clock::now();
     for (uint32_t i = 0; i < loopCount; ++i)
-        mgr->Update(1 / 60.0f);
+        speedJob.Run(1 / 60.0f);
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsedJob = end - start;
 
@@ -320,6 +382,7 @@ int main () {
     TestFindingComponents();
     TestCompositionChanges();
     TestJob();
+    TestSingletonComponents();
 
 #ifndef _DEBUG
     TestJobSpeed();

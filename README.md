@@ -39,11 +39,14 @@ int main () {
 - Jobs that iterate all entities matching specified filter criteria:
   - Read/Write
   - Exclude/Require/RequireAny
-  - ReadOther/WriteOther (locks components but doesn't affect filtering)
+  - Read/WriteOther (locks components but doesn't affect filtering)
+  - Read/WriteSingleton (exactly one component of that type exists and isn't associated with an entity)
 
 ## TODO
+- 100% test coverage
+  - HasComponent from job
+  - Remaining component access (Require, RequireAny, ReadOther, WriteOther)
 - Queued composition changes
-- Singleton Components
 - Job ordering control
 - Multi-threading
 - Improve/replace ComponentFlags

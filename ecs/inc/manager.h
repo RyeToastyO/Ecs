@@ -35,6 +35,9 @@ public:
     void DestroyImmediate (Entity entity);
 
     template<typename T>
+    T * GetSingletonComponent ();
+
+    template<typename T>
     bool HasComponent (Entity entity) const;
 
     template<typename T>
@@ -52,6 +55,7 @@ private:
     std::vector<uint32_t> m_freeList;
     std::vector<Job *> m_jobs;
     std::unordered_map<ComponentFlags, Chunk*> m_chunks;
+    std::unordered_map<ComponentId, ISingletonComponent *> m_singletonComponents;
 
 private:
     Entity CreateEntityImmediateInternal (ComponentFlags composition);

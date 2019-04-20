@@ -17,6 +17,7 @@ void Manager::AddComponents (Entity entity, T component, Args...args) {
 
 template<typename T, typename...Args>
 Entity Manager::CreateEntityImmediate (T component, Args...args) {
+    static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be added to entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not add Entity as a component");
 
     // Compile the composition flags
@@ -33,7 +34,22 @@ Entity Manager::CreateEntityImmediate (T component, Args...args) {
 }
 
 template<typename T>
+T * Manager::GetSingletonComponent () {
+    static_assert(std::is_base_of<ISingletonComponent, T>::value, "GetSingletonComponent<T> must inherit ISingletonComponent");
+    static_assert(!std::is_empty<T>(), "Singleton components must have data, they always exist so they can't be used as tags");
+
+    auto iter = m_singletonComponents.find(GetComponentId<T>());
+    if (iter == m_singletonComponents.end()) {
+        T * component = new T();
+        m_singletonComponents.emplace(GetComponentId<T>(), component);
+        return component;
+    }
+    return static_cast<T*>(iter->second);
+}
+
+template<typename T>
 bool Manager::HasComponent (Entity entity) const {
+    static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Yes, it does. Use Exists to check for deletion");
 
     if (!Exists(entity))
@@ -44,6 +60,7 @@ bool Manager::HasComponent (Entity entity) const {
 
 template<typename T>
 T * Manager::FindComponent (Entity entity) const {
+    static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Why are you finding an Entity with that Entity?");
 
     if (!Exists(entity))
@@ -54,6 +71,7 @@ T * Manager::FindComponent (Entity entity) const {
 
 template<typename T, typename...Args>
 void Manager::RemoveComponents (Entity entity) {
+    static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not remove Entity as a component");
 
     if (!Exists(entity))
@@ -68,6 +86,7 @@ void Manager::RemoveComponents (Entity entity) {
 
 template<typename T, typename...Args>
 void Manager::SetComponentsInternal (const EntityData & entity, T component, Args...args) const {
+    static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be set on entities");
     *(entity.chunk->Find<T>(entity.chunkIndex)) = component;
     if constexpr (sizeof...(Args) > 0)
         SetComponentsInternal(entity, args...);
@@ -82,7 +101,10 @@ Manager::Manager () {
 Manager::~Manager () {
     for (auto & chunk : m_chunks)
         delete chunk.second;
+    for (auto & singleton : m_singletonComponents)
+        delete singleton.second;
     m_chunks.clear();
+    m_singletonComponents.clear();
 }
 
 bool Manager::Exists (Entity entity) const {
