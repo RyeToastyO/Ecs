@@ -2,6 +2,8 @@ namespace ecs {
 
 template<typename T, typename...Args>
 void Manager::AddComponents (Entity entity, T component, Args...args) {
+    static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not add Entity as a component");
+
     if (!Exists(entity))
         return;
     auto & entityData = m_entityData[entity.index];
@@ -15,6 +17,8 @@ void Manager::AddComponents (Entity entity, T component, Args...args) {
 
 template<typename T, typename...Args>
 Entity Manager::CreateEntityImmediate (T component, Args...args) {
+    static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not add Entity as a component");
+
     // Compile the composition flags
     ComponentFlags composition;
     composition.SetFlags<T, Args...>();
@@ -30,6 +34,8 @@ Entity Manager::CreateEntityImmediate (T component, Args...args) {
 
 template<typename T>
 bool Manager::HasComponent (Entity entity) const {
+    static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Yes, it does. Use Exists to check for deletion");
+
     if (!Exists(entity))
         return false;
     const auto & entityData = m_entityData[entity.index];
@@ -38,6 +44,8 @@ bool Manager::HasComponent (Entity entity) const {
 
 template<typename T>
 T * Manager::FindComponent (Entity entity) const {
+    static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Why are you finding an Entity with that Entity?");
+
     if (!Exists(entity))
         return nullptr;
     const auto & entityData = m_entityData[entity.index];
@@ -46,6 +54,8 @@ T * Manager::FindComponent (Entity entity) const {
 
 template<typename T, typename...Args>
 void Manager::RemoveComponents (Entity entity) {
+    static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not remove Entity as a component");
+
     if (!Exists(entity))
         return;
     auto & entityData = m_entityData[entity.index];
