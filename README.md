@@ -38,7 +38,7 @@ int main () {
 - Adding/setting/removing components
 - Jobs that iterate all entities matching specified filter criteria:
   - Read/Write
-  - Any/Exclude/Require
+  - Exclude/Require/RequireAny
   - ReadOther/WriteOther (locks components but doesn't affect filtering)
 
 ## TODO
