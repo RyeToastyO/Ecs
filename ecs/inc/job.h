@@ -15,19 +15,8 @@ class Manager;
 
 // Job base class
 struct Job {
-    void OnChunkAdded (Chunk * chunk);
-    void OnRegistered (Manager * manager);
-
-    void AddExclude (IComponentAccess * access);
-    void AddRead (IComponentAccess * access);
-    void AddReadOther (IComponentAccess * access);
-    void AddRequire (IComponentAccess * access);
-    void AddRequireAny (IComponentAccess * access);
-    void AddWrite (IComponentAccess * access);
-    void AddWriteOther (IComponentAccess * access);
-
-    uint32_t GetCurrentIndex () const { return m_currentIndex; }
-    Manager & GetManager () const { return *m_manager; }
+    template<typename T>
+    bool HasComponent (Entity entity) const;
 
 public:
     virtual void Run (float dt);
@@ -50,6 +39,27 @@ private:
     ComponentFlags m_write;
 
     Manager * m_manager = nullptr;
+
+private:
+    friend class Manager;
+    void OnChunkAdded (Chunk * chunk);
+    void OnRegistered (Manager * manager);
+
+private:
+    template<typename T, typename...Args> friend struct Exclude;
+    void AddExclude (IComponentAccess * access);
+    template<typename T> friend struct Read;
+    void AddRead (IComponentAccess * access);
+    template<typename T> friend struct ReadOther;
+    void AddReadOther (IComponentAccess * access);
+    template<typename T, typename...Args> friend struct Require;
+    void AddRequire (IComponentAccess * access);
+    template<typename T, typename...Args> friend struct RequireAny;
+    void AddRequireAny (IComponentAccess * access);
+    template<typename T> friend struct Write;
+    void AddWrite (IComponentAccess * access);
+    template<typename T> friend struct WriteOther;
+    void AddWriteOther (IComponentAccess * access);
 };
 
 // Register job for updates

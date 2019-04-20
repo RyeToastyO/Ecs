@@ -46,15 +46,15 @@ template<typename T>
 struct Read : public DataComponentAccess<T> {
     Read (Job & job) : DataComponentAccess<T>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddRead(this); }
-    const T & operator* () const { return this->m_componentArray[this->m_job.GetCurrentIndex()]; }
-    const T * operator-> () const { return this->m_componentArray + this->m_job.GetCurrentIndex(); }
+    const T & operator* () const { return this->m_componentArray[this->m_job.m_currentIndex]; }
+    const T * operator-> () const { return this->m_componentArray + this->m_job.m_currentIndex; }
 };
 
 template<typename T>
 struct ReadOther : public LookupComponentAccess<T> {
     ReadOther (Job & job) : LookupComponentAccess<T>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddReadOther(this); }
-    const T * operator[] (Entity entity) const { return this->m_job.GetManager().FindComponent<T>(entity); }
+    const T * operator[] (Entity entity) const { return this->m_job.m_manager.FindComponent<T>(entity); }
 };
 
 template<typename T, typename...Args>
@@ -73,15 +73,15 @@ template<typename T>
 struct Write : public DataComponentAccess<T> {
     Write (Job & job) : DataComponentAccess<T>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddWrite(this); }
-    T & operator* () const { return this->m_componentArray[this->m_job.GetCurrentIndex()]; }
-    T * operator-> () const { return this->m_componentArray + this->m_job.GetCurrentIndex(); }
+    T & operator* () const { return this->m_componentArray[this->m_job.m_currentIndex]; }
+    T * operator-> () const { return this->m_componentArray + this->m_job.m_currentIndex; }
 };
 
 template<typename T>
 struct WriteOther : public LookupComponentAccess<T> {
     WriteOther (Job & job) : LookupComponentAccess<T>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddWriteOther(this); }
-    T * operator[] (Entity entity) const { return this->m_job.GetManager().FindComponent<T>(entity); }
+    T * operator[] (Entity entity) const { return this->m_job.m_manager.FindComponent<T>(entity); }
 };
 
 // Job
@@ -117,6 +117,11 @@ void Job::AddWrite (IComponentAccess * access) {
 
 void Job::AddWriteOther (IComponentAccess * access) {
     access->ApplyTo(m_write);
+}
+
+template<typename T>
+bool Job::HasComponent (Entity entity) const {
+    return m_manager.HasComponent<T>(entity);
 }
 
 void Job::OnChunkAdded (Chunk * chunk) {
