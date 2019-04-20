@@ -18,11 +18,11 @@ struct Job {
     void OnChunkAdded (Chunk * chunk);
     void OnRegistered (Manager * manager);
 
-    void AddAny (IComponentAccess * access);
     void AddExclude (IComponentAccess * access);
     void AddRead (IComponentAccess * access);
     void AddReadOther (IComponentAccess * access);
     void AddRequire (IComponentAccess * access);
+    void AddRequireAny (IComponentAccess * access);
     void AddWrite (IComponentAccess * access);
     void AddWriteOther (IComponentAccess * access);
 
@@ -42,7 +42,7 @@ private:
 
     std::vector<IComponentAccess *> m_dataAccess;
 
-    std::vector<ComponentFlags> m_any;
+    std::vector<ComponentFlags> m_requireAny;
     ComponentFlags m_exclude;
     ComponentFlags m_required;
 
@@ -62,8 +62,6 @@ type s_##type;                              \
 JobId s_##type##Id = RegisterJob(&s_##type);
 
 // Component Access macros
-#define ECS_ANY(...) Any<__VA_ARGS__> __any##__LINE__ = Any<__VA_ARGS__>(*this);
-
 #define ECS_EXCLUDE(...) Exclude<__VA_ARGS__> __exclude##__LINE__ = Exclude<__VA_ARGS__>(*this);
 
 #define ECS_READ(componentType, variableName)                   \
@@ -76,6 +74,7 @@ static_assert(!std::is_empty<componentType>(), "Cannot read access an empty/tag 
 static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entity>::value, "ReadOther Entity doesn't even make sense");
 
 #define ECS_REQUIRE(...) Require<__VA_ARGS__> __require##__LINE__ = Require<__VA_ARGS__>(*this);
+#define ECS_REQUIRE_ANY(...) RequireAny<__VA_ARGS__> __requireAny##__LINE__ = RequireAny<__VA_ARGS__>(*this);
 
 #define ECS_WRITE(componentType, variableName)                                                                  \
 Write<componentType> variableName = Write<componentType>(*this);                                                \

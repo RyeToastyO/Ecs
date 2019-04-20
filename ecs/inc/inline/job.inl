@@ -37,12 +37,6 @@ struct LookupComponentAccess : public IComponentAccess {
 
 // Actual component access
 template<typename T, typename...Args>
-struct Any : public CompositionAccess<T, Args...> {
-    Any (Job & job) : CompositionAccess<T, Args...>(job) { OnCreate(); }
-    void OnCreate () override { this->m_job.AddAny(this); }
-};
-
-template<typename T, typename...Args>
 struct Exclude : public CompositionAccess<T, Args...> {
     Exclude (Job & job) : CompositionAccess<T, Args...>(job) { OnCreate(); }
     void OnCreate () override { this->m_job.AddExclude(this); }
@@ -69,6 +63,12 @@ struct Require : public CompositionAccess<T, Args...> {
     void OnCreate () override { this->m_job.AddRequire(this); }
 };
 
+template<typename T, typename...Args>
+struct RequireAny : public CompositionAccess<T, Args...> {
+    RequireAny (Job & job) : CompositionAccess<T, Args...>(job) { OnCreate(); }
+    void OnCreate () override { this->m_job.AddRequireAny(this); }
+};
+
 template<typename T>
 struct Write : public DataComponentAccess<T> {
     Write (Job & job) : DataComponentAccess<T>(job) { OnCreate(); }
@@ -85,12 +85,6 @@ struct WriteOther : public LookupComponentAccess<T> {
 };
 
 // Job
-void Job::AddAny (IComponentAccess * access) {
-    ComponentFlags any;
-    access->ApplyTo(any);
-    m_any.push_back(any);
-}
-
 void Job::AddExclude (IComponentAccess * access) {
     access->ApplyTo(m_exclude);
 }
@@ -107,6 +101,12 @@ void Job::AddReadOther (IComponentAccess * access) {
 
 void Job::AddRequire (IComponentAccess * access) {
     access->ApplyTo(m_required);
+}
+
+void Job::AddRequireAny (IComponentAccess * access) {
+    ComponentFlags any;
+    access->ApplyTo(any);
+    m_requireAny.push_back(any);
 }
 
 void Job::AddWrite (IComponentAccess * access) {
@@ -136,7 +136,7 @@ bool Job::IsValid (const Chunk * chunk) const {
         return false;
     if (!composition.HasNone(m_exclude))
         return false;
-    for (const auto & any : m_any) {
+    for (const auto & any : m_requireAny) {
         if (!composition.HasAny(any))
             return false;
     }
