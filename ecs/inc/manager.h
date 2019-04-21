@@ -46,14 +46,13 @@ public:
     template<typename T, typename...Args>
     void RemoveComponents (Entity entity);
 
-    void RegisterJob (Job * job);
-
-    void Update (float dt);
+    template<typename T>
+    void RunJob (float dt);
 
 private:
     std::vector<EntityData> m_entityData;
     std::vector<uint32_t> m_freeList;
-    std::vector<Job *> m_jobs;
+    std::unordered_map<JobId, Job *> m_manualJobs;
     std::unordered_map<ComponentFlags, Chunk*> m_chunks;
     std::unordered_map<ComponentId, ISingletonComponent *> m_singletonComponents;
 

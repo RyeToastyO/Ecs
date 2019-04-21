@@ -21,14 +21,14 @@ struct RegenJob : public ecs::Job {
         Current->Value += Regen->Value * dt;
     }
 };
-REGISTER_ECS_JOB(RegenJob);
 
 int main () {
     ecs::Manager mgr;
-    ecs::Entity a = mgr->CreateEntityImmediate(HealthCurrent{10}, HealthRegen{1});
-    mgr->Update(1 /* dt */);
+    ecs::Entity a = mgr.CreateEntityImmediate(HealthCurrent{10}, HealthRegen{1});
 
-    std::cout << mgr->FindComponent<HealthCurrent>(a)->Value;
+    mgr.RunJob<RegenJob>(1.0f /* dt */);
+
+    std::cout << mgr.FindComponent<HealthCurrent>(a)->Value;
     /* 11 */
 }
 ```
@@ -44,7 +44,8 @@ int main () {
 
 ## TODO
 - Queued composition changes
-- Better job global registration that handles multiple managers
+- Job registration that handles multiple managers
+- Job update groups
 - Job ordering control
 - Multi-threading
 - Improve/replace ComponentFlags

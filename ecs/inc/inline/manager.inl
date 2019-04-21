@@ -93,17 +93,17 @@ void Manager::SetComponentsInternal (const EntityData & entity, T component, Arg
 }
 
 Manager::Manager () {
-    const auto & jobs = GetRegisteredJobs();
-    for (auto job : jobs)
-        RegisterJob(job);
 }
 
 Manager::~Manager () {
     for (auto & chunk : m_chunks)
         delete chunk.second;
+    for (auto & job : m_manualJobs)
+        delete job.second;
     for (auto & singleton : m_singletonComponents)
         delete singleton.second;
     m_chunks.clear();
+    m_manualJobs.clear();
     m_singletonComponents.clear();
 }
 
@@ -172,17 +172,33 @@ Chunk * Manager::GetOrCreateChunk (const ComponentFlags & composition) {
     if (chunkIter == m_chunks.end()) {
         m_chunks.emplace(composition, new Chunk(composition));
         chunkIter = m_chunks.find(composition);
-        for (auto job : m_jobs)
-            job->OnChunkAdded(chunkIter->second);
+        for (const auto & jobIter : m_manualJobs)
+            jobIter.second->OnChunkAdded(chunkIter->second);
     }
     return chunkIter->second;
 }
 
-void Manager::RegisterJob (Job * job) {
-    m_jobs.push_back(job);
-    job->OnRegistered(this);
-    for (auto & chunk : m_chunks)
-        job->OnChunkAdded(chunk.second);
+template<typename T>
+void Manager::RunJob (float dt) {
+    static_assert(std::is_base_of<Job, T>::value, "Must inherit from Job");
+
+    Job * job = nullptr;
+
+    auto iter = m_manualJobs.find(GetJobId<T>());
+    if (iter == m_manualJobs.end()) {
+        job = new T();
+
+        job->OnRegistered(this);
+        for (auto & chunk : m_chunks)
+            job->OnChunkAdded(chunk.second);
+
+        m_manualJobs.emplace(GetJobId<T>(), job);
+    }
+    else {
+        job = iter->second;
+    }
+
+    job->Run(dt);
 }
 
 void Manager::SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition) {
@@ -191,11 +207,6 @@ void Manager::SetCompositionInternal (EntityData & entityData, const ComponentFl
         return;
     entityData.chunkIndex = entityData.chunk->MoveTo(entityData.chunkIndex, *chunk);
     entityData.chunk = chunk;
-}
-
-void Manager::Update (float dt) {
-    for (uint32_t i = 0; i < m_jobs.size(); ++i)
-        m_jobs[i]->Run(dt);
 }
 
 } // namespace ecs

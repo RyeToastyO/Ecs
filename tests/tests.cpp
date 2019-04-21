@@ -264,9 +264,7 @@ void TestJob () {
     Entity d = mgr.CreateEntityImmediate(test::FloatA{ 4 }, test::FloatB{ 4 }, test::TagA{}, test::TagB{});
     Entity e = mgr.CreateEntityImmediate(test::FloatA{ 5 }, test::FloatB{ 5 });
 
-    AddFloatBToFloatA addFloatBToFloatA;
-    mgr.RegisterJob(&addFloatBToFloatA);
-    addFloatBToFloatA.Run(0.0f);
+    mgr.RunJob<AddFloatBToFloatA>(0.0f);
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(a)->Value == 2);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(b)->Value == 4);
@@ -274,9 +272,7 @@ void TestJob () {
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(d)->Value == 8);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 10);
 
-    AddFloatBToFloatARequireExclude addFloatBToFloatARequireExclude;
-    mgr.RegisterJob(&addFloatBToFloatARequireExclude);
-    addFloatBToFloatARequireExclude.Run(0.0f);
+    mgr.RunJob<AddFloatBToFloatARequireExclude>(0.0f);
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(a)->Value == 2);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(b)->Value == 6);
@@ -284,9 +280,7 @@ void TestJob () {
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(d)->Value == 8);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 10);
 
-    AddFloatBToFloatARequireAny addFloatBToFloatARequireAny;
-    mgr.RegisterJob(&addFloatBToFloatARequireAny);
-    addFloatBToFloatARequireAny.Run(0.0f);
+    mgr.RunJob<AddFloatBToFloatARequireAny>(0.0f);
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(a)->Value == 2);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(b)->Value == 8);
@@ -295,7 +289,7 @@ void TestJob () {
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 10);
 }
 
-struct ReadOtherTest : public Job {
+struct ReadOtherTestJob : public Job {
     ECS_WRITE(test::FloatA, A);
     ECS_READ(test::EntityReference, Ref);
 
@@ -306,7 +300,7 @@ struct ReadOtherTest : public Job {
     }
 };
 
-struct WriteOtherTest : public Job {
+struct WriteOtherTestJob : public Job {
     ECS_READ(test::FloatB, B);
     ECS_READ(test::EntityReference, Ref);
 
@@ -321,35 +315,29 @@ struct WriteOtherTest : public Job {
 void TestReadWriteOther () {
     Manager mgr;
 
-    ReadOtherTest readOther;
-    mgr.RegisterJob(&readOther);
-
-    WriteOtherTest writeOther;
-    mgr.RegisterJob(&writeOther);
-
     Entity target = mgr.CreateEntityImmediate(test::FloatC{ 30.0f }, test::TagA{});
     Entity referencer = mgr.CreateEntityImmediate(test::FloatA{ 10.0f }, test::FloatB{ 20.0f }, test::EntityReference{ target });
 
-    readOther.Run(0.0f);
+    mgr.RunJob<ReadOtherTestJob>(0.0f);
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(referencer)->Value == 30.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatB>(referencer)->Value == 20.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatC>(target)->Value = 30.0f);
 
-    writeOther.Run(0.0f);
+    mgr.RunJob<WriteOtherTestJob>(0.0f);
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(referencer)->Value == 30.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatB>(referencer)->Value == 20.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatC>(target)->Value = 20.0f);
 
-    readOther.Run(0.0f);
+    mgr.RunJob<ReadOtherTestJob>(0.0f);
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(referencer)->Value == 20.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatB>(referencer)->Value == 20.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatC>(target)->Value = 20.0f);
 }
 
-struct SingletonWrite : public Job {
+struct SingletonWriteJob : public Job {
     ECS_WRITE_SINGLETON(test::SingletonA, Singleton);
     ECS_READ(test::FloatA, A);
 
@@ -362,9 +350,8 @@ struct SingletonWrite : public Job {
         Singleton->Value += A->Value;
     }
 };
-REGISTER_ECS_JOB(SingletonWrite);
 
-struct SingletonRead : public Job {
+struct SingletonReadJob : public Job {
     ECS_READ_SINGLETON(test::SingletonA, Singleton);
     ECS_READ(test::FloatA, A);
 
@@ -372,7 +359,6 @@ struct SingletonRead : public Job {
         EXPECT_TRUE(Singleton->Value == 10.0f);
     }
 };
-REGISTER_ECS_JOB(SingletonRead);
 
 void TestSingletonComponents () {
     Manager mgr;
@@ -383,19 +369,15 @@ void TestSingletonComponents () {
     Entity a = mgr.CreateEntityImmediate(test::FloatA{ 5.0f });
     mgr.CreateEntityImmediate(test::FloatA{ 5.0f });
 
-    SingletonWrite write;
-    mgr.RegisterJob(&write);
-    write.Run(0.0f);
+    mgr.RunJob<SingletonWriteJob>(0.0f);
 
     EXPECT_TRUE(singleton && singleton->Value == 10.0f);
 
-    SingletonRead read;
-    mgr.RegisterJob(&read);
-    read.Run(0.0f);
+    mgr.RunJob<SingletonReadJob>(0.0f);
 
     mgr.FindComponent<test::FloatA>(a)->Value = 10.0f;
 
-    write.Run(0.0f);
+    mgr.RunJob<SingletonWriteJob>(0.0f);
 
     EXPECT_TRUE(singleton && singleton->Value == 15.0f);
 }
@@ -424,15 +406,10 @@ void TestJobSpeed () {
     for (uint32_t i = 0; i < entityCount; ++i)
         mgr.CreateEntityImmediate(test::FloatA{ 0 }, test::FloatB{ 1000 }, test::FloatC{ 1.0f });
 
-    // Manually register and run a job so we don't include
-    // global test jobs and skew our timing results
-    SpeedTestJob speedJob;
-    mgr.RegisterJob(&speedJob);
-
     float timestep = 1 / 60.0f;
     auto start = std::chrono::system_clock::now();
     for (uint32_t i = 0; i < loopCount; ++i)
-        speedJob.Run(timestep);
+        mgr.RunJob<SpeedTestJob>(timestep);
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsedJob = end - start;
 
@@ -446,7 +423,7 @@ void TestJobSpeed () {
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsedBenchmark = end - start;
 
-    double maxRatio = 2.0;
+    double maxRatio = 1.0;
     EXPECT_FALSE(elapsedJob.count() > elapsedBenchmark.count() * maxRatio);
     if (elapsedJob.count() > elapsedBenchmark.count() * maxRatio)
         std::cout << "  " << elapsedJob.count() * 1000 << "ms vs " << elapsedBenchmark.count() * 1000 << "ms (" << 100 * elapsedJob.count() / elapsedBenchmark.count() << "%)" << std::endl;
