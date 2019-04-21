@@ -48,10 +48,10 @@ public:
     void RemoveComponents (Entity entity);
 
     template<typename T>
-    void RunJob (float dt);
+    void RunJob (Timestep dt);
 
     template<typename T>
-    void RunUpdateGroup (float dt);
+    void RunUpdateGroup (Timestep dt);
 
 private:
     std::vector<EntityData> m_entityData;

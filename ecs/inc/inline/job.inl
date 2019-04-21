@@ -79,7 +79,7 @@ bool Job::IsValid (const Chunk * chunk) const {
     return true;
 }
 
-void Job::Run (float dt) {
+void Job::Run (Timestep dt) {
     for (auto chunk : m_chunks) {
         for (auto dataAccess : m_dataAccess)
             dataAccess->UpdateChunk(chunk);

@@ -17,7 +17,7 @@ struct RegenJob : public ecs::Job {
     ECS_WRITE(HealthCurrent, Current);
     ECS_READ(HealthRegen, Regen);
 
-    void ForEach (float dt) override {
+    void ForEach (ecs::Timestep dt) override {
         Current->Value += Regen->Value * dt;
     }
 };
@@ -42,13 +42,14 @@ int main () {
   - Read/WriteOther (locks components but doesn't affect filtering)
   - Read/WriteSingleton (exactly one component of that type exists and isn't associated with an entity)
 - Update groups
+- Configurable:
+  - Timestep type
 
 ## TODO
 - Queued composition changes
 - Job ordering control
 - Multi-threading
 - Add support for custom allocators
-- Add support for custom timestep types
 
 ## License
 See [LICENSE](LICENSE)

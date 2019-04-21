@@ -229,7 +229,7 @@ struct AddFloatBToFloatA : public Job {
     ECS_WRITE(test::FloatA, A);
     ECS_READ(test::FloatB, B);
 
-    void ForEach (float) override {
+    void ForEach (Timestep) override {
         A->Value += B->Value;
     }
 };
@@ -240,7 +240,7 @@ struct AddFloatBToFloatARequireExclude : public Job {
     ECS_REQUIRE(test::TagA);
     ECS_EXCLUDE(test::TagB);
 
-    void ForEach (float) override {
+    void ForEach (Timestep) override {
         A->Value += B->Value;
     }
 };
@@ -250,7 +250,7 @@ struct AddFloatBToFloatARequireAny : public Job {
     ECS_READ(test::FloatB, B);
     ECS_REQUIRE_ANY(test::TagA, test::TagB);
 
-    void ForEach (float) override {
+    void ForEach (Timestep) override {
         A->Value += B->Value;
     }
 };
@@ -295,7 +295,7 @@ struct ReadOtherTestJob : public Job {
 
     ECS_READ_OTHER(test::FloatC, ReadC);
 
-    void ForEach (float) override {
+    void ForEach (Timestep) override {
         A->Value = ReadC[Ref->Value]->Value;
     }
 };
@@ -306,7 +306,7 @@ struct WriteOtherTestJob : public Job {
 
     ECS_WRITE_OTHER(test::FloatC, WriteC);
 
-    void ForEach (float) override {
+    void ForEach (Timestep) override {
         if (HasComponent<test::TagA>(Ref->Value))
             WriteC[Ref->Value]->Value = B->Value;
     }
@@ -341,12 +341,12 @@ struct SingletonWriteJob : public Job {
     ECS_WRITE_SINGLETON(test::SingletonA, Singleton);
     ECS_READ(test::FloatA, A);
 
-    void Run (float dt) override {
+    void Run (Timestep dt) override {
         Singleton->Value = 0.0f;
         Job::Run(dt);
     }
 
-    void ForEach (float) override {
+    void ForEach (Timestep) override {
         Singleton->Value += A->Value;
     }
 };
@@ -355,7 +355,7 @@ struct SingletonReadJob : public Job {
     ECS_READ_SINGLETON(test::SingletonA, Singleton);
     ECS_READ(test::FloatA, A);
 
-    void ForEach (float) override {
+    void ForEach (Timestep) override {
         EXPECT_TRUE(Singleton->Value == 10.0f);
     }
 };
@@ -386,7 +386,7 @@ struct UpdateGroupJobA : public Job {
     ECS_WRITE(test::FloatA, A);
     ECS_READ(test::FloatB, B);
 
-    void ForEach (float) override {
+    void ForEach (Timestep) override {
         A->Value += B->Value;
     }
 };
@@ -397,7 +397,7 @@ struct UpdateGroupJobB : public Job {
     ECS_WRITE(test::FloatA, A);
     ECS_READ(test::FloatC, C);
 
-    void ForEach (float) override {
+    void ForEach (Timestep) override {
         A->Value += C->Value;
     }
 };
@@ -417,7 +417,7 @@ void TestUpdateGroups () {
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 8.0f);
 }
 
-void SpeedTestCalculation (float dt, float & a, const float & b, const float & c) {
+void SpeedTestCalculation (Timestep dt, float & a, const float & b, const float & c) {
     a = std::min(a + c * dt, b);
 }
 
@@ -427,7 +427,7 @@ struct SpeedTestJob : public Job {
     ECS_READ(test::FloatC, C);
     ECS_EXCLUDE(test::TagA);
 
-    void ForEach (float dt) override {
+    void ForEach (Timestep dt) override {
         SpeedTestCalculation(dt, A->Value, B->Value, C->Value);
     }
 };

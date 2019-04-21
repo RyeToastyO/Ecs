@@ -184,7 +184,7 @@ Chunk * Manager::GetOrCreateChunk (const ComponentFlags & composition) {
 }
 
 template<typename T>
-void Manager::RunJob (float dt) {
+void Manager::RunJob (Timestep dt) {
     static_assert(std::is_base_of<Job, T>::value, "Must inherit from Job");
 
     Job * job = nullptr;
@@ -205,7 +205,7 @@ void Manager::RunJob (float dt) {
 }
 
 template<typename T>
-void Manager::RunUpdateGroup (float dt) {
+void Manager::RunUpdateGroup (Timestep dt) {
     static_assert(std::is_base_of<IUpdateGroup, T>::value, "Must inherit from IUpdateGroup");
 
     auto iter = m_updateGroups.find(GetUpdateGroupId<T>());

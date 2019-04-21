@@ -21,8 +21,8 @@ struct Job {
     bool HasComponent (Entity entity) const;
 
 public:
-    virtual void Run (float dt);
-    virtual void ForEach (float dt) { ECS_REF(dt); }
+    virtual void Run (Timestep dt);
+    virtual void ForEach (Timestep dt) { ECS_REF(dt); }
 
 private:
     bool IsValid (const Chunk * chunk) const;
