@@ -370,15 +370,12 @@ void TestSingletonComponents () {
     mgr.CreateEntityImmediate(test::FloatA{ 5.0f });
 
     mgr.RunJob<SingletonWriteJob>(0.0f);
-
     EXPECT_TRUE(singleton && singleton->Value == 10.0f);
 
     mgr.RunJob<SingletonReadJob>(0.0f);
 
     mgr.FindComponent<test::FloatA>(a)->Value = 10.0f;
-
     mgr.RunJob<SingletonWriteJob>(0.0f);
-
     EXPECT_TRUE(singleton && singleton->Value == 15.0f);
 }
 
