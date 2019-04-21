@@ -423,7 +423,7 @@ void TestJobSpeed () {
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsedBenchmark = end - start;
 
-    double maxRatio = 1.0;
+    double maxRatio = 2.0;
     EXPECT_FALSE(elapsedJob.count() > elapsedBenchmark.count() * maxRatio);
     if (elapsedJob.count() > elapsedBenchmark.count() * maxRatio)
         std::cout << "  " << elapsedJob.count() * 1000 << "ms vs " << elapsedBenchmark.count() * 1000 << "ms (" << 100 * elapsedJob.count() / elapsedBenchmark.count() << "%)" << std::endl;
