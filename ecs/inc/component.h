@@ -3,14 +3,9 @@
 #include <cstdint>
 #include <unordered_map>
 
-namespace ecs {
+#include "../config.h"
 
-// This can be large during development.
-// Once you actually know your shipping component count,
-// this should be set to it to speed up ComponentFlags
-#ifndef MAX_ECS_COMPONENTS
-#define MAX_ECS_COMPONENTS 256
-#endif
+namespace ecs {
 
 typedef uint32_t ComponentId;
 

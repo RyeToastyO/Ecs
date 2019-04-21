@@ -29,7 +29,7 @@ bool ComponentFlagIterator::operator!= (const ComponentFlagIterator & rhs) const
     return m_current != rhs.m_current;
 }
 ComponentFlagIterator & ComponentFlagIterator::operator++ () {
-    while (++m_current < MAX_ECS_COMPONENTS && !m_flags.Has(m_current));
+    while (++m_current < ECS_MAX_COMPONENTS && !m_flags.Has(m_current));
     return *this;
 }
 const ComponentId & ComponentFlagIterator::operator* () const {
@@ -37,7 +37,7 @@ const ComponentId & ComponentFlagIterator::operator* () const {
 }
 
 ComponentFlagIterator ComponentFlagIterator::begin () const { return *this; }
-ComponentFlagIterator ComponentFlagIterator::end () const { return ComponentFlagIterator(m_flags, MAX_ECS_COMPONENTS); }
+ComponentFlagIterator ComponentFlagIterator::end () const { return ComponentFlagIterator(m_flags, ECS_MAX_COMPONENTS); }
 
 
 // ComponentFlags

@@ -4,12 +4,13 @@
 #include <functional>
 
 #include "component.h"
+#include "../config.h"
 
 namespace ecs {
 
 typedef uint64_t ComponentFlagDataType;
 const auto COMPONENT_FLAG_DATA_BITS = sizeof(ComponentFlagDataType) * 8;
-const auto COMPONENT_FLAG_DATA_COUNT = ((MAX_ECS_COMPONENTS - 1 + COMPONENT_FLAG_DATA_BITS) / COMPONENT_FLAG_DATA_BITS);
+const auto COMPONENT_FLAG_DATA_COUNT = ((ECS_MAX_COMPONENTS - 1 + COMPONENT_FLAG_DATA_BITS) / COMPONENT_FLAG_DATA_BITS);
 
 struct ComponentFlags;
 

@@ -48,7 +48,6 @@ int main () {
 - Job update groups
 - Job ordering control
 - Multi-threading
-- Improve/replace ComponentFlags
 - Add support for custom allocators
 - Add support for custom timestep types
 

@@ -31,7 +31,7 @@ struct Component {
 template<typename T>
 ComponentId Component<T>::GetId () {
     static ComponentId id = ComponentRegistry::RegisterComponent(std::is_empty<T>() ? 0 : sizeof(T));
-    assert(id < MAX_ECS_COMPONENTS);
+    assert(id < ECS_MAX_COMPONENTS);
     return id;
 }
 
