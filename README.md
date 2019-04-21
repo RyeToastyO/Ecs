@@ -43,9 +43,6 @@ int main () {
   - Read/WriteSingleton (exactly one component of that type exists and isn't associated with an entity)
 
 ## TODO
-- 100% test coverage
-  - HasComponent from job
-  - Remaining component access (ReadOther, WriteOther)
 - Queued composition changes
 - Better job global registration that handles multiple managers
 - Job ordering control

@@ -158,7 +158,7 @@ void Job::AddWriteSingleton (IComponentAccess * access) {
 
 template<typename T>
 bool Job::HasComponent (Entity entity) const {
-    return m_manager.HasComponent<T>(entity);
+    return m_manager->HasComponent<T>(entity);
 }
 
 void Job::OnChunkAdded (Chunk * chunk) {

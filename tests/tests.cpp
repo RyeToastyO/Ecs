@@ -16,7 +16,7 @@ struct TagA {};
 struct TagB {};
 struct TagC {};
 
-//struct EntityReference { Entity Value; };
+struct EntityReference { Entity Value; };
 
 struct FloatA { float Value = 0.0f; };
 struct FloatB { float Value = 0.0f; };
@@ -295,6 +295,60 @@ void TestJob () {
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 10);
 }
 
+struct ReadOtherTest : public Job {
+    ECS_WRITE(test::FloatA, A);
+    ECS_READ(test::EntityReference, Ref);
+
+    ECS_READ_OTHER(test::FloatC, ReadC);
+
+    void ForEach (float dt) override {
+        A->Value = ReadC[Ref->Value]->Value;
+    }
+};
+
+struct WriteOtherTest : public Job {
+    ECS_READ(test::FloatB, B);
+    ECS_READ(test::EntityReference, Ref);
+
+    ECS_WRITE_OTHER(test::FloatC, WriteC);
+
+    void ForEach (float dt) override {
+        if (HasComponent<test::TagA>(Ref->Value))
+            WriteC[Ref->Value]->Value = B->Value;
+    }
+};
+
+void TestReadWriteOther () {
+    Manager mgr;
+
+    ReadOtherTest readOther;
+    mgr.RegisterJob(&readOther);
+
+    WriteOtherTest writeOther;
+    mgr.RegisterJob(&writeOther);
+
+    Entity target = mgr.CreateEntityImmediate(test::FloatC{ 30.0f }, test::TagA{});
+    Entity referencer = mgr.CreateEntityImmediate(test::FloatA{ 10.0f }, test::FloatB{ 20.0f }, test::EntityReference{ target });
+
+    readOther.Run(0.0f);
+
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(referencer)->Value == 30.0f);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatB>(referencer)->Value == 20.0f);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatC>(target)->Value = 30.0f);
+
+    writeOther.Run(0.0f);
+
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(referencer)->Value == 30.0f);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatB>(referencer)->Value == 20.0f);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatC>(target)->Value = 20.0f);
+
+    readOther.Run(0.0f);
+
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(referencer)->Value == 20.0f);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatB>(referencer)->Value == 20.0f);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatC>(target)->Value = 20.0f);
+}
+
 struct SingletonWrite : public Job {
     ECS_WRITE_SINGLETON(test::SingletonA, Singleton);
     ECS_READ(test::FloatA, A);
@@ -407,7 +461,7 @@ int main () {
     TestFindingComponents();
     TestCompositionChanges();
     TestJob();
-    //TestReadWriteOther(); TODO
+    TestReadWriteOther();
     TestSingletonComponents();
 
 #ifndef _DEBUG
