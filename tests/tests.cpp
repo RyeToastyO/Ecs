@@ -10,27 +10,21 @@ using namespace ecs;
 int s_errorCount = 0;
 
 // Test components
-namespace test { namespace health {
+namespace test {
 
-struct IsDead {};
+struct TagA {};
+struct TagB {};
+struct TagC {};
 
-struct Current {
-    float Value = 0;
-};
+//struct EntityReference { Entity Value; };
 
-struct Max {
-    float Value = 0;
-};
+struct FloatA { float Value = 0.0f; };
+struct FloatB { float Value = 0.0f; };
+struct FloatC { float Value = 0.0f; };
 
-struct Regen {
-    float Value = 0;
-};
+struct SingletonA : ISingletonComponent { float Value = 0.0f; };
 
-struct Total : ISingletonComponent {
-    float Value = 0;
-};
-
-}} // namespace test::health
+}
 
 // Helpers
 #define EXPECT_TRUE(condition)                                                                  \
@@ -42,9 +36,9 @@ struct Total : ISingletonComponent {
 
 // Tests
 void TestAssumptions () {
-    EXPECT_TRUE(sizeof(Entity) == 8);
-    EXPECT_TRUE(std::is_empty<test::health::IsDead>());
-    EXPECT_TRUE(sizeof(test::health::Current) == 4);
+    EXPECT_TRUE(sizeof(Entity) == (sizeof(uint32_t) + sizeof(uint32_t)));
+    EXPECT_TRUE(std::is_empty<test::TagA>());
+    EXPECT_TRUE(sizeof(test::FloatA) == sizeof(float));
 }
 
 void TestEntityComparison () {
@@ -54,57 +48,55 @@ void TestEntityComparison () {
 }
 
 void TestEntityCreationDestruction () {
-    Manager * mgr = new Manager();
+    Manager mgr;
 
     // Create and destroy a single entity
     {
-        Entity entity = mgr->CreateEntityImmediate();
+        Entity entity = mgr.CreateEntityImmediate();
 
-        EXPECT_TRUE(mgr->Exists(entity));
+        EXPECT_TRUE(mgr.Exists(entity));
 
-        mgr->DestroyImmediate(entity);
+        mgr.DestroyImmediate(entity);
 
-        EXPECT_FALSE(mgr->Exists(entity));
+        EXPECT_FALSE(mgr.Exists(entity));
     }
 
     // Create several entities and destroy them in an odd order
     {
-        Entity first = mgr->CreateEntityImmediate();
-        Entity second = mgr->CreateEntityImmediate();
-        Entity third = mgr->CreateEntityImmediate();
+        Entity first = mgr.CreateEntityImmediate();
+        Entity second = mgr.CreateEntityImmediate();
+        Entity third = mgr.CreateEntityImmediate();
 
-        EXPECT_TRUE(mgr->Exists(first));
-        EXPECT_TRUE(mgr->Exists(second));
-        EXPECT_TRUE(mgr->Exists(third));
+        EXPECT_TRUE(mgr.Exists(first));
+        EXPECT_TRUE(mgr.Exists(second));
+        EXPECT_TRUE(mgr.Exists(third));
 
-        mgr->DestroyImmediate(third);
+        mgr.DestroyImmediate(third);
 
-        EXPECT_TRUE(mgr->Exists(first));
-        EXPECT_TRUE(mgr->Exists(second));
-        EXPECT_FALSE(mgr->Exists(third));
+        EXPECT_TRUE(mgr.Exists(first));
+        EXPECT_TRUE(mgr.Exists(second));
+        EXPECT_FALSE(mgr.Exists(third));
 
-        mgr->DestroyImmediate(first);
+        mgr.DestroyImmediate(first);
 
-        EXPECT_FALSE(mgr->Exists(first));
-        EXPECT_TRUE(mgr->Exists(second));
-        EXPECT_FALSE(mgr->Exists(third));
+        EXPECT_FALSE(mgr.Exists(first));
+        EXPECT_TRUE(mgr.Exists(second));
+        EXPECT_FALSE(mgr.Exists(third));
 
-        mgr->DestroyImmediate(second);
+        mgr.DestroyImmediate(second);
 
-        EXPECT_FALSE(mgr->Exists(first));
-        EXPECT_FALSE(mgr->Exists(second));
-        EXPECT_FALSE(mgr->Exists(third));
+        EXPECT_FALSE(mgr.Exists(first));
+        EXPECT_FALSE(mgr.Exists(second));
+        EXPECT_FALSE(mgr.Exists(third));
     }
-
-    delete mgr;
 }
 
 void TestComponentFlags () {
     ComponentFlags all;
-    all.SetFlags<test::health::Current, test::health::Max, test::health::Regen>();
+    all.SetFlags<test::FloatA, test::FloatB, test::FloatC>();
 
     ComponentFlags some;
-    some.SetFlags<test::health::Current, test::health::Max>();
+    some.SetFlags<test::FloatA, test::FloatB>();
 
     ComponentFlags none;
 
@@ -122,15 +114,15 @@ void TestComponentFlags () {
 
     EXPECT_TRUE(all.HasAny(all));
     EXPECT_TRUE(all.HasAny(some));
-    EXPECT_FALSE(all.HasAny(none)); // Should this be true?
+    EXPECT_FALSE(all.HasAny(none));
 
     EXPECT_TRUE(some.HasAny(all));
     EXPECT_TRUE(some.HasAny(some));
-    EXPECT_FALSE(some.HasAny(none)); // Should this be true?
+    EXPECT_FALSE(some.HasAny(none));
 
     EXPECT_FALSE(none.HasAny(all));
     EXPECT_FALSE(none.HasAny(some));
-    EXPECT_FALSE(none.HasAny(none)); // This seems sane-ish
+    EXPECT_FALSE(none.HasAny(none));
 
     EXPECT_FALSE(all.HasNone(all));
     EXPECT_FALSE(all.HasNone(some));
@@ -145,7 +137,7 @@ void TestComponentFlags () {
     EXPECT_TRUE(none.HasNone(none));
 
     ComponentFlags other;
-    other.SetFlags<test::health::Regen>();
+    other.SetFlags<test::FloatC>();
 
     EXPECT_FALSE(some.HasAll(other));
     EXPECT_FALSE(some.HasAny(other));
@@ -157,160 +149,173 @@ void TestComponentFlags () {
 }
 
 void TestFindingComponents () {
-    Manager * mgr = new Manager();
+    Manager mgr;
 
-    Entity entityA = mgr->CreateEntityImmediate(test::health::Current{ 10 }, test::health::Max{ 100 });
-    Entity entityB = mgr->CreateEntityImmediate(test::health::Current{ 20 }, test::health::Max{ 200 });
-    Entity entityC = mgr->CreateEntityImmediate(test::health::Current{ 30 });
+    Entity e1 = mgr.CreateEntityImmediate(test::FloatA{ 10 }, test::FloatB{ 100 });
+    Entity e2 = mgr.CreateEntityImmediate(test::FloatA{ 20 }, test::FloatB{ 200 });
+    Entity e3 = mgr.CreateEntityImmediate(test::FloatA{ 30 });
 
-    EXPECT_TRUE(mgr->HasComponent<test::health::Max>(entityA));
-    EXPECT_FALSE(mgr->HasComponent<test::health::IsDead>(entityA));
+    EXPECT_TRUE(mgr.HasComponent<test::FloatB>(e1));
+    EXPECT_FALSE(mgr.HasComponent<test::TagA>(e1));
 
-    auto current = mgr->FindComponent<test::health::Current>(entityA);
-    EXPECT_TRUE(current != nullptr);
-    EXPECT_TRUE(current && current->Value == 10);
+    auto e1FloatA = mgr.FindComponent<test::FloatA>(e1);
+    EXPECT_TRUE(e1FloatA != nullptr);
+    EXPECT_TRUE(e1FloatA && e1FloatA->Value == 10);
 
-    auto max = mgr->FindComponent<test::health::Max>(entityA);
-    EXPECT_TRUE(max != nullptr);
-    EXPECT_TRUE(max && max->Value == 100);
+    auto e1FloatB = mgr.FindComponent<test::FloatB>(e1);
+    EXPECT_TRUE(e1FloatB != nullptr);
+    EXPECT_TRUE(e1FloatB && e1FloatB->Value == 100);
 
-    auto regen = mgr->FindComponent<test::health::Regen>(entityA);
-    EXPECT_FALSE(regen != nullptr);
+    auto e1FloatC = mgr.FindComponent<test::FloatC>(e1);
+    EXPECT_FALSE(e1FloatC != nullptr);
 
-    auto currentB = mgr->FindComponent<test::health::Current>(entityB);
-    EXPECT_TRUE(currentB);
-    EXPECT_TRUE(currentB && currentB->Value == 20);
+    auto e2FloatA = mgr.FindComponent<test::FloatA>(e2);
+    EXPECT_TRUE(e2FloatA);
+    EXPECT_TRUE(e2FloatA && e2FloatA->Value == 20);
 
-    mgr->DestroyImmediate(entityA);
+    mgr.DestroyImmediate(e1);
 
-    current = mgr->FindComponent<test::health::Current>(entityA);
-    EXPECT_FALSE(current != nullptr);
-    EXPECT_FALSE(mgr->HasComponent<test::health::Current>(entityA));
+    e1FloatA = mgr.FindComponent<test::FloatA>(e1);
+    EXPECT_FALSE(e1FloatA != nullptr);
+    EXPECT_FALSE(mgr.HasComponent<test::FloatA>(e1));
 
-    currentB = mgr->FindComponent<test::health::Current>(entityB);
-    EXPECT_TRUE(currentB && currentB->Value == 20);
+    e2FloatA = mgr.FindComponent<test::FloatA>(e2);
+    EXPECT_TRUE(e2FloatA && e2FloatA->Value == 20);
 
-    auto currentC = mgr->FindComponent<test::health::Current>(entityC);
-    EXPECT_TRUE(currentC && currentC->Value == 30);
-    auto maxC = mgr->FindComponent<test::health::Max>(entityC);
-    EXPECT_FALSE(maxC);
-
-    delete mgr;
+    auto e3FloatA = mgr.FindComponent<test::FloatA>(e3);
+    EXPECT_TRUE(e3FloatA && e3FloatA->Value == 30);
+    auto e3FloatB = mgr.FindComponent<test::FloatB>(e3);
+    EXPECT_FALSE(e3FloatB);
 }
 
 void TestCompositionChanges () {
-    Manager * mgr = new Manager();
+    Manager mgr;
 
-    Entity a = mgr->CreateEntityImmediate(test::health::Current{ 10 });
-    Entity b = mgr->CreateEntityImmediate(test::health::Current{ 20 }, test::health::Max{ 200 }, test::health::Regen{ 2 });
+    Entity e1 = mgr.CreateEntityImmediate(test::FloatA{ 10 });
+    Entity e2 = mgr.CreateEntityImmediate(test::FloatA{ 20 }, test::FloatB{ 200 }, test::FloatC{ 2 });
 
     {
-        mgr->AddComponents(a, test::health::Max{ 100 });
-        auto cur = mgr->FindComponent<test::health::Current>(a);
-        auto max = mgr->FindComponent<test::health::Max>(a);
-        auto reg = mgr->FindComponent<test::health::Regen>(a);
-        EXPECT_TRUE(cur && cur->Value == 10);
-        EXPECT_TRUE(max && max->Value == 100);
-        EXPECT_FALSE(reg);
+        mgr.AddComponents(e1, test::FloatB{ 100 });
+        auto floatA = mgr.FindComponent<test::FloatA>(e1);
+        auto floatB = mgr.FindComponent<test::FloatB>(e1);
+        auto floatC = mgr.FindComponent<test::FloatC>(e1);
+        EXPECT_TRUE(floatA && floatA->Value == 10);
+        EXPECT_TRUE(floatB && floatB->Value == 100);
+        EXPECT_FALSE(floatC);
     }
 
     {
-        mgr->RemoveComponents<test::health::Regen>(b);
-        auto cur = mgr->FindComponent<test::health::Current>(b);
-        auto max = mgr->FindComponent<test::health::Max>(b);
-        auto reg = mgr->FindComponent<test::health::Regen>(b);
-        EXPECT_TRUE(cur && cur->Value == 20);
-        EXPECT_TRUE(max && max->Value == 200);
-        EXPECT_FALSE(reg);
+        mgr.RemoveComponents<test::FloatC>(e2);
+        auto floatA = mgr.FindComponent<test::FloatA>(e2);
+        auto floatB = mgr.FindComponent<test::FloatB>(e2);
+        auto floatC = mgr.FindComponent<test::FloatC>(e2);
+        EXPECT_TRUE(floatA && floatA->Value == 20);
+        EXPECT_TRUE(floatB && floatB->Value == 200);
+        EXPECT_FALSE(floatC);
     }
 
     {
-        mgr->AddComponents(a, test::health::Regen{ 1 });
-        auto cur = mgr->FindComponent<test::health::Current>(a);
-        auto max = mgr->FindComponent<test::health::Max>(a);
-        auto reg = mgr->FindComponent<test::health::Regen>(a);
-        EXPECT_TRUE(cur && cur->Value == 10);
-        EXPECT_TRUE(max && max->Value == 100);
-        EXPECT_TRUE(reg && reg->Value == 1);
+        mgr.AddComponents(e1, test::FloatC{ 1 });
+        auto floatA = mgr.FindComponent<test::FloatA>(e1);
+        auto floatB = mgr.FindComponent<test::FloatB>(e1);
+        auto floatC = mgr.FindComponent<test::FloatC>(e1);
+        EXPECT_TRUE(floatA && floatA->Value == 10);
+        EXPECT_TRUE(floatB && floatB->Value == 100);
+        EXPECT_TRUE(floatC && floatC->Value == 1);
     }
-
-    delete mgr;
 }
 
-struct HealthRegen : public Job {
-    ECS_WRITE(test::health::Current, Current);
-    ECS_READ(test::health::Max, Max);
-    ECS_READ(test::health::Regen, Regen);
-    ECS_EXCLUDE(test::health::IsDead);
+struct AddFloatBToFloatA : public Job {
+    ECS_WRITE(test::FloatA, A);
+    ECS_READ(test::FloatB, B);
 
     void ForEach (float dt) override {
-        Current->Value = std::min(Current->Value + Regen->Value * dt, Max->Value);
+        A->Value += B->Value;
     }
 };
-REGISTER_ECS_JOB(HealthRegen);
+
+struct AddFloatBToFloatARequireExclude : public Job {
+    ECS_WRITE(test::FloatA, A);
+    ECS_READ(test::FloatB, B);
+    ECS_REQUIRE(test::TagA);
+    ECS_EXCLUDE(test::TagB);
+
+    void ForEach (float dt) override {
+        A->Value += B->Value;
+    }
+};
+
+struct AddFloatBToFloatARequireAny : public Job {
+    ECS_WRITE(test::FloatA, A);
+    ECS_READ(test::FloatB, B);
+    ECS_REQUIRE_ANY(test::TagA, test::TagB);
+
+    void ForEach (float dt) override {
+        A->Value += B->Value;
+    }
+};
 
 void TestJob () {
-    Manager * mgr = new Manager();
+    Manager mgr;
 
-    Entity a = mgr->CreateEntityImmediate(test::health::Current{ 10 }, test::health::Max{ 100 }, test::health::Regen{ 1 });
-    Entity b = mgr->CreateEntityImmediate(test::health::Current{ 20 }, test::health::Max{ 200 }, test::health::Regen{ 2 });
-    Entity c = mgr->CreateEntityImmediate(test::health::Current{ 30 }, test::health::Max{ 300 }, test::health::Regen{ 3 });
-    Entity d = mgr->CreateEntityImmediate(test::health::Current{ 40 }, test::health::Max{ 400 }, test::health::Regen{ 4 }, test::health::IsDead{});
+    Entity a = mgr.CreateEntityImmediate(test::FloatA{ 1 }, test::FloatB{ 1 });
+    Entity b = mgr.CreateEntityImmediate(test::FloatA{ 2 }, test::FloatB{ 2 }, test::TagA{});
+    Entity c = mgr.CreateEntityImmediate(test::FloatA{ 3 }, test::FloatB{ 3 }, test::TagB{});
+    Entity d = mgr.CreateEntityImmediate(test::FloatA{ 4 }, test::FloatB{ 4 }, test::TagA{}, test::TagB{});
+    Entity e = mgr.CreateEntityImmediate(test::FloatA{ 5 }, test::FloatB{ 5 });
 
-    mgr->Update(10);
+    AddFloatBToFloatA addFloatBToFloatA;
+    mgr.RegisterJob(&addFloatBToFloatA);
+    addFloatBToFloatA.Run(0.0f);
 
-    test::health::Current * healthA = mgr->FindComponent<test::health::Current>(a);
-    test::health::Current * healthB = mgr->FindComponent<test::health::Current>(b);
-    test::health::Current * healthC = mgr->FindComponent<test::health::Current>(c);
-    test::health::Current * healthD = mgr->FindComponent<test::health::Current>(d);
-    EXPECT_TRUE(healthA && healthA->Value == 20);
-    EXPECT_TRUE(healthB && healthB->Value == 40);
-    EXPECT_TRUE(healthC && healthC->Value == 60);
-    EXPECT_TRUE(healthD && healthD->Value == 40);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(a)->Value == 2);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(b)->Value == 4);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(c)->Value == 6);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(d)->Value == 8);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 10);
 
-    mgr->Update(1000);
+    AddFloatBToFloatARequireExclude addFloatBToFloatARequireExclude;
+    mgr.RegisterJob(&addFloatBToFloatARequireExclude);
+    addFloatBToFloatARequireExclude.Run(0.0f);
 
-    healthA = mgr->FindComponent<test::health::Current>(a);
-    healthB = mgr->FindComponent<test::health::Current>(b);
-    healthC = mgr->FindComponent<test::health::Current>(c);
-    healthD = mgr->FindComponent<test::health::Current>(d);
-    EXPECT_TRUE(healthA && healthA->Value == 100);
-    EXPECT_TRUE(healthB && healthB->Value == 200);
-    EXPECT_TRUE(healthC && healthC->Value == 300);
-    EXPECT_TRUE(healthD && healthD->Value == 40);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(a)->Value == 2);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(b)->Value == 6);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(c)->Value == 6);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(d)->Value == 8);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 10);
 
-    delete mgr;
+    AddFloatBToFloatARequireAny addFloatBToFloatARequireAny;
+    mgr.RegisterJob(&addFloatBToFloatARequireAny);
+    addFloatBToFloatARequireAny.Run(0.0f);
+
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(a)->Value == 2);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(b)->Value == 8);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(c)->Value == 9);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(d)->Value == 12);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 10);
 }
 
 struct SingletonWrite : public Job {
-    ECS_WRITE_SINGLETON(test::health::Total, Total);
-    ECS_READ(test::health::Current, Current);
+    ECS_WRITE_SINGLETON(test::SingletonA, Singleton);
+    ECS_READ(test::FloatA, A);
 
     void Run (float dt) override {
-        Total->Value = 0.0f;
+        Singleton->Value = 0.0f;
         Job::Run(dt);
     }
 
     void ForEach (float dt) override {
-        Total->Value += Current->Value;
+        Singleton->Value += A->Value;
     }
 };
 REGISTER_ECS_JOB(SingletonWrite);
 
 struct SingletonRead : public Job {
-    ECS_READ_SINGLETON(test::health::Total, Total);
-    ECS_READ(test::health::Current, Current);
-
-    float total;
-
-    void Run (float dt) override {
-        total = 0.0f;
-        Job::Run(dt);
-        EXPECT_TRUE(Total->Value == total);
-    }
+    ECS_READ_SINGLETON(test::SingletonA, Singleton);
+    ECS_READ(test::FloatA, A);
 
     void ForEach (float dt) override {
-        total += Current->Value;
+        EXPECT_TRUE(Singleton->Value == 10.0f);
     }
 };
 REGISTER_ECS_JOB(SingletonRead);
@@ -318,50 +323,72 @@ REGISTER_ECS_JOB(SingletonRead);
 void TestSingletonComponents () {
     Manager mgr;
 
-    auto total = mgr.GetSingletonComponent<test::health::Total>();
-    EXPECT_TRUE(total && total->Value == 0.0f);
+    auto singleton = mgr.GetSingletonComponent<test::SingletonA>();
+    EXPECT_TRUE(singleton && singleton->Value == 0.0f);
 
-    Entity a = mgr.CreateEntityImmediate(test::health::Current{ 10 });
-    mgr.CreateEntityImmediate(test::health::Current{ 20 }, test::health::Max{ 200 });
+    Entity a = mgr.CreateEntityImmediate(test::FloatA{ 5.0f });
+    mgr.CreateEntityImmediate(test::FloatA{ 5.0f });
 
-    mgr.Update(1.0f);
+    SingletonWrite write;
+    mgr.RegisterJob(&write);
+    write.Run(0.0f);
 
-    EXPECT_TRUE(total && total->Value == 30.0f);
+    EXPECT_TRUE(singleton && singleton->Value == 10.0f);
 
-    mgr.FindComponent<test::health::Current>(a)->Value = 5.0f;
+    SingletonRead read;
+    mgr.RegisterJob(&read);
+    read.Run(0.0f);
 
-    mgr.Update(1.0f);
+    mgr.FindComponent<test::FloatA>(a)->Value = 10.0f;
 
-    EXPECT_TRUE(total && total->Value == 25.0f);
+    write.Run(0.0f);
+
+    EXPECT_TRUE(singleton && singleton->Value == 15.0f);
 }
 
+void SpeedTestCalculation (float dt, float & a, const float & b, const float & c) {
+    a = std::min(a + c * dt, b);
+}
+
+struct SpeedTestJob : public Job {
+    ECS_WRITE(test::FloatA, A);
+    ECS_READ(test::FloatB, B);
+    ECS_READ(test::FloatC, C);
+    ECS_EXCLUDE(test::TagA);
+
+    void ForEach (float dt) override {
+        SpeedTestCalculation(dt, A->Value, B->Value, C->Value);
+    }
+};
+
 void TestJobSpeed () {
-    Manager * mgr = new Manager();
+    Manager mgr;
 
     uint32_t entityCount = 100000;
     uint32_t loopCount = 1 * 60 * 60;
 
     for (uint32_t i = 0; i < entityCount; ++i)
-        mgr->CreateEntityImmediate(test::health::Current{ 0 }, test::health::Max{ 1000 }, test::health::Regen{ 1.0f });
+        mgr.CreateEntityImmediate(test::FloatA{ 0 }, test::FloatB{ 1000 }, test::FloatC{ 1.0f });
 
     // Manually register and run a job so we don't include
     // global test jobs and skew our timing results
-    HealthRegen speedJob;
-    mgr->RegisterJob(&speedJob);
+    SpeedTestJob speedJob;
+    mgr.RegisterJob(&speedJob);
 
+    float timestep = 1 / 60.0f;
     auto start = std::chrono::system_clock::now();
     for (uint32_t i = 0; i < loopCount; ++i)
-        speedJob.Run(1 / 60.0f);
+        speedJob.Run(timestep);
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsedJob = end - start;
 
     uint64_t benchmarkLoops = entityCount * (uint64_t)loopCount;
-    float cur = 0;
-    float max = 1000;
-    float regen = 1;
+    float a = 0;
+    float b = 1000;
+    float c = 1;
     start = std::chrono::system_clock::now();
     for (uint64_t i = 0; i < benchmarkLoops; ++i)
-        cur = std::min(cur + regen * (1/60.0f), max);
+        SpeedTestCalculation(timestep, a, b, c);
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsedBenchmark = end - start;
 
@@ -369,8 +396,6 @@ void TestJobSpeed () {
     EXPECT_FALSE(elapsedJob.count() > elapsedBenchmark.count() * maxRatio);
     if (elapsedJob.count() > elapsedBenchmark.count() * maxRatio)
         std::cout << "  " << elapsedJob.count() * 1000 << "ms vs " << elapsedBenchmark.count() * 1000 << "ms (" << 100 * elapsedJob.count() / elapsedBenchmark.count() << "%)" << std::endl;
-
-    delete mgr;
 }
 
 // Main
@@ -382,6 +407,7 @@ int main () {
     TestFindingComponents();
     TestCompositionChanges();
     TestJob();
+    //TestReadWriteOther(); TODO
     TestSingletonComponents();
 
 #ifndef _DEBUG

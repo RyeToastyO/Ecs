@@ -45,8 +45,9 @@ int main () {
 ## TODO
 - 100% test coverage
   - HasComponent from job
-  - Remaining component access (Require, RequireAny, ReadOther, WriteOther)
+  - Remaining component access (ReadOther, WriteOther)
 - Queued composition changes
+- Better job global registration that handles multiple managers
 - Job ordering control
 - Multi-threading
 - Improve/replace ComponentFlags
