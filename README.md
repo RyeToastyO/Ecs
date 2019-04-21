@@ -50,6 +50,7 @@ int main () {
 - Multi-threading
 - Improve/replace ComponentFlags
 - Add support for custom allocators
+- Add support for custom timestep types
 
 ## License
 See [LICENSE](LICENSE)
