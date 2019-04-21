@@ -2,7 +2,7 @@
 
 #include <functional>
 
-inline void HashCombine (size_t & seed) { }
+inline void HashCombine (size_t & /* seed */) { }
 
 template <typename T, typename... Rest>
 inline void HashCombine (size_t & seed, const T & v, Rest... rest) {

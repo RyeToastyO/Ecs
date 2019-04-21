@@ -7,6 +7,7 @@
 #include "chunk.h"
 #include "entity.h"
 #include "job.h"
+#include "update_group.h"
 
 namespace ecs {
 
@@ -49,12 +50,16 @@ public:
     template<typename T>
     void RunJob (float dt);
 
+    template<typename T>
+    void RunUpdateGroup (float dt);
+
 private:
     std::vector<EntityData> m_entityData;
     std::vector<uint32_t> m_freeList;
-    std::unordered_map<JobId, Job *> m_manualJobs;
+    std::unordered_map<JobId, Job*> m_manualJobs;
+    std::unordered_map<UpdateGroupId, std::vector<Job*> > m_updateGroups;
     std::unordered_map<ComponentFlags, Chunk*> m_chunks;
-    std::unordered_map<ComponentId, ISingletonComponent *> m_singletonComponents;
+    std::unordered_map<ComponentId, ISingletonComponent*> m_singletonComponents;
 
 private:
     Entity CreateEntityImmediateInternal (ComponentFlags composition);
@@ -65,6 +70,8 @@ private:
     void SetComponentsInternal (const EntityData & entity, T component, Args...args) const;
 
     void SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition);
+
+    void RegisterJobInternal (Job * job);
 };
 
 } // namespace ecs

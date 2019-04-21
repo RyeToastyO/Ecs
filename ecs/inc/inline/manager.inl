@@ -100,10 +100,15 @@ Manager::~Manager () {
         delete chunk.second;
     for (auto & job : m_manualJobs)
         delete job.second;
+    for (auto & jobs : m_updateGroups) {
+        for (auto job : jobs.second)
+            delete job;
+    }
     for (auto & singleton : m_singletonComponents)
         delete singleton.second;
     m_chunks.clear();
     m_manualJobs.clear();
+    m_updateGroups.clear();
     m_singletonComponents.clear();
 }
 
@@ -188,9 +193,7 @@ void Manager::RunJob (float dt) {
     if (iter == m_manualJobs.end()) {
         job = new T();
 
-        job->OnRegistered(this);
-        for (auto & chunk : m_chunks)
-            job->OnChunkAdded(chunk.second);
+        RegisterJobInternal(job);
 
         m_manualJobs.emplace(GetJobId<T>(), job);
     }
@@ -199,6 +202,35 @@ void Manager::RunJob (float dt) {
     }
 
     job->Run(dt);
+}
+
+template<typename T>
+void Manager::RunUpdateGroup (float dt) {
+    static_assert(std::is_base_of<IUpdateGroup, T>::value, "Must inherit from IUpdateGroup");
+
+    auto iter = m_updateGroups.find(GetUpdateGroupId<T>());
+    if (iter == m_updateGroups.end()) {
+        const auto & jobFactories = GetUpdateGroupJobs<T>();
+
+        std::vector<Job*> jobs;
+        for (auto jobFactory : jobFactories) {
+            Job * newJob = jobFactory();
+            RegisterJobInternal(newJob);
+            jobs.push_back(newJob);
+        }
+
+        m_updateGroups.emplace(GetUpdateGroupId<T>(), std::move(jobs));
+        iter = m_updateGroups.find(GetUpdateGroupId<T>());
+    }
+
+    for (auto job : iter->second)
+        job->Run(dt);
+}
+
+void Manager::RegisterJobInternal (Job * job) {
+    job->OnRegistered(this);
+    for (auto & chunk : m_chunks)
+        job->OnChunkAdded(chunk.second);
 }
 
 void Manager::SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition) {

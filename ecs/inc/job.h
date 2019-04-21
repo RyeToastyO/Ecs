@@ -6,6 +6,7 @@
 
 #include "chunk.h"
 #include "entity.h"
+#include "../helpers/ref.h"
 
 namespace ecs {
 
@@ -21,7 +22,7 @@ struct Job {
 
 public:
     virtual void Run (float dt);
-    virtual void ForEach (float dt) {}
+    virtual void ForEach (float dt) { ECS_REF(dt); }
 
 private:
     bool IsValid (const Chunk * chunk) const;
@@ -68,9 +69,6 @@ private:
     template<typename T> friend struct WriteSingleton;
     void AddWriteSingleton (IComponentAccess * access);
 };
-
-template<typename T>
-static JobId GetJobId ();
 
 }
 

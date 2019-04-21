@@ -90,10 +90,10 @@ void Job::Run (float dt) {
 
 // Registration
 struct JobRegistry {
-    static JobId RegisterJob (size_t size);
+    static JobId RegisterJob ();
 };
 
-JobId JobRegistry::RegisterJob (size_t size) {
+JobId JobRegistry::RegisterJob () {
     static JobId s_idCounter = 0;
     return s_idCounter++;
 }
@@ -105,7 +105,7 @@ struct JobIdGetter {
 
 template<typename T>
 JobId JobIdGetter<T>::GetId () {
-    static JobId id = JobRegistry::RegisterJob(std::is_empty<T>() ? 0 : sizeof(T));
+    static JobId id = JobRegistry::RegisterJob();
     return id;
 }
 

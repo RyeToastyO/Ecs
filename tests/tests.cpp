@@ -36,9 +36,9 @@ struct SingletonA : ISingletonComponent { float Value = 0.0f; };
 
 // Tests
 void TestAssumptions () {
-    EXPECT_TRUE(sizeof(Entity) == (sizeof(uint32_t) + sizeof(uint32_t)));
-    EXPECT_TRUE(std::is_empty<test::TagA>());
-    EXPECT_TRUE(sizeof(test::FloatA) == sizeof(float));
+    static_assert(sizeof(Entity) == (sizeof(uint32_t) + sizeof(uint32_t)), "Unexpected Entity size");
+    static_assert(std::is_empty<test::TagA>(), "Unexpected tag size");
+    static_assert(sizeof(test::FloatA) == sizeof(float), "Unexpected struct size");
 }
 
 void TestEntityComparison () {
@@ -229,7 +229,7 @@ struct AddFloatBToFloatA : public Job {
     ECS_WRITE(test::FloatA, A);
     ECS_READ(test::FloatB, B);
 
-    void ForEach (float dt) override {
+    void ForEach (float) override {
         A->Value += B->Value;
     }
 };
@@ -240,7 +240,7 @@ struct AddFloatBToFloatARequireExclude : public Job {
     ECS_REQUIRE(test::TagA);
     ECS_EXCLUDE(test::TagB);
 
-    void ForEach (float dt) override {
+    void ForEach (float) override {
         A->Value += B->Value;
     }
 };
@@ -250,7 +250,7 @@ struct AddFloatBToFloatARequireAny : public Job {
     ECS_READ(test::FloatB, B);
     ECS_REQUIRE_ANY(test::TagA, test::TagB);
 
-    void ForEach (float dt) override {
+    void ForEach (float) override {
         A->Value += B->Value;
     }
 };
@@ -295,7 +295,7 @@ struct ReadOtherTestJob : public Job {
 
     ECS_READ_OTHER(test::FloatC, ReadC);
 
-    void ForEach (float dt) override {
+    void ForEach (float) override {
         A->Value = ReadC[Ref->Value]->Value;
     }
 };
@@ -306,7 +306,7 @@ struct WriteOtherTestJob : public Job {
 
     ECS_WRITE_OTHER(test::FloatC, WriteC);
 
-    void ForEach (float dt) override {
+    void ForEach (float) override {
         if (HasComponent<test::TagA>(Ref->Value))
             WriteC[Ref->Value]->Value = B->Value;
     }
@@ -346,7 +346,7 @@ struct SingletonWriteJob : public Job {
         Job::Run(dt);
     }
 
-    void ForEach (float dt) override {
+    void ForEach (float) override {
         Singleton->Value += A->Value;
     }
 };
@@ -355,7 +355,7 @@ struct SingletonReadJob : public Job {
     ECS_READ_SINGLETON(test::SingletonA, Singleton);
     ECS_READ(test::FloatA, A);
 
-    void ForEach (float dt) override {
+    void ForEach (float) override {
         EXPECT_TRUE(Singleton->Value == 10.0f);
     }
 };
@@ -377,6 +377,44 @@ void TestSingletonComponents () {
     mgr.FindComponent<test::FloatA>(a)->Value = 10.0f;
     mgr.RunJob<SingletonWriteJob>(0.0f);
     EXPECT_TRUE(singleton && singleton->Value == 15.0f);
+}
+
+struct UpdateGroupA : public IUpdateGroup {};
+struct UpdateGroupB : IUpdateGroup {};
+
+struct UpdateGroupJobA : public Job {
+    ECS_WRITE(test::FloatA, A);
+    ECS_READ(test::FloatB, B);
+
+    void ForEach (float) override {
+        A->Value += B->Value;
+    }
+};
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(UpdateGroupJobA, UpdateGroupA);
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(UpdateGroupJobA, UpdateGroupB);
+
+struct UpdateGroupJobB : public Job {
+    ECS_WRITE(test::FloatA, A);
+    ECS_READ(test::FloatC, C);
+
+    void ForEach (float) override {
+        A->Value += C->Value;
+    }
+};
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(UpdateGroupJobB, UpdateGroupA);
+
+void TestUpdateGroups () {
+    Manager mgr;
+
+    Entity e = mgr.CreateEntityImmediate(test::FloatA{ 1.0f }, test::FloatB{ 2.0f }, test::FloatC{ 3.0f });
+
+    mgr.RunUpdateGroup<UpdateGroupA>(0.0f);
+
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 6.0f);
+
+    mgr.RunUpdateGroup<UpdateGroupB>(0.0f);
+
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 8.0f);
 }
 
 void SpeedTestCalculation (float dt, float & a, const float & b, const float & c) {
@@ -437,6 +475,7 @@ int main () {
     TestJob();
     TestReadWriteOther();
     TestSingletonComponents();
+    TestUpdateGroups();
 
 #ifndef _DEBUG
     TestJobSpeed();

@@ -41,11 +41,10 @@ int main () {
   - Exclude/Require/RequireAny
   - Read/WriteOther (locks components but doesn't affect filtering)
   - Read/WriteSingleton (exactly one component of that type exists and isn't associated with an entity)
+- Update groups
 
 ## TODO
 - Queued composition changes
-- Job registration that handles multiple managers
-- Job update groups
 - Job ordering control
 - Multi-threading
 - Add support for custom allocators
