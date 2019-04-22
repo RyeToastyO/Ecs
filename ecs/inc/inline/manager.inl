@@ -223,14 +223,71 @@ void Manager::RunUpdateGroup (Timestep dt) {
         iter = m_updateGroups.find(GetUpdateGroupId<T>());
     }
 
-    for (auto job : iter->second)
-        job->Run(dt);
+    m_jobIndex = 0;
+    m_jobList = &iter->second;
+
+    std::thread workerThreads[ECS_MAX_THREADS];
+
+    for (auto i = 0; i < ECS_MAX_THREADS; ++i)
+        workerThreads[i] = std::thread(&Manager::RunJobListThreadedInternal, this, dt);
+    for (auto i = 0; i < ECS_MAX_THREADS; ++i)
+        workerThreads[i].join();
 }
 
 void Manager::RegisterJobInternal (Job * job) {
     job->OnRegistered(this);
     for (auto & chunk : m_chunks)
         job->OnChunkAdded(chunk.second);
+}
+
+bool Manager::AcquireLocksInternal (Job * job) {
+    // Verify we can lock everything we need to
+    for (auto componentId : job->m_write.GetIterator()) {
+        if (m_writeLocks.Has(componentId))
+            return false;
+        if (m_readLocks[componentId] > 0)
+            return false;
+    }
+    for (auto componentId : job->m_read.GetIterator()) {
+        if (m_writeLocks.Has(componentId))
+            return false;
+    }
+
+    // Actually lock everything
+    for (auto componentId : job->m_write.GetIterator())
+        m_writeLocks.SetFlag(componentId);
+    for (auto componentId : job->m_read.GetIterator())
+        m_readLocks[componentId]++;
+
+    return true;
+}
+
+void Manager::ReleaseLocksInternal (Job * job) {
+    for (auto componentId : job->m_read.GetIterator())
+        m_readLocks[componentId]--;
+    for (auto componentId : job->m_write.GetIterator())
+        m_writeLocks.ClearFlag(componentId);
+}
+
+void Manager::RunJobListThreadedInternal (Timestep dt) {
+    while (m_jobIndex < m_jobList->size()) {
+        Job * job = nullptr;
+
+        m_jobListLock.lock();
+        if (m_jobIndex < m_jobList->size()) {
+            job = (*m_jobList)[m_jobIndex];
+            if (AcquireLocksInternal(job))
+                m_jobIndex++;
+            else
+                job = nullptr;
+        }
+        m_jobListLock.unlock();
+
+        if (job) {
+            job->Run(dt);
+            ReleaseLocksInternal(job);
+        }
+    }
 }
 
 void Manager::SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition) {

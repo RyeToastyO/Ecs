@@ -49,18 +49,24 @@ void ComponentFlags::Clear () {
     memset(flags, 0, COMPONENT_FLAG_DATA_COUNT * sizeof(ComponentFlagDataType));
 }
 
+void ComponentFlags::ClearFlag (ComponentId id) {
+    flags[id / COMPONENT_FLAG_DATA_BITS] &= ~(static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS);
+}
+
 template<typename T, typename...Args>
 void ComponentFlags::ClearFlags () {
-    const auto id = GetComponentId<T>();
-    flags[id / COMPONENT_FLAG_DATA_BITS] &= ~(static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS);
+    ClearFlag(GetComponentId<T>());
     if constexpr (sizeof...(Args) > 0)
         ClearFlags<Args...>();
 }
 
+void ComponentFlags::SetFlag (ComponentId id) {
+    flags[id / COMPONENT_FLAG_DATA_BITS] |= static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS;
+}
+
 template<typename T, typename...Args>
 void ComponentFlags::SetFlags () {
-    const auto id = GetComponentId<T>();
-    flags[id / COMPONENT_FLAG_DATA_BITS] |= static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS;
+    SetFlag(GetComponentId<T>());
     if constexpr (sizeof...(Args) > 0)
         SetFlags<Args...>();
 }

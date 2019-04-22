@@ -95,6 +95,7 @@ int main () {
 ```
 
 ### Update groups
+Jobs within update groups are automatically run multi-threaded
 ```C++
 struct UpdateGroupA : IUpdateGroup {};
 
@@ -109,13 +110,15 @@ int main () {
 ### Configurable Settings
 ```C++
 #define ECS_MAX_COMPONENTS 256
+#define ECS_MAX_THREADS 4
 #define ECS_TIMESTEP_TYPE float
 ```
 
 ## TODO
 - Queued composition changes
 - Job ordering control
-- Multi-threading
+- Job ordering optimization
+- Unit tests for multi-threading
 - Add support for custom allocators
 
 ## License

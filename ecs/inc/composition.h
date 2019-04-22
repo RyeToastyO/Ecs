@@ -40,9 +40,11 @@ struct ComponentFlags {
 
     void Clear ();
 
+    void ClearFlag (ComponentId id);
     template<typename T, typename...Args>
 	void ClearFlags();
 
+    void SetFlag (ComponentId id);
     template<typename T, typename...Args>
 	void SetFlags();
 

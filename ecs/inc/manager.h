@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -62,6 +64,16 @@ private:
     std::unordered_map<ComponentId, ISingletonComponent*> m_singletonComponents;
 
 private:
+    uint32_t m_jobIndex = 0;
+    std::vector<Job*> * m_jobList = nullptr;
+    std::mutex m_jobListLock;
+    uint8_t m_readLocks[ECS_MAX_COMPONENTS] = {};
+    ComponentFlags m_writeLocks;
+
+private:
+    bool AcquireLocksInternal (Job * job);
+    void ReleaseLocksInternal (Job * job);
+
     Entity CreateEntityImmediateInternal (ComponentFlags composition);
 
     Chunk * GetOrCreateChunk (const ComponentFlags & composition);
@@ -72,6 +84,8 @@ private:
     void SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition);
 
     void RegisterJobInternal (Job * job);
+
+    void RunJobListThreadedInternal (Timestep dt);
 };
 
 } // namespace ecs
