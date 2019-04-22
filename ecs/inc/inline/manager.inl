@@ -285,7 +285,10 @@ void Manager::RunJobListThreadedInternal (Timestep dt) {
 
         if (job) {
             job->Run(dt);
+
+            m_jobListLock.lock();
             ReleaseLocksInternal(job);
+            m_jobListLock.unlock();
         }
     }
 }
