@@ -1,7 +1,7 @@
 # Ecs
 Entity Component System - A data-oriented solution for storing and processing state
 
-## Usage Example
+### Usage Example
 ```C++
 #include "ecs/ecs.h"
 
@@ -30,7 +30,7 @@ int main () {
 }
 ```
 
-## Current Features
+# Current Features
 ### Creation/Destruction of Entities
 ```C++
 ecs::Entity entity = mgr.CreateEntityImmediate(ComponentA{10.0f}, ComponentB{20.0f}, ...);
