@@ -1,4 +1,9 @@
-#include "../helpers/hash.h"
+/*
+ * Copyright (c) 2019 Ryan Diederich
+ * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+ */
+
+#include "../../helpers/hash.h"
 
 namespace std {
     template <> struct hash<::ecs::ComponentFlags> {

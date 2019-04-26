@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2019 Ryan Diederich
+ * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+ */
+
 namespace ecs {
 
 template<typename T, typename...Args>
