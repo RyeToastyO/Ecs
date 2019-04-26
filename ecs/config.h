@@ -1,3 +1,5 @@
+#pragma once
+
 namespace ecs {
 
 // This can be large during development.

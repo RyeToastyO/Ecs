@@ -1,12 +1,12 @@
 #pragma once
 
-#include <cstdint>
-#include <type_traits>
-#include <vector>
-
 #include "chunk.h"
 #include "entity.h"
 #include "../helpers/ref.h"
+
+#include <cstdint>
+#include <type_traits>
+#include <vector>
 
 namespace ecs {
 

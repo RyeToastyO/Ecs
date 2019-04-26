@@ -1,3 +1,5 @@
+#include "../composition.h"
+
 namespace ecs {
 
 // Component Access

@@ -2,12 +2,15 @@
 
 #include <algorithm>
 #include <chrono>
+#include <future>
 #include <iostream>
+#include <mutex>
 
 using namespace ecs;
 
 // Static data
 int s_errorCount = 0;
+std::mutex s_errorLock;
 
 // Test components
 namespace test {
@@ -18,19 +21,36 @@ struct TagC {};
 
 struct EntityReference { Entity Value; };
 
+struct DoubleA { double Value = 0.0; };
+struct DoubleB { double Value = 0.0; };
+struct DoubleC { double Value = 0.0; };
+
 struct FloatA { float Value = 0.0f; };
 struct FloatB { float Value = 0.0f; };
 struct FloatC { float Value = 0.0f; };
 
-struct SingletonA : ISingletonComponent { float Value = 0.0f; };
+struct IntA { int32_t Value = 0; };
+struct IntB { int32_t Value = 0; };
+struct IntC { int32_t Value = 0; };
+
+struct UintA { uint32_t Value = 0; };
+struct UintB { uint32_t Value = 0; };
+struct UintC { uint32_t Value = 0; };
+
+struct SingletonDouble : ISingletonComponent { double Value = 0.0; };
+struct SingletonFloat : ISingletonComponent { float Value = 0.0f; };
+struct SingletonInt : ISingletonComponent { int32_t Value = 0; };
+struct SingletonUint : ISingletonComponent { uint32_t Value = 0; };
 
 }
 
 // Helpers
 #define EXPECT_TRUE(condition)                                                                  \
     if (!(condition)) {                                                                         \
+        s_errorLock.lock();                                                                     \
         ++s_errorCount;                                                                         \
         std::cout << __FUNCTION__ << "(line " << __LINE__ << "): " << #condition << std::endl;  \
+        s_errorLock.unlock();                                                                   \
     }
 #define EXPECT_FALSE(condition) EXPECT_TRUE(!(condition));
 
@@ -338,7 +358,7 @@ void TestReadWriteOther () {
 }
 
 struct SingletonWriteJob : public Job {
-    ECS_WRITE_SINGLETON(test::SingletonA, Singleton);
+    ECS_WRITE_SINGLETON(test::SingletonFloat, Singleton);
     ECS_READ(test::FloatA, A);
 
     void Run (Timestep dt) override {
@@ -352,7 +372,7 @@ struct SingletonWriteJob : public Job {
 };
 
 struct SingletonReadJob : public Job {
-    ECS_READ_SINGLETON(test::SingletonA, Singleton);
+    ECS_READ_SINGLETON(test::SingletonFloat, Singleton);
     ECS_READ(test::FloatA, A);
 
     void ForEach (Timestep) override {
@@ -363,7 +383,7 @@ struct SingletonReadJob : public Job {
 void TestSingletonComponents () {
     Manager mgr;
 
-    auto singleton = mgr.GetSingletonComponent<test::SingletonA>();
+    auto singleton = mgr.GetSingletonComponent<test::SingletonFloat>();
     EXPECT_TRUE(singleton && singleton->Value == 0.0f);
 
     Entity a = mgr.CreateEntityImmediate(test::FloatA{ 5.0f });
@@ -417,6 +437,130 @@ void TestUpdateGroups () {
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 8.0f);
 }
 
+struct UpdateGroupMultiThreading : IUpdateGroup {};
+
+#define MULTI_THREAD_JOB(Type)                                                      \
+struct MultiThreadJob##Type : public Job {                                          \
+    ECS_READ(test::Type##A, A);                                                     \
+    ECS_READ(test::Type##B, B);                                                     \
+    ECS_WRITE(test::Type##C, C);                                                    \
+                                                                                    \
+    void ForEach (Timestep) override {                                              \
+        C->Value = std::max(A->Value, B->Value);                                    \
+    }                                                                               \
+};                                                                                  \
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(MultiThreadJob##Type, UpdateGroupMultiThreading);
+
+#define MULTI_THREAD_SINGLETON_JOB(Type)                                            \
+struct MultiThreadSingletonJob##Type : public Job {                                 \
+    ECS_READ(test::Type##C, C);                                                     \
+    ECS_WRITE_SINGLETON(test::Singleton##Type, Total);                              \
+                                                                                    \
+    void Run (Timestep dt) override {                                               \
+        Total->Value = 0;                                                           \
+        Job::Run(dt);                                                               \
+    }                                                                               \
+                                                                                    \
+    void ForEach (Timestep) override {                                              \
+        Total->Value += C->Value;                                                   \
+    }                                                                               \
+};                                                                                  \
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(MultiThreadSingletonJob##Type, UpdateGroupMultiThreading);
+
+MULTI_THREAD_JOB(Double);
+MULTI_THREAD_JOB(Float);
+MULTI_THREAD_JOB(Int);
+MULTI_THREAD_JOB(Uint);
+
+MULTI_THREAD_SINGLETON_JOB(Double);
+MULTI_THREAD_SINGLETON_JOB(Float);
+MULTI_THREAD_SINGLETON_JOB(Int);
+MULTI_THREAD_SINGLETON_JOB(Uint);
+
+#define MULTI_THREAD_ENTITY_COUNT 25000
+
+void InitMultiThreadingTest (Manager * mgr) {
+    // Run these first to eliminate the first time init costs
+    mgr->RunUpdateGroup<UpdateGroupMultiThreading>(0.0f);
+    mgr->RunJob<MultiThreadJobDouble>(0.0f);
+    mgr->RunJob<MultiThreadJobFloat>(0.0f);
+    mgr->RunJob<MultiThreadJobInt>(0.0f);
+    mgr->RunJob<MultiThreadJobUint>(0.0f);
+    mgr->RunJob<MultiThreadSingletonJobDouble>(0.0f);
+    mgr->RunJob<MultiThreadSingletonJobFloat>(0.0f);
+    mgr->RunJob<MultiThreadSingletonJobInt>(0.0f);
+    mgr->RunJob<MultiThreadSingletonJobUint>(0.0f);
+
+    for (auto i = 0; i < MULTI_THREAD_ENTITY_COUNT; ++i) {
+        mgr->CreateEntityImmediate(
+            test::DoubleA{ 1.0 }, test::DoubleB{ 2.0 }, test::DoubleC{ 1.0 },
+            test::FloatA{ 1.0f }, test::FloatB{ 2.0f }, test::FloatC{ 1.0f },
+            test::IntA{ 1 }, test::IntB{ 2 }, test::IntC{ 1 },
+            test::UintA{ 1 }, test::UintB{ 2 }, test::UintC{ 1 }
+        );
+    }
+}
+
+enum EThreadingType : uint8_t {
+    Single,
+    ManualMulti,
+    UpdateGroupMulti
+};
+void ExecuteMultiThreadingTest (Manager * mgr, EThreadingType threading) {
+    switch (threading) {
+        case EThreadingType::Single: {
+            mgr->RunJob<MultiThreadJobDouble>(0.0f);
+            mgr->RunJob<MultiThreadJobFloat>(0.0f);
+            mgr->RunJob<MultiThreadJobInt>(0.0f);
+            mgr->RunJob<MultiThreadJobUint>(0.0f);
+            mgr->RunJob<MultiThreadSingletonJobDouble>(0.0f);
+            mgr->RunJob<MultiThreadSingletonJobFloat>(0.0f);
+            mgr->RunJob<MultiThreadSingletonJobInt>(0.0f);
+            mgr->RunJob<MultiThreadSingletonJobUint>(0.0f);
+        } break;
+        case EThreadingType::UpdateGroupMulti: {
+            mgr->RunUpdateGroup<UpdateGroupMultiThreading>(0.0f);
+        } break;
+        case EThreadingType::ManualMulti: {
+            std::future<void> handle[4];
+            handle[0] = std::async(std::launch::async, [mgr]() {
+                mgr->RunJob<MultiThreadJobDouble>(0.0f);
+                mgr->RunJob<MultiThreadSingletonJobDouble>(0.0);
+            });
+            handle[1] = std::async(std::launch::async, [mgr]() {
+                mgr->RunJob<MultiThreadJobFloat>(0.0f);
+                mgr->RunJob<MultiThreadSingletonJobFloat>(0.0);
+            });
+            handle[2] = std::async(std::launch::async, [mgr]() {
+                mgr->RunJob<MultiThreadJobInt>(0.0f);
+                mgr->RunJob<MultiThreadSingletonJobInt>(0.0);
+            });
+            handle[3] = std::async(std::launch::async, [mgr]() {
+                mgr->RunJob<MultiThreadJobUint>(0.0f);
+                mgr->RunJob<MultiThreadSingletonJobUint>(0.0);
+            });
+            for (auto i = 0; i < 4; ++i)
+                handle[i].wait();
+        } break;
+    }
+    EXPECT_TRUE(mgr->GetSingletonComponent<test::SingletonDouble>()->Value == 2.0 * MULTI_THREAD_ENTITY_COUNT);
+    EXPECT_TRUE(mgr->GetSingletonComponent<test::SingletonFloat>()->Value == 2.0f * MULTI_THREAD_ENTITY_COUNT);
+    EXPECT_TRUE(mgr->GetSingletonComponent<test::SingletonInt>()->Value == 2 * MULTI_THREAD_ENTITY_COUNT);
+    EXPECT_TRUE(mgr->GetSingletonComponent<test::SingletonUint>()->Value == 2 * MULTI_THREAD_ENTITY_COUNT);
+}
+
+void TestManualMultiThreading () {
+    Manager mgr;
+    InitMultiThreadingTest(&mgr);
+    ExecuteMultiThreadingTest(&mgr, EThreadingType::ManualMulti);
+}
+
+void TestMultiThreading () {
+    Manager mgr;
+    InitMultiThreadingTest(&mgr);
+    ExecuteMultiThreadingTest(&mgr, EThreadingType::UpdateGroupMulti);
+}
+
 void SpeedTestCalculation (Timestep dt, float & a, const float & b, const float & c) {
     a = std::min(a + c * dt, b);
 }
@@ -435,6 +579,9 @@ struct SpeedTestJob : public Job {
 void TestJobSpeed () {
     Manager mgr;
 
+    // Run once with no entities to initialize the job outside our profiling
+    mgr.RunJob<SpeedTestJob>(0.0f);
+
     uint32_t entityCount = 100000;
     uint32_t loopCount = 1 * 60 * 60;
 
@@ -442,20 +589,20 @@ void TestJobSpeed () {
         mgr.CreateEntityImmediate(test::FloatA{ 0 }, test::FloatB{ 1000 }, test::FloatC{ 1.0f });
 
     float timestep = 1 / 60.0f;
-    auto start = std::chrono::system_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
     for (uint32_t i = 0; i < loopCount; ++i)
         mgr.RunJob<SpeedTestJob>(timestep);
-    auto end = std::chrono::system_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsedJob = end - start;
 
     uint64_t benchmarkLoops = entityCount * (uint64_t)loopCount;
     float a = 0;
     float b = 1000;
     float c = 1;
-    start = std::chrono::system_clock::now();
+    start = std::chrono::high_resolution_clock::now();
     for (uint64_t i = 0; i < benchmarkLoops; ++i)
         SpeedTestCalculation(timestep, a, b, c);
-    end = std::chrono::system_clock::now();
+    end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsedBenchmark = end - start;
 
     double maxRatio = 2.0;
@@ -464,8 +611,54 @@ void TestJobSpeed () {
         std::cout << "  " << elapsedJob.count() * 1000 << "ms vs " << elapsedBenchmark.count() * 1000 << "ms (" << 100 * elapsedJob.count() / elapsedBenchmark.count() << "%)" << std::endl;
 }
 
-// Main
-int main () {
+void TestMultiThreadingSpeed () {
+    auto loopCount = 1 * 60 * 60;
+
+    std::chrono::duration<double> elapsedMulti;
+    {
+        Manager mgr;
+        InitMultiThreadingTest(&mgr);
+
+        auto start = std::chrono::high_resolution_clock::now();
+        for (auto i = 0; i < loopCount; ++i)
+            ExecuteMultiThreadingTest(&mgr, EThreadingType::UpdateGroupMulti);
+        auto end = std::chrono::high_resolution_clock::now();
+        elapsedMulti = end - start;
+    }
+
+    std::chrono::duration<double> elapsedManual;
+    {
+        Manager mgr;
+        InitMultiThreadingTest(&mgr);
+
+        auto start = std::chrono::high_resolution_clock::now();
+        for (auto i = 0; i < loopCount; ++i)
+            ExecuteMultiThreadingTest(&mgr, EThreadingType::ManualMulti);
+        auto end = std::chrono::high_resolution_clock::now();
+        elapsedManual = end - start;
+    }
+
+    std::chrono::duration<double> elapsedSingle;
+    {
+        Manager mgr;
+        InitMultiThreadingTest(&mgr);
+
+        auto start = std::chrono::high_resolution_clock::now();
+        for (auto i = 0; i < loopCount; ++i)
+            ExecuteMultiThreadingTest(&mgr, EThreadingType::Single);
+        auto end = std::chrono::high_resolution_clock::now();
+        elapsedSingle = end - start;
+    }
+
+    double maxRatio = 1.0;
+    EXPECT_FALSE(elapsedMulti.count() > elapsedSingle.count() * maxRatio);
+    if (elapsedMulti.count() > elapsedSingle.count() * maxRatio) {
+        std::cout << "  " << elapsedMulti.count() * 1000 << "ms vs " << elapsedSingle.count() * 1000 << "ms (" << 100 * elapsedMulti.count() / elapsedSingle.count() << "%)" << std::endl;
+        std::cout << "  (Manual Multithreading: " << elapsedManual.count() * 1000 << "ms)" << std::endl;
+    }
+}
+
+void TestCorrectness () {
     TestAssumptions();
     TestEntityComparison();
     TestEntityCreationDestruction();
@@ -476,10 +669,32 @@ int main () {
     TestReadWriteOther();
     TestSingletonComponents();
     TestUpdateGroups();
+    TestManualMultiThreading();
+    TestMultiThreading();
+}
 
+void TestSpeed () {
 #ifndef _DEBUG
     TestJobSpeed();
+    TestMultiThreadingSpeed();
 #endif
+}
+
+void TestMultipleManagers () {
+    const auto threadCount = 4;
+    std::future<void> threads[threadCount];
+
+    for (auto i = 0; i < threadCount; ++i)
+        threads[i] = std::async(std::launch::async, TestCorrectness);
+    for (auto i = 0; i < threadCount; ++i)
+        threads[i].wait();
+}
+
+// Main
+int main () {
+    TestCorrectness();
+    TestSpeed();
+    TestMultipleManagers();
 
     return s_errorCount;
 }

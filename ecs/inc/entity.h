@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-
 #include "component.h"
+
+#include <cstdint>
 
 namespace ecs {
 

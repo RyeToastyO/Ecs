@@ -1,10 +1,10 @@
 #pragma once
 
+#include "composition.h"
+
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
-
-#include "composition.h"
 
 namespace ecs {
 

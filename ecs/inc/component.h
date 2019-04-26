@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../config.h"
+
 #include <cstdint>
 #include <unordered_map>
-
-#include "../config.h"
 
 namespace ecs {
 

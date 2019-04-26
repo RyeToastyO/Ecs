@@ -1,10 +1,10 @@
 #pragma once
 
+#include "../config.h"
+#include "component.h"
+
 #include <cstdint>
 #include <functional>
-
-#include "component.h"
-#include "../config.h"
 
 namespace ecs {
 

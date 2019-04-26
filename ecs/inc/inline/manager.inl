@@ -100,10 +100,6 @@ Manager::~Manager () {
         delete chunk.second;
     for (auto & job : m_manualJobs)
         delete job.second;
-    for (auto & jobs : m_updateGroups) {
-        for (auto job : jobs.second)
-            delete job;
-    }
     for (auto & singleton : m_singletonComponents)
         delete singleton.second;
     m_chunks.clear();
@@ -177,10 +173,21 @@ Chunk * Manager::GetOrCreateChunk (const ComponentFlags & composition) {
     if (chunkIter == m_chunks.end()) {
         m_chunks.emplace(composition, new Chunk(composition));
         chunkIter = m_chunks.find(composition);
-        for (const auto & jobIter : m_manualJobs)
-            jobIter.second->OnChunkAdded(chunkIter->second);
+        NotifyChunkCreated(chunkIter->second);
     }
     return chunkIter->second;
+}
+
+void Manager::NotifyChunkCreated (Chunk * chunk) {
+    for (const auto & jobIter : m_manualJobs)
+        jobIter.second->OnChunkAdded(chunk);
+    for (const auto & groupIter : m_updateGroups) {
+        for (const auto & listIter : groupIter.second) {
+            for (auto job : listIter) {
+                job->OnChunkAdded(chunk);
+            }
+        }
+    }
 }
 
 template<typename T>
@@ -210,87 +217,76 @@ void Manager::RunUpdateGroup (Timestep dt) {
 
     auto iter = m_updateGroups.find(GetUpdateGroupId<T>());
     if (iter == m_updateGroups.end()) {
-        const auto & jobFactories = GetUpdateGroupJobs<T>();
-
-        std::vector<Job*> jobs;
-        for (auto jobFactory : jobFactories) {
-            Job * newJob = jobFactory();
-            RegisterJobInternal(newJob);
-            jobs.push_back(newJob);
-        }
-
-        m_updateGroups.emplace(GetUpdateGroupId<T>(), std::move(jobs));
+        BuildJobListsInternal(GetUpdateGroupId<T>(), GetUpdateGroupJobs<T>());
         iter = m_updateGroups.find(GetUpdateGroupId<T>());
     }
 
-    m_jobIndex = 0;
-    m_jobList = &iter->second;
+    RunJobLists(iter->second, dt);
+}
 
-    std::thread workerThreads[ECS_MAX_THREADS];
+void Manager::RunJobLists (ParallelJobLists & lists, Timestep dt) {
+    for (auto & list : lists) {
+        m_runningTasks.push_back(std::async(std::launch::async, [list, dt]() {
+            for (auto job : list)
+                job->Run(dt);
+        }));
+    }
+    for (auto & task : m_runningTasks)
+        task.wait();
+    m_runningTasks.clear();
+}
 
-    for (auto i = 0; i < ECS_MAX_THREADS; ++i)
-        workerThreads[i] = std::thread(&Manager::RunJobListThreadedInternal, this, dt);
-    for (auto i = 0; i < ECS_MAX_THREADS; ++i)
-        workerThreads[i].join();
+void Manager::BuildJobListsInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
+    // TODO: Push in reverse order for now, we should actually be doing
+    // some sorting later, but this preserves the order well enough
+    // for testing at the moment
+    for (auto i = factories.size(); i > 0;) {
+        auto job = factories[--i]();
+        RegisterJobInternal(job);
+        m_scratchJobArray.push_back(job);
+    }
+
+    ParallelJobLists lists;
+    while (m_scratchJobArray.size()) {
+        JobList list;
+        list.push_back(m_scratchJobArray.back());
+        m_scratchJobArray.pop_back();
+
+        for (auto i = 0; i < m_scratchJobArray.size();) {
+            Job * job = m_scratchJobArray[i];
+
+            bool matchesAny = false;
+            for (auto listJob : list) {
+                matchesAny = true;
+                if (listJob->m_read.HasAny(job->m_read))
+                    break;
+                if (listJob->m_read.HasAny(job->m_write))
+                    break;
+                if (listJob->m_write.HasAny(job->m_read))
+                    break;
+                if (listJob->m_write.HasAny(job->m_write))
+                    break;
+                matchesAny = false;
+            }
+            if (matchesAny) {
+                list.push_back(job);
+                m_scratchJobArray[i] = m_scratchJobArray.back();
+                m_scratchJobArray.pop_back();
+            }
+            else {
+                ++i;
+            }
+        }
+        lists.push_back(std::move(list));
+    }
+
+    m_updateGroups.emplace(id, std::move(lists));
 }
 
 void Manager::RegisterJobInternal (Job * job) {
     job->OnRegistered(this);
     for (auto & chunk : m_chunks)
         job->OnChunkAdded(chunk.second);
-}
-
-bool Manager::AcquireLocksInternal (Job * job) {
-    // Verify we can lock everything we need to
-    for (auto componentId : job->m_write.GetIterator()) {
-        if (m_writeLocks.Has(componentId))
-            return false;
-        if (m_readLocks[componentId] > 0)
-            return false;
-    }
-    for (auto componentId : job->m_read.GetIterator()) {
-        if (m_writeLocks.Has(componentId))
-            return false;
-    }
-
-    // Actually lock everything
-    for (auto componentId : job->m_write.GetIterator())
-        m_writeLocks.SetFlag(componentId);
-    for (auto componentId : job->m_read.GetIterator())
-        m_readLocks[componentId]++;
-
-    return true;
-}
-
-void Manager::ReleaseLocksInternal (Job * job) {
-    for (auto componentId : job->m_read.GetIterator())
-        m_readLocks[componentId]--;
-    for (auto componentId : job->m_write.GetIterator())
-        m_writeLocks.ClearFlag(componentId);
-}
-
-void Manager::RunJobListThreadedInternal (Timestep dt) {
-    while (m_jobIndex < m_jobList->size()) {
-        Job * job = nullptr;
-
-        m_jobListLock.lock();
-        if (m_jobIndex < m_jobList->size()) {
-            job = (*m_jobList)[m_jobIndex];
-            if (AcquireLocksInternal(job))
-                m_jobIndex++;
-            else
-                job = nullptr;
-        }
-        m_jobListLock.unlock();
-
-        if (job) {
-            job->Run(dt);
-
-            m_jobListLock.lock();
-            ReleaseLocksInternal(job);
-            m_jobListLock.unlock();
-        }
-    }
 }
 
 void Manager::SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition) {
