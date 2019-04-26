@@ -118,7 +118,6 @@ int main () {
 - Queued composition changes
 - Job ordering control
 - Job ordering optimization
-- Unit tests for multi-threading
 - Add support for custom allocators
 
 ## License
