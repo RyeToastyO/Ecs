@@ -42,6 +42,4 @@ static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entit
 ::ecs::WriteSingleton<componentType> variableName = ::ecs::WriteSingleton<componentType>(*this);    \
 static_assert(std::is_base_of<::ecs::ISingletonComponent, componentType>::value, "Must inherit ISingletonComponent to be written in this way");
 
-}
-
-#include "inline/component_access.inl"
+} // namespace ecs

@@ -73,4 +73,10 @@ private:
 
 } // namespace ecs
 
-#include "inline/composition.inl"
+namespace std {
+    template <> struct hash<::ecs::ComponentFlags> {
+        size_t operator() (const ::ecs::ComponentFlags & flags) const {
+            return flags.GetHash();
+        }
+    };
+};

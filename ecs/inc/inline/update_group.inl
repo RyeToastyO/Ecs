@@ -7,8 +7,6 @@
 
 namespace ecs {
 
-typedef uint32_t UpdateGroupId;
-
 // UpdateGroupId Registration
 struct UpdateGroupRegistry {
     static UpdateGroupId RegisterUpdateGroup ();
@@ -31,14 +29,12 @@ UpdateGroupId UpdateGroupIdGetter<T>::GetId () {
 }
 
 template<typename T>
-static UpdateGroupId GetUpdateGroupId () {
+UpdateGroupId GetUpdateGroupId () {
     static_assert(std::is_base_of<IUpdateGroup, T>::value, "Must inherit UpdateGroup to use GetUpdateGroupId");
     return UpdateGroupIdGetter<typename std::remove_const<T>::type>::GetId();
 }
 
 // Job Registration
-typedef Job* (*JobFactory)();
-
 template<typename T>
 std::vector<JobFactory> & GetUpdateGroupJobs () {
     static std::vector<JobFactory> s_jobs;

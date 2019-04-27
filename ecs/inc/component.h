@@ -31,5 +31,3 @@ static ComponentId GetComponentId ();
 static size_t GetComponentSize (ComponentId id);
 
 } // namespace ecs
-
-#include "inline/component.inl"

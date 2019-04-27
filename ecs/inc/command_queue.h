@@ -77,5 +77,3 @@ private:
 };
 
 } // namespace ecs
-
-//#include "inline/command_queue.inl"

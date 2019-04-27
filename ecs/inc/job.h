@@ -92,6 +92,4 @@ private:
     void AddWriteSingleton (IComponentAccess * access);
 };
 
-}
-
-#include "inline/job.inl"
+} // namespace ecs

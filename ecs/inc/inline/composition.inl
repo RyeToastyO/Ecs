@@ -5,14 +5,6 @@
 
 #include "../../helpers/hash.h"
 
-namespace std {
-    template <> struct hash<::ecs::ComponentFlags> {
-        size_t operator() (const ::ecs::ComponentFlags & flags) const {
-            return flags.GetHash();
-        }
-    };
-};
-
 namespace ecs {
 
 // ComponentFlagIterator
