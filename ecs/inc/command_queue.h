@@ -33,6 +33,7 @@ template<typename T>
 struct QueuedComponentCollection : public IQueuedComponentCollection {
     void Apply (Entity entity, uint32_t index, Manager * mgr) override;
     void Clear () override;
+    uint32_t Push (T && component);
 
 private:
     std::vector<T> m_components;

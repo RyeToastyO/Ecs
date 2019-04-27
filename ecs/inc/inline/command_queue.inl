@@ -17,6 +17,12 @@ void QueuedComponentCollection<T>::Clear () {
 }
 
 template<typename T>
+uint32_t QueuedComponentCollection<T>::Push (T && component) {
+    m_components.push_back(component);
+    return (uint32_t)m_components.size() - 1;
+}
+
+template<typename T>
 void ComponentRemover<T>::Apply (Entity entity, Manager * mgr) {
     mgr->RemoveComponents<T>(entity);
 }
@@ -70,10 +76,8 @@ void CommandQueue::AddComponents (Entity entity, T component, Args...args) {
         ECommandType::AddComponent,
         entity,
         GetComponentId<T>(),
-        collection->m_components.size()
+        collection->Push(std::move(component))
     });
-
-    collection->m_components.push_back(std::move(component));
 
     if constexpr (sizeof...(Args) > 0)
         AddComponents(entity, args...);
@@ -88,7 +92,7 @@ void CommandQueue::CreateEntity (T component, Args...args) {
         0   // ComponentIndex
     });
 
-    AddComponents(Entity{}, component, args);
+    AddComponents(Entity{}, component, args...);
 }
 
 void CommandQueue::DestroyEntity (Entity entity) {
