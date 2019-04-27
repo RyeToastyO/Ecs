@@ -566,6 +566,47 @@ void TestMultiThreading () {
     ExecuteMultiThreadingTest(&mgr, EThreadingType::UpdateGroupMulti);
 }
 
+struct QueuedChangeJob : Job {
+    ECS_READ(Entity, Ent);
+    ECS_READ(test::EntityReference, Ref);
+    ECS_REQUIRE(test::TagA);
+
+    void ForEach (Timestep) override {
+        QueueAddComponents(*Ent, test::FloatA{ 1.0f });
+        QueueRemoveComponents<test::TagA>(*Ent);
+        QueueCreateEntity(test::FloatA{ 2.0f });
+        QueueDestroyEntity(Ref->Value);
+    }
+};
+
+struct QueuedChangeTotal: Job {
+    ECS_READ(test::FloatA, A);
+
+    ECS_WRITE_SINGLETON(test::SingletonFloat, Total);
+
+    void ForEach (Timestep) override {
+        Total->Value += A->Value;
+    }
+};
+
+void TestQueuedChanges () {
+    Manager mgr;
+
+    Entity a = mgr.CreateEntityImmediate(test::FloatA{ 10.0f });
+    Entity b = mgr.CreateEntityImmediate(test::FloatA{ 20.0f });
+    Entity c = mgr.CreateEntityImmediate(test::TagA{}, test::EntityReference{ a });
+    Entity d = mgr.CreateEntityImmediate(test::TagA{}, test::EntityReference{ b });
+
+    mgr.RunJob<QueuedChangeJob>(0.0f);
+    mgr.RunJob<QueuedChangeTotal>(0.0f);
+
+    EXPECT_FALSE(mgr.Exists(a));
+    EXPECT_FALSE(mgr.Exists(b));
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(c)->Value == 1.0f);
+    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(d)->Value == 1.0f);
+    EXPECT_TRUE(mgr.GetSingletonComponent<test::SingletonFloat>()->Value == 6.0f);
+}
+
 void SpeedTestCalculation (Timestep dt, float & a, const float & b, const float & c) {
     a = std::min(a + c * dt, b);
 }
@@ -676,6 +717,7 @@ void TestCorrectness () {
     TestUpdateGroups();
     TestManualMultiThreading();
     TestMultiThreading();
+    TestQueuedChanges();
 }
 
 void TestSpeed () {

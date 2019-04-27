@@ -18,6 +18,4 @@ struct Entity {
     bool operator== (const Entity & rhs) const;
 };
 
-}
-
-#include "inline/entity.inl"
+} // namespace ecs

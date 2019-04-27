@@ -9,3 +9,5 @@
 #include "inc/component.h"
 #include "inc/job.h"
 #include "inc/manager.h"
+
+#include "inc/inline/inline.inl"

@@ -92,5 +92,3 @@ private:
 };
 
 } // namespace ecs
-
-#include "inline/manager.inl"

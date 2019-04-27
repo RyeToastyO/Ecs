@@ -47,11 +47,11 @@ struct ComponentFlags {
 
     void ClearFlag (ComponentId id);
     template<typename T, typename...Args>
-	void ClearFlags();
+    void ClearFlags ();
 
     void SetFlag (ComponentId id);
     template<typename T, typename...Args>
-	void SetFlags();
+    void SetFlags ();
 
     ComponentInfo GetComponentInfo () const;
     ComponentFlagIterator GetIterator () const;
@@ -73,4 +73,10 @@ private:
 
 } // namespace ecs
 
-#include "inline/composition.inl"
+namespace std {
+    template <> struct hash<::ecs::ComponentFlags> {
+        size_t operator() (const ::ecs::ComponentFlags & flags) const {
+            return flags.GetHash();
+        }
+    };
+};

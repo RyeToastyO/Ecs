@@ -51,6 +51,4 @@ private: // Helpers
     void Resize (uint32_t capacity);
 };
 
-}
-
-#include "inline/chunk.inl"
+} // namespace ecs
