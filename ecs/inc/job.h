@@ -26,6 +26,8 @@ struct Job {
     bool HasComponent (Entity entity) const;
 
 public:
+    virtual ~Job () {}
+
     virtual void Run (Timestep dt);
     virtual void ForEach (Timestep dt) { ECS_REF(dt); }
 

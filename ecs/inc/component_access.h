@@ -10,37 +10,37 @@
 namespace ecs {
 
 // Component Access macros
-#define ECS_EXCLUDE(...) Exclude<__VA_ARGS__> ECS_TOKEN_COMBINE(__exclude, __LINE__) = Exclude<__VA_ARGS__>(*this);
+#define ECS_EXCLUDE(...) ::ecs::Exclude<__VA_ARGS__> ECS_TOKEN_COMBINE(__exclude, __LINE__) = ::ecs::Exclude<__VA_ARGS__>(*this);
 
-#define ECS_READ(componentType, variableName)                   \
-Read<componentType> variableName = Read<componentType>(*this);  \
+#define ECS_READ(componentType, variableName)                                   \
+::ecs::Read<componentType> variableName = ::ecs::Read<componentType>(*this);    \
 static_assert(!std::is_empty<componentType>(), "Cannot read access an empty/tag component, use ECS_REQUIRE");
 
 #define ECS_READ_OTHER(componentType, variableName)                                                                         \
-ReadOther<componentType> variableName = ReadOther<componentType>(*this);                                                    \
+::ecs::ReadOther<componentType> variableName = ::ecs::ReadOther<componentType>(*this);                                      \
 static_assert(!std::is_empty<componentType>(), "Cannot read access an empty/tag component, use HasComponent<T>(entity)");   \
 static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entity>::value, "ReadOther Entity doesn't even make sense");
 
-#define ECS_READ_SINGLETON(componentType, variableName)                             \
-ReadSingleton<componentType> variableName = ReadSingleton<componentType>(*this);    \
-static_assert(std::is_base_of<ISingletonComponent, componentType>::value, "Must inherit ISingletonComponent to be read in this way");
+#define ECS_READ_SINGLETON(componentType, variableName)                                         \
+::ecs::ReadSingleton<componentType> variableName = ::ecs::ReadSingleton<componentType>(*this);  \
+static_assert(std::is_base_of<::ecs::ISingletonComponent, componentType>::value, "Must inherit ISingletonComponent to be read in this way");
 
-#define ECS_REQUIRE(...) Require<__VA_ARGS__> ECS_TOKEN_COMBINE(__require, __LINE__) = Require<__VA_ARGS__>(*this);
-#define ECS_REQUIRE_ANY(...) RequireAny<__VA_ARGS__> ECS_TOKEN_COMBINE(__requireAny, __LINE__) = RequireAny<__VA_ARGS__>(*this);
+#define ECS_REQUIRE(...) ::ecs::Require<__VA_ARGS__> ECS_TOKEN_COMBINE(__require, __LINE__) = ::ecs::Require<__VA_ARGS__>(*this);
+#define ECS_REQUIRE_ANY(...) ::ecs::RequireAny<__VA_ARGS__> ECS_TOKEN_COMBINE(__requireAny, __LINE__) = ::ecs::RequireAny<__VA_ARGS__>(*this);
 
 #define ECS_WRITE(componentType, variableName)                                                                  \
-Write<componentType> variableName = Write<componentType>(*this);                                                \
+::ecs::Write<componentType> variableName = ::ecs::Write<componentType>(*this);                                  \
 static_assert(!std::is_empty<componentType>(), "Cannot write access an empty/tag component, use ECS_REQUIRE");  \
 static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entity>::value, "Don't write to Entity, you will break everything");
 
 #define ECS_WRITE_OTHER(componentType, variableName)                                                                        \
-WriteOther<componentType> variableName = WriteOther<componentType>(*this);                                                  \
+::ecs::WriteOther<componentType> variableName = ::ecs::WriteOther<componentType>(*this);                                    \
 static_assert(!std::is_empty<componentType>(), "Cannot write access an empty/tag component, use HasComponent<T>(entity)");  \
 static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entity>::value, "Don't write to Entity, you will break everything");
 
-#define ECS_WRITE_SINGLETON(componentType, variableName)                            \
-WriteSingleton<componentType> variableName = WriteSingleton<componentType>(*this);  \
-static_assert(std::is_base_of<ISingletonComponent, componentType>::value, "Must inherit ISingletonComponent to be written in this way");
+#define ECS_WRITE_SINGLETON(componentType, variableName)                                            \
+::ecs::WriteSingleton<componentType> variableName = ::ecs::WriteSingleton<componentType>(*this);    \
+static_assert(std::is_base_of<::ecs::ISingletonComponent, componentType>::value, "Must inherit ISingletonComponent to be written in this way");
 
 }
 
