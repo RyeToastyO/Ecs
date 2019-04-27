@@ -214,6 +214,7 @@ void Manager::RunJob (Timestep dt) {
     }
 
     job->Run(dt);
+    job->ApplyQueuedCommands();
 }
 
 template<typename T>
@@ -239,6 +240,11 @@ void Manager::RunJobLists (ParallelJobLists & lists, Timestep dt) {
     for (auto & task : m_runningTasks)
         task.wait();
     m_runningTasks.clear();
+
+    for (auto & list : lists) {
+        for (auto job : list)
+            job->ApplyQueuedCommands();
+    }
 }
 
 void Manager::BuildJobListsInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {

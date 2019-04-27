@@ -52,6 +52,10 @@ void Job::AddWriteSingleton (IComponentAccess * access) {
     m_singletonAccess.push_back(access);
 }
 
+void Job::ApplyQueuedCommands () {
+    m_commands.Apply(m_manager);
+}
+
 template<typename T>
 bool Job::HasComponent (Entity entity) const {
     return m_manager->HasComponent<T>(entity);
@@ -91,6 +95,25 @@ void Job::Run (Timestep dt) {
         for (m_currentIndex = 0; m_currentIndex < chunk->GetCount(); ++m_currentIndex)
             ForEach(dt);
     }
+}
+
+template<typename T, typename...Args>
+void Job::QueueAddComponents (Entity entity, T component, Args...args) {
+    m_commands.AddComponents(entity, component, args...);
+}
+
+template<typename T, typename...Args>
+void Job::QueueCreateEntity (T component, Args...args) {
+    m_commands.CreateEntity(component, args...);
+}
+
+void Job::QueueDestroyEntity (Entity entity) {
+    m_commands.DestroyEntity(entity);
+}
+
+template<typename T, typename...Args>
+void Job::QueueRemoveComponents (Entity entity) {
+    m_commands.RemoveComponents<T, Args...>(entity);
 }
 
 // Registration

@@ -7,6 +7,7 @@
 
 #include "chunk.h"
 #include "entity.h"
+#include "command_queue.h"
 #include "../helpers/ref.h"
 
 #include <cstdint>
@@ -28,6 +29,17 @@ struct Job {
 public:
     virtual ~Job () {}
 
+    template<typename T, typename...Args>
+    void QueueAddComponents (Entity, T component, Args...args);
+
+    template<typename T, typename...Args>
+    void QueueCreateEntity (T component, Args...args);
+
+    void QueueDestroyEntity (Entity entity);
+
+    template<typename T, typename...Args>
+    void QueueRemoveComponents (Entity entity);
+
     virtual void Run (Timestep dt);
     virtual void ForEach (Timestep dt) { ECS_REF(dt); }
 
@@ -48,10 +60,13 @@ private:
     ComponentFlags m_read;
     ComponentFlags m_write;
 
+    CommandQueue m_commands;
+
     Manager * m_manager = nullptr;
 
 private:
     friend class Manager;
+    void ApplyQueuedCommands ();
     void OnChunkAdded (Chunk * chunk);
     void OnRegistered (Manager * manager);
 

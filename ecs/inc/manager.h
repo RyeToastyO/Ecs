@@ -94,3 +94,4 @@ private:
 } // namespace ecs
 
 #include "inline/manager.inl"
+#include "inline/command_queue.inl" // TODO: find a cleaner way to do this include
