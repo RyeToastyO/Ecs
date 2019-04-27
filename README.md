@@ -107,6 +107,21 @@ int main () {
 }
 ```
 
+### Queued Composition Changes from Jobs
+Applied after completion of RunJob<> or RunUpdateGroup<>
+```C++
+struct QueuedChange : ecs::Job {
+    ECS_READ(ecs::Entity, CurrentEntity);
+
+    void ForEach (ecs::Timestep) override {
+        QueueAddComponents(*CurrentEntity, ComponentA{1.0f});
+        QueueRemoveComponents<ComponentB>(*CurrentEntity);
+        QueueCreateEntity(ComponentA{1.0f});
+        QueueDestroyEntity(*CurrentEntity);
+    }
+};
+```
+
 ### Configurable Settings
 ```C++
 #define ECS_MAX_COMPONENTS 256
@@ -115,7 +130,6 @@ int main () {
 ```
 
 ## TODO
-- Queued composition changes
 - Job ordering control
 - Job ordering optimization
 - Add support for custom allocators
