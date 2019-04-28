@@ -132,6 +132,7 @@ struct QueuedChange : ecs::Job {
 ## TODO
 - Job ordering control
 - Job ordering optimization
+- Run component destructors
 - Add support for custom allocators
 
 ## License
