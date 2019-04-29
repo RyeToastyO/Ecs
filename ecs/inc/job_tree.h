@@ -6,6 +6,7 @@
 #pragma once
 
 #include "job.h"
+#include "update_group.h"
 
 #include <cstdint>
 #include <vector>
@@ -18,6 +19,9 @@ struct JobNode {
 
     ~JobNode ();
 };
+
+template<typename T>
+void ForEachNode (JobNode * root, T func);
 
 JobNode * NewJobTree (const std::vector<JobFactory> & factories);
 

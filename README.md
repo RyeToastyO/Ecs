@@ -133,6 +133,7 @@ struct QueuedChange : ecs::Job {
 - Job ordering control
 - Job ordering optimization
 - Run component destructors
+- Hide implementation detail global functions in another namespace
 - Add support for custom allocators
 
 ## License

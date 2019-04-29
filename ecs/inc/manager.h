@@ -67,8 +67,7 @@ private:
     std::unordered_map<UpdateGroupId, JobNode*> m_updateGroups;
     std::unordered_map<ComponentFlags, Chunk*> m_chunks;
     std::unordered_map<ComponentId, ISingletonComponent*> m_singletonComponents;
-    std::vector<std::future<std::vector<JobNode*>*>> m_runningTasks;
-    std::vector<Job*> m_scratchJobArray;
+    std::vector<std::future<std::vector<JobNode>*>> m_runningTasks;
 
 private:
     void BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories);
@@ -86,6 +85,7 @@ private:
 
     void RegisterJobInternal (Job * job);
 
+    void RunJobList (std::vector<JobNode> & list, Timestep dt);
     void RunJobTree (JobNode * rootNode, Timestep dt);
 };
 

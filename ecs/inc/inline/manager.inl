@@ -187,11 +187,10 @@ void Manager::NotifyChunkCreated (Chunk * chunk) {
     for (const auto & jobIter : m_manualJobs)
         jobIter.second->OnChunkAdded(chunk);
     for (const auto & groupIter : m_updateGroups) {
-        for (const auto & listIter : groupIter.second) {
-            for (auto job : listIter) {
-                job->OnChunkAdded(chunk);
-            }
-        }
+        ForEachNode(groupIter.second, [chunk](JobNode * node) {
+            if (node->job)
+                node->job->OnChunkAdded(chunk);
+        });
     }
 }
 
@@ -230,56 +229,52 @@ void Manager::RunUpdateGroup (Timestep dt) {
     RunJobTree(iter->second, dt);
 }
 
+void Manager::RunJobList (std::vector<JobNode> & list, Timestep dt) {
+    for (JobNode & nodeIter : list) {
+        JobNode * node = &nodeIter;
+        m_runningTasks.push_back(std::async(std::launch::async, [node, dt]() {
+            // Run the assigned job
+            node->job->Run(dt);
+
+            // Just continue down our dependents if we only have one
+            std::vector<JobNode> * deps = &(node->dependents);
+            while (deps->size() == 1) {
+                (*deps)[0].job->Run(dt);
+                deps = &((*deps)[0].dependents);
+            }
+
+            // Let the manager figure out what to do otherwise
+            return deps->size() == 0 ? nullptr : deps;
+        }));
+    }
+}
+
 void Manager::RunJobTree (JobNode * rootNode, Timestep dt) {
-    // TODO: Run jobs
-    // TODO: Apply queued commands
+    RunJobList(rootNode->dependents, dt);
+
+    for (auto i = 0; i < m_runningTasks.size(); ++i) {
+        auto additionalTasks = m_runningTasks[i].get();
+        if (additionalTasks)
+            RunJobList(*additionalTasks, dt);
+    }
+
+    m_runningTasks.clear();
+
+    ForEachNode(rootNode, [this](JobNode * node) {
+        if (node->job)
+            node->job->ApplyQueuedCommands();
+    });
 }
 
 void Manager::BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
-    // TODO: Push in reverse order for now, we should actually be doing
-    // some sorting later, but this preserves the order well enough
-    // for testing at the moment
-    for (auto i = factories.size(); i > 0;) {
-        auto job = factories[--i]();
-        RegisterJobInternal(job);
-        m_scratchJobArray.push_back(job);
-    }
+    JobNode * rootNode = NewJobTree(factories);
 
-    ParallelJobLists lists;
-    while (m_scratchJobArray.size()) {
-        JobList list;
-        list.push_back(m_scratchJobArray.back());
-        m_scratchJobArray.pop_back();
+    ForEachNode(rootNode, [this](JobNode * node) {
+        if (node->job)
+            RegisterJobInternal(node->job);
+    });
 
-        for (auto i = 0; i < m_scratchJobArray.size();) {
-            Job * job = m_scratchJobArray[i];
-
-            bool matchesAny = false;
-            for (auto listJob : list) {
-                matchesAny = true;
-                if (listJob->m_read.HasAny(job->m_read))
-                    break;
-                if (listJob->m_read.HasAny(job->m_write))
-                    break;
-                if (listJob->m_write.HasAny(job->m_read))
-                    break;
-                if (listJob->m_write.HasAny(job->m_write))
-                    break;
-                matchesAny = false;
-            }
-            if (matchesAny) {
-                list.push_back(job);
-                m_scratchJobArray[i] = m_scratchJobArray.back();
-                m_scratchJobArray.pop_back();
-            }
-            else {
-                ++i;
-            }
-        }
-        lists.push_back(std::move(list));
-    }
-
-    m_updateGroups.emplace(id, std::move(lists));
+    m_updateGroups.emplace(id, rootNode);
 }
 
 void Manager::RegisterJobInternal (Job * job) {

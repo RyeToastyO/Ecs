@@ -31,6 +31,13 @@ struct LowestNode {
     uint32_t depth;
 };
 
+template<typename T>
+void ForEachNode (JobNode * node, T func) {
+    func(node);
+    for (auto & dependent : node->dependents)
+        ForEachNode(&dependent, func);
+}
+
 void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results) {
     if (results.depth < depth) {
         if (node->job->GetWriteFlags().HasAny(flags)) {
