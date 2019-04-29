@@ -12,5 +12,6 @@
 #include "composition.inl"
 #include "entity.inl"
 #include "job.inl"
+#include "job_tree.inl"
 #include "manager.inl"
 #include "update_group.inl"

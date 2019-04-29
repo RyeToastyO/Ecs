@@ -223,31 +223,19 @@ void Manager::RunUpdateGroup (Timestep dt) {
 
     auto iter = m_updateGroups.find(GetUpdateGroupId<T>());
     if (iter == m_updateGroups.end()) {
-        BuildJobListsInternal(GetUpdateGroupId<T>(), GetUpdateGroupJobs<T>());
+        BuildJobTreeInternal(GetUpdateGroupId<T>(), GetUpdateGroupJobs<T>());
         iter = m_updateGroups.find(GetUpdateGroupId<T>());
     }
 
-    RunJobLists(iter->second, dt);
+    RunJobTree(iter->second, dt);
 }
 
-void Manager::RunJobLists (ParallelJobLists & lists, Timestep dt) {
-    for (auto & list : lists) {
-        m_runningTasks.push_back(std::async(std::launch::async, [list, dt]() {
-            for (auto job : list)
-                job->Run(dt);
-        }));
-    }
-    for (auto & task : m_runningTasks)
-        task.wait();
-    m_runningTasks.clear();
-
-    for (auto & list : lists) {
-        for (auto job : list)
-            job->ApplyQueuedCommands();
-    }
+void Manager::RunJobTree (JobNode * rootNode, Timestep dt) {
+    // TODO: Run jobs
+    // TODO: Apply queued commands
 }
 
-void Manager::BuildJobListsInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
+void Manager::BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
     // TODO: Push in reverse order for now, we should actually be doing
     // some sorting later, but this preserves the order well enough
     // for testing at the moment
