@@ -15,14 +15,21 @@ namespace ecs {
 
 struct JobNode {
     Job * job = nullptr;
-    std::vector<JobNode> dependents;
+    std::vector<JobNode*> dependents;
 
     ~JobNode ();
 };
 
-template<typename T>
-void ForEachNode (JobNode * root, T func);
+struct JobTree {
+    JobNode * nodeMemory = nullptr;
+    std::vector<JobNode*> topNodes;
 
-JobNode * NewJobTree (const std::vector<JobFactory> & factories);
+    ~JobTree ();
+};
+
+template<typename T>
+void ForEachNode (JobTree * tree, T func);
+
+JobTree * NewJobTree (const std::vector<JobFactory> & factories);
 
 } // namespace ecs

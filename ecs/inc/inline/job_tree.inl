@@ -12,8 +12,15 @@ JobNode::~JobNode () {
     }
 }
 
+JobTree::~JobTree () {
+    if (nodeMemory) {
+        delete[] nodeMemory;
+        nodeMemory = nullptr;
+    }
+}
+
 struct JobDependencyData {
-    Job * job = nullptr;
+    JobNode * node = nullptr;
     bool isGrouped = false;
     std::vector<Job*> hardDeps; // Writes and RUN_BEFORE/AFTER
     std::vector<Job*> outReadDeps;
@@ -34,8 +41,14 @@ struct LowestNode {
 template<typename T>
 void ForEachNode (JobNode * node, T func) {
     func(node);
-    for (auto & dependent : node->dependents)
-        ForEachNode(&dependent, func);
+    for (auto dep : node->dependents)
+        ForEachNode(dep, func);
+}
+
+template<typename T>
+void ForEachNode (JobTree * tree, T func) {
+    for (auto node : tree->topNodes)
+        ForEachNode(node, func);
 }
 
 void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results) {
@@ -45,47 +58,50 @@ void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFl
             results.depth = depth;
         }
     }
-    for (auto & dependent : node->dependents)
-        FindLowestSatisfyingNode(&dependent, depth + 1, flags, results);
+    for (auto dependent : node->dependents)
+        FindLowestSatisfyingNode(dependent, depth + 1, flags, results);
 }
 
 void AddToDependencyGroup (JobDependencyData * data, DependencyGroup * group) {
     data->isGrouped = true;
-    group->read.SetFlags(data->job->GetReadFlags());
-    group->write.SetFlags(data->job->GetWriteFlags());
+    group->read.SetFlags(data->node->job->GetReadFlags());
+    group->write.SetFlags(data->node->job->GetWriteFlags());
     group->jobs.push_back(data);
 }
 
-JobNode * NewJobTree (const std::vector<JobFactory> & factories) {
-    JobNode * rootNode = new JobNode();
+JobTree * NewJobTree (const std::vector<JobFactory> & factories) {
+    JobTree * tree = new JobTree();
+    tree->nodeMemory = new JobNode[factories.size()];
 
     std::vector<JobDependencyData> depData;
-    for (auto factory : factories)
-        depData.push_back(JobDependencyData{ factory() });
+    for (auto i = 0; i < factories.size(); ++i) {
+        depData.push_back(JobDependencyData{ tree->nodeMemory + i });
+        tree->nodeMemory[i].job = factories[i]();
+    }
 
     // Gather dependency graph data
     for (auto i = 0; i < depData.size(); ++i) {
         auto & depI = depData[i];
-        auto & readI = depI.job->GetReadFlags();
-        auto & writeI = depI.job->GetWriteFlags();
+        auto & readI = depI.node->job->GetReadFlags();
+        auto & writeI = depI.node->job->GetWriteFlags();
 
         for (auto j = i + 1; j < depData.size(); ++j) {
             auto & depJ = depData[j];
-            auto & readJ = depJ.job->GetReadFlags();
-            auto & writeJ = depJ.job->GetWriteFlags();
+            auto & readJ = depJ.node->job->GetReadFlags();
+            auto & writeJ = depJ.node->job->GetWriteFlags();
 
             if (writeI.HasAny(writeJ) || writeI.HasAny(readJ) && writeJ.HasAny(readI)) {
-                depI.hardDeps.push_back(depJ.job);
-                depJ.hardDeps.push_back(depI.job);
+                depI.hardDeps.push_back(depJ.node->job);
+                depJ.hardDeps.push_back(depI.node->job);
             }
             else {
                 if (writeI.HasAny(readJ)) {
-                    depI.inReadDeps.push_back(depJ.job);
-                    depJ.outReadDeps.push_back(depI.job);
+                    depI.inReadDeps.push_back(depJ.node->job);
+                    depJ.outReadDeps.push_back(depI.node->job);
                 }
                 if (writeJ.HasAny(readI)) {
-                    depJ.inReadDeps.push_back(depI.job);
-                    depI.outReadDeps.push_back(depJ.job);
+                    depJ.inReadDeps.push_back(depI.node->job);
+                    depI.outReadDeps.push_back(depJ.node->job);
                 }
             }
         }
@@ -106,7 +122,7 @@ JobNode * NewJobTree (const std::vector<JobFactory> & factories) {
             if (depJ.isGrouped)
                 continue;
 
-            if (group.write.HasAny(depJ.job->GetWriteFlags())) {
+            if (group.write.HasAny(depJ.node->job->GetWriteFlags())) {
                 AddToDependencyGroup(&depJ, &group);
 
                 // Reset our iterator since we might need to group other jobs that didn't previously
@@ -118,6 +134,7 @@ JobNode * NewJobTree (const std::vector<JobFactory> & factories) {
         std::sort(group.jobs.begin(), group.jobs.end(), [](const JobDependencyData * a, const JobDependencyData * b) {
             return a->inReadDeps.size() < b->inReadDeps.size();
         });
+        hardGroups.push_back(std::move(group));
     }
 
     // Sort groups by longest chain
@@ -129,20 +146,25 @@ JobNode * NewJobTree (const std::vector<JobFactory> & factories) {
     for (auto & group : hardGroups) {
         LowestNode results;
         results.depth = 0;
-        results.node = rootNode;
+        results.node = nullptr;
 
-        FindLowestSatisfyingNode(rootNode, 0, group.read, results);
-        
+        for (auto topNode : tree->topNodes)
+            FindLowestSatisfyingNode(topNode, 1, group.read, results);
+
         JobNode * currentNode = results.node;
         for (auto jobData : group.jobs) {
-            currentNode->dependents.push_back(JobNode{ jobData->job });
-            currentNode = &(currentNode->dependents.back());
+            if (currentNode)
+                currentNode->dependents.push_back(jobData->node);
+            else
+                tree->topNodes.push_back(jobData->node);
+
+            currentNode = jobData->node;
         }
     }
 
     // TODO: Sort children by depth (this mostly happens by above sorts, but not 100%)
 
-    return rootNode;
+    return tree;
 }
 
 } // namespace ecs

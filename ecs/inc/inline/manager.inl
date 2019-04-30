@@ -107,6 +107,8 @@ Manager::~Manager () {
         delete job.second;
     for (auto & singleton : m_singletonComponents)
         delete singleton.second;
+    for (auto & updateGroup : m_updateGroups)
+        delete updateGroup.second;
     m_chunks.clear();
     m_manualJobs.clear();
     m_updateGroups.clear();
@@ -188,8 +190,7 @@ void Manager::NotifyChunkCreated (Chunk * chunk) {
         jobIter.second->OnChunkAdded(chunk);
     for (const auto & groupIter : m_updateGroups) {
         ForEachNode(groupIter.second, [chunk](JobNode * node) {
-            if (node->job)
-                node->job->OnChunkAdded(chunk);
+            node->job->OnChunkAdded(chunk);
         });
     }
 }
@@ -229,18 +230,17 @@ void Manager::RunUpdateGroup (Timestep dt) {
     RunJobTree(iter->second, dt);
 }
 
-void Manager::RunJobList (std::vector<JobNode> & list, Timestep dt) {
-    for (JobNode & nodeIter : list) {
-        JobNode * node = &nodeIter;
+void Manager::RunJobList (std::vector<JobNode*> & list, Timestep dt) {
+    for (JobNode * node : list) {
         m_runningTasks.push_back(std::async(std::launch::async, [node, dt]() {
             // Run the assigned job
             node->job->Run(dt);
 
             // Just continue down our dependents if we only have one
-            std::vector<JobNode> * deps = &(node->dependents);
+            std::vector<JobNode*> * deps = &(node->dependents);
             while (deps->size() == 1) {
-                (*deps)[0].job->Run(dt);
-                deps = &((*deps)[0].dependents);
+                (*deps)[0]->job->Run(dt);
+                deps = &((*deps)[0]->dependents);
             }
 
             // Let the manager figure out what to do otherwise
@@ -249,8 +249,8 @@ void Manager::RunJobList (std::vector<JobNode> & list, Timestep dt) {
     }
 }
 
-void Manager::RunJobTree (JobNode * rootNode, Timestep dt) {
-    RunJobList(rootNode->dependents, dt);
+void Manager::RunJobTree (JobTree * tree, Timestep dt) {
+    RunJobList(tree->topNodes, dt);
 
     for (auto i = 0; i < m_runningTasks.size(); ++i) {
         auto additionalTasks = m_runningTasks[i].get();
@@ -260,21 +260,19 @@ void Manager::RunJobTree (JobNode * rootNode, Timestep dt) {
 
     m_runningTasks.clear();
 
-    ForEachNode(rootNode, [this](JobNode * node) {
-        if (node->job)
-            node->job->ApplyQueuedCommands();
+    ForEachNode(tree, [this](JobNode * node) {
+        node->job->ApplyQueuedCommands();
     });
 }
 
 void Manager::BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
-    JobNode * rootNode = NewJobTree(factories);
+    JobTree * tree = NewJobTree(factories);
 
-    ForEachNode(rootNode, [this](JobNode * node) {
-        if (node->job)
-            RegisterJobInternal(node->job);
+    ForEachNode(tree, [this](JobNode * node) {
+        RegisterJobInternal(node->job);
     });
 
-    m_updateGroups.emplace(id, rootNode);
+    m_updateGroups.emplace(id, tree);
 }
 
 void Manager::RegisterJobInternal (Job * job) {
