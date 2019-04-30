@@ -8,6 +8,7 @@
 #include "chunk.h"
 #include "entity.h"
 #include "job.h"
+#include "job_tree.h"
 #include "update_group.h"
 
 #include <cstdint>
@@ -16,9 +17,6 @@
 #include <vector>
 
 namespace ecs {
-
-typedef std::vector<Job*> JobList;
-typedef std::vector<JobList> ParallelJobLists;
 
 struct EntityData {
     uint32_t generation = UINT32_MAX;
@@ -66,14 +64,13 @@ private:
     std::vector<EntityData> m_entityData;
     std::vector<uint32_t> m_freeList;
     std::unordered_map<JobId, Job*> m_manualJobs;
-    std::unordered_map<UpdateGroupId, ParallelJobLists> m_updateGroups;
+    std::unordered_map<UpdateGroupId, JobTree*> m_updateGroups;
     std::unordered_map<ComponentFlags, Chunk*> m_chunks;
     std::unordered_map<ComponentId, ISingletonComponent*> m_singletonComponents;
-    std::vector<std::future<void>> m_runningTasks;
-    std::vector<Job*> m_scratchJobArray;
+    std::vector<std::future<std::vector<JobNode*>*>> m_runningTasks;
 
 private:
-    void BuildJobListsInternal (UpdateGroupId id, std::vector<JobFactory> & factories);
+    void BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories);
 
     Entity CreateEntityImmediateInternal (ComponentFlags composition);
 
@@ -88,7 +85,8 @@ private:
 
     void RegisterJobInternal (Job * job);
 
-    void RunJobLists (ParallelJobLists & jobLists, Timestep dt);
+    void RunJobList (std::vector<JobNode*> & list, Timestep dt);
+    void RunJobTree (JobTree * tree, Timestep dt);
 };
 
 } // namespace ecs

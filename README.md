@@ -130,10 +130,13 @@ struct QueuedChange : ecs::Job {
 ```
 
 ## TODO
+- additional, more complicated job tree unit tests
+- inline everything
+- c++11 support?
 - Job ordering control
-- Job ordering optimization
 - Run component destructors
-- Add support for custom allocators
+- Hide implementation detail global functions in another namespace
+- Add support for custom allocators/use new instead of malloc
 
 ## License
 See [LICENSE](LICENSE)

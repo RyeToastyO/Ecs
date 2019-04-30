@@ -56,6 +56,14 @@ void Job::ApplyQueuedCommands () {
     m_commands.Apply(m_manager);
 }
 
+const ComponentFlags & Job::GetReadFlags () const {
+    return m_read;
+}
+
+const ComponentFlags & Job::GetWriteFlags () const {
+    return m_write;
+}
+
 template<typename T>
 bool Job::HasComponent (Entity entity) const {
     return m_manager->HasComponent<T>(entity);

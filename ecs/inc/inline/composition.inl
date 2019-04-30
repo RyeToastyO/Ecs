@@ -57,6 +57,11 @@ void ComponentFlags::ClearFlags () {
         ClearFlags<Args...>();
 }
 
+void ComponentFlags::ClearFlags (const ComponentFlags & rhs) {
+    for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i)
+        flags[i] &= ~rhs.flags[i];
+}
+
 void ComponentFlags::SetFlag (ComponentId id) {
     flags[id / COMPONENT_FLAG_DATA_BITS] |= static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS;
 }
@@ -66,6 +71,11 @@ void ComponentFlags::SetFlags () {
     SetFlag(GetComponentId<T>());
     if constexpr (sizeof...(Args) > 0)
         SetFlags<Args...>();
+}
+
+void ComponentFlags::SetFlags (const ComponentFlags & rhs) {
+    for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i)
+        flags[i] |= rhs.flags[i];
 }
 
 ComponentInfo ComponentFlags::GetComponentInfo () const {

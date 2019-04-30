@@ -48,10 +48,12 @@ struct ComponentFlags {
     void ClearFlag (ComponentId id);
     template<typename T, typename...Args>
     void ClearFlags ();
+    void ClearFlags (const ComponentFlags & flags);
 
     void SetFlag (ComponentId id);
     template<typename T, typename...Args>
     void SetFlags ();
+    void SetFlags (const ComponentFlags & flags);
 
     ComponentInfo GetComponentInfo () const;
     ComponentFlagIterator GetIterator () const;

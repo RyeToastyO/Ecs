@@ -107,6 +107,8 @@ Manager::~Manager () {
         delete job.second;
     for (auto & singleton : m_singletonComponents)
         delete singleton.second;
+    for (auto & updateGroup : m_updateGroups)
+        delete updateGroup.second;
     m_chunks.clear();
     m_manualJobs.clear();
     m_updateGroups.clear();
@@ -187,11 +189,9 @@ void Manager::NotifyChunkCreated (Chunk * chunk) {
     for (const auto & jobIter : m_manualJobs)
         jobIter.second->OnChunkAdded(chunk);
     for (const auto & groupIter : m_updateGroups) {
-        for (const auto & listIter : groupIter.second) {
-            for (auto job : listIter) {
-                job->OnChunkAdded(chunk);
-            }
-        }
+        ForEachNode(groupIter.second, [chunk](JobNode * node) {
+            node->job->OnChunkAdded(chunk);
+        });
     }
 }
 
@@ -223,75 +223,56 @@ void Manager::RunUpdateGroup (Timestep dt) {
 
     auto iter = m_updateGroups.find(GetUpdateGroupId<T>());
     if (iter == m_updateGroups.end()) {
-        BuildJobListsInternal(GetUpdateGroupId<T>(), GetUpdateGroupJobs<T>());
+        BuildJobTreeInternal(GetUpdateGroupId<T>(), GetUpdateGroupJobs<T>());
         iter = m_updateGroups.find(GetUpdateGroupId<T>());
     }
 
-    RunJobLists(iter->second, dt);
+    RunJobTree(iter->second, dt);
 }
 
-void Manager::RunJobLists (ParallelJobLists & lists, Timestep dt) {
-    for (auto & list : lists) {
-        m_runningTasks.push_back(std::async(std::launch::async, [list, dt]() {
-            for (auto job : list)
-                job->Run(dt);
+void Manager::RunJobList (std::vector<JobNode*> & list, Timestep dt) {
+    for (JobNode * node : list) {
+        m_runningTasks.push_back(std::async(std::launch::async, [node, dt]() {
+            // Run the assigned job
+            node->job->Run(dt);
+
+            // Just continue down our dependents if we only have one
+            std::vector<JobNode*> * deps = &(node->dependents);
+            while (deps->size() == 1) {
+                (*deps)[0]->job->Run(dt);
+                deps = &((*deps)[0]->dependents);
+            }
+
+            // Let the manager figure out what to do otherwise
+            return deps->size() == 0 ? nullptr : deps;
         }));
     }
-    for (auto & task : m_runningTasks)
-        task.wait();
-    m_runningTasks.clear();
-
-    for (auto & list : lists) {
-        for (auto job : list)
-            job->ApplyQueuedCommands();
-    }
 }
 
-void Manager::BuildJobListsInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
-    // TODO: Push in reverse order for now, we should actually be doing
-    // some sorting later, but this preserves the order well enough
-    // for testing at the moment
-    for (auto i = factories.size(); i > 0;) {
-        auto job = factories[--i]();
-        RegisterJobInternal(job);
-        m_scratchJobArray.push_back(job);
+void Manager::RunJobTree (JobTree * tree, Timestep dt) {
+    RunJobList(tree->topNodes, dt);
+
+    for (auto i = 0; i < m_runningTasks.size(); ++i) {
+        auto additionalTasks = m_runningTasks[i].get();
+        if (additionalTasks)
+            RunJobList(*additionalTasks, dt);
     }
 
-    ParallelJobLists lists;
-    while (m_scratchJobArray.size()) {
-        JobList list;
-        list.push_back(m_scratchJobArray.back());
-        m_scratchJobArray.pop_back();
+    m_runningTasks.clear();
 
-        for (auto i = 0; i < m_scratchJobArray.size();) {
-            Job * job = m_scratchJobArray[i];
+    ForEachNode(tree, [this](JobNode * node) {
+        node->job->ApplyQueuedCommands();
+    });
+}
 
-            bool matchesAny = false;
-            for (auto listJob : list) {
-                matchesAny = true;
-                if (listJob->m_read.HasAny(job->m_read))
-                    break;
-                if (listJob->m_read.HasAny(job->m_write))
-                    break;
-                if (listJob->m_write.HasAny(job->m_read))
-                    break;
-                if (listJob->m_write.HasAny(job->m_write))
-                    break;
-                matchesAny = false;
-            }
-            if (matchesAny) {
-                list.push_back(job);
-                m_scratchJobArray[i] = m_scratchJobArray.back();
-                m_scratchJobArray.pop_back();
-            }
-            else {
-                ++i;
-            }
-        }
-        lists.push_back(std::move(list));
-    }
+void Manager::BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
+    JobTree * tree = NewJobTree(factories);
 
-    m_updateGroups.emplace(id, std::move(lists));
+    ForEachNode(tree, [this](JobNode * node) {
+        RegisterJobInternal(node->job);
+    });
+
+    m_updateGroups.emplace(id, tree);
 }
 
 void Manager::RegisterJobInternal (Job * job) {

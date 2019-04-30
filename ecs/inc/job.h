@@ -23,11 +23,11 @@ typedef uint32_t JobId;
 
 // Job base class
 struct Job {
+    const ComponentFlags & GetReadFlags () const;
+    const ComponentFlags & GetWriteFlags () const;
+
     template<typename T>
     bool HasComponent (Entity entity) const;
-
-public:
-    virtual ~Job () {}
 
     template<typename T, typename...Args>
     void QueueAddComponents (Entity, T component, Args...args);
@@ -39,6 +39,9 @@ public:
 
     template<typename T, typename...Args>
     void QueueRemoveComponents (Entity entity);
+
+public:
+    virtual ~Job () {}
 
     virtual void Run (Timestep dt);
     virtual void ForEach (Timestep dt) { ECS_REF(dt); }
