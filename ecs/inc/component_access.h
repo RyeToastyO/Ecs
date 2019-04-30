@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../helpers/token_combine.h"
+#include "helpers/token_combine.h"
 
 namespace ecs {
 

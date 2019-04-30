@@ -6,7 +6,7 @@
 #pragma once
 
 #include "job.h"
-#include "../helpers/token_combine.h"
+#include "helpers/token_combine.h"
 
 #include <cstdint>
 #include <type_traits>

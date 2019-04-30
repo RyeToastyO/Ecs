@@ -8,7 +8,7 @@
 #include "chunk.h"
 #include "entity.h"
 #include "command_queue.h"
-#include "../helpers/ref.h"
+#include "helpers/ref.h"
 
 #include <cstdint>
 #include <type_traits>

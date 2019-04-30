@@ -95,15 +95,13 @@ inline JobTree * NewJobTree (const std::vector<JobFactory> & factories) {
                 depI.hardDeps.push_back(depJ.node->job);
                 depJ.hardDeps.push_back(depI.node->job);
             }
-            else {
-                if (writeI.HasAny(readJ)) {
-                    depI.inReadDeps.push_back(depJ.node->job);
-                    depJ.outReadDeps.push_back(depI.node->job);
-                }
-                if (writeJ.HasAny(readI)) {
-                    depJ.inReadDeps.push_back(depI.node->job);
-                    depI.outReadDeps.push_back(depJ.node->job);
-                }
+            else if (writeI.HasAny(readJ)) {
+                depI.inReadDeps.push_back(depJ.node->job);
+                depJ.outReadDeps.push_back(depI.node->job);
+            }
+            else if (writeJ.HasAny(readI)) {
+                depJ.inReadDeps.push_back(depI.node->job);
+                depI.outReadDeps.push_back(depJ.node->job);
             }
         }
     }

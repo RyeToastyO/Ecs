@@ -3,7 +3,7 @@
  * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
  */
 
-#include "../../helpers/hash.h"
+#include "../helpers/hash.h"
 
 namespace ecs {
 namespace impl {
