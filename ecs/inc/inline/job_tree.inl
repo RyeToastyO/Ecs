@@ -5,14 +5,14 @@
 
 namespace ecs {
 
-JobNode::~JobNode () {
+inline JobNode::~JobNode () {
     if (job) {
         delete job;
         job = nullptr;
     }
 }
 
-JobTree::~JobTree () {
+inline JobTree::~JobTree () {
     if (nodeMemory) {
         delete[] nodeMemory;
         nodeMemory = nullptr;
@@ -39,19 +39,19 @@ struct LowestNode {
 };
 
 template<typename T>
-void ForEachNode (JobNode * node, T func) {
+inline void ForEachNode (JobNode * node, T func) {
     func(node);
     for (auto dep : node->dependents)
         ForEachNode(dep, func);
 }
 
 template<typename T>
-void ForEachNode (JobTree * tree, T func) {
+inline void ForEachNode (JobTree * tree, T func) {
     for (auto node : tree->topNodes)
         ForEachNode(node, func);
 }
 
-void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results) {
+inline void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results) {
     if (results.depth < depth) {
         if (node->job->GetWriteFlags().HasAny(flags)) {
             results.node = node;
@@ -62,14 +62,14 @@ void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFl
         FindLowestSatisfyingNode(dependent, depth + 1, flags, results);
 }
 
-void AddToDependencyGroup (JobDependencyData * data, DependencyGroup * group) {
+inline void AddToDependencyGroup (JobDependencyData * data, DependencyGroup * group) {
     data->isGrouped = true;
     group->read.SetFlags(data->node->job->GetReadFlags());
     group->write.SetFlags(data->node->job->GetWriteFlags());
     group->jobs.push_back(data);
 }
 
-JobTree * NewJobTree (const std::vector<JobFactory> & factories) {
+inline JobTree * NewJobTree (const std::vector<JobFactory> & factories) {
     JobTree * tree = new JobTree();
     tree->nodeMemory = new JobNode[factories.size()];
 

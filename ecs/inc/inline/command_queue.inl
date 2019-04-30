@@ -7,35 +7,35 @@ namespace ecs {
 
 // QueuedComponentCollection
 template<typename T>
-void QueuedComponentCollection<T>::Apply (Entity entity, uint32_t index, Manager * mgr) {
+inline void QueuedComponentCollection<T>::Apply (Entity entity, uint32_t index, Manager * mgr) {
     mgr->AddComponents(entity, m_components[index]);
 }
 
 template<typename T>
-void QueuedComponentCollection<T>::Clear () {
+inline void QueuedComponentCollection<T>::Clear () {
     m_components.clear();
 }
 
 template<typename T>
-uint32_t QueuedComponentCollection<T>::Push (T && component) {
+inline uint32_t QueuedComponentCollection<T>::Push (T && component) {
     m_components.push_back(component);
     return (uint32_t)m_components.size() - 1;
 }
 
 template<typename T>
-void ComponentRemover<T>::Apply (Entity entity, Manager * mgr) {
+inline void ComponentRemover<T>::Apply (Entity entity, Manager * mgr) {
     mgr->RemoveComponents<T>(entity);
 }
 
 // CommandQueue
-CommandQueue::~CommandQueue () {
+inline CommandQueue::~CommandQueue () {
     for (auto & collection : m_queuedComponents)
         delete collection.second;
     for (auto & remover : m_componentRemovers)
         delete remover.second;
 }
 
-void CommandQueue::Apply (Manager * mgr) {
+inline void CommandQueue::Apply (Manager * mgr) {
     Entity createdEntity;
     for (const auto & command : m_commands) {
         switch (command.type) {
@@ -63,7 +63,7 @@ void CommandQueue::Apply (Manager * mgr) {
 }
 
 template<typename T, typename...Args>
-void CommandQueue::AddComponents (Entity entity, T component, Args...args) {
+inline void CommandQueue::AddComponents (Entity entity, T component, Args...args) {
     auto iter = m_queuedComponents.find(GetComponentId<T>());
     if (iter == m_queuedComponents.end()) {
         m_queuedComponents.emplace(GetComponentId<T>(), new QueuedComponentCollection<T>());
@@ -79,12 +79,11 @@ void CommandQueue::AddComponents (Entity entity, T component, Args...args) {
         collection->Push(std::move(component))
     });
 
-    if constexpr (sizeof...(Args) > 0)
-        AddComponents(entity, args...);
+    AddComponents(entity, args...);
 }
 
 template<typename T, typename...Args>
-void CommandQueue::CreateEntity (T component, Args...args) {
+inline void CommandQueue::CreateEntity (T component, Args...args) {
     m_commands.push_back(Command{
         ECommandType::CreateEntity,
         Entity{},
@@ -95,7 +94,7 @@ void CommandQueue::CreateEntity (T component, Args...args) {
     AddComponents(Entity{}, component, args...);
 }
 
-void CommandQueue::DestroyEntity (Entity entity) {
+inline void CommandQueue::DestroyEntity (Entity entity) {
     m_commands.push_back(Command{
         ECommandType::DestroyEntity,
         entity,
@@ -105,7 +104,7 @@ void CommandQueue::DestroyEntity (Entity entity) {
 }
 
 template<typename T, typename...Args>
-void CommandQueue::RemoveComponents (Entity entity) {
+inline void CommandQueue::RemoveComponents (Entity entity) {
     auto iter = m_componentRemovers.find(GetComponentId<T>());
     if (iter == m_componentRemovers.end())
         m_componentRemovers.emplace(GetComponentId<T>(), new ComponentRemover<T>());
@@ -116,8 +115,8 @@ void CommandQueue::RemoveComponents (Entity entity) {
         GetComponentId<T>(),
         0   // ComponentIndex
     });
-    if constexpr (sizeof...(Args) > 0)
-        RemoveComponents<Args...>(entity);
+
+    RemoveComponents<Args...>(entity);
 }
 
 } // namespace ecs

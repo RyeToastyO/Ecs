@@ -12,7 +12,7 @@ struct UpdateGroupRegistry {
     static UpdateGroupId RegisterUpdateGroup ();
 };
 
-UpdateGroupId UpdateGroupRegistry::RegisterUpdateGroup () {
+inline UpdateGroupId UpdateGroupRegistry::RegisterUpdateGroup () {
     static UpdateGroupId s_idCounter = 0;
     return s_idCounter++;
 }
@@ -23,26 +23,26 @@ struct UpdateGroupIdGetter {
 };
 
 template<typename T>
-UpdateGroupId UpdateGroupIdGetter<T>::GetId () {
+inline UpdateGroupId UpdateGroupIdGetter<T>::GetId () {
     static UpdateGroupId id = UpdateGroupRegistry::RegisterUpdateGroup();
     return id;
 }
 
 template<typename T>
-UpdateGroupId GetUpdateGroupId () {
+inline UpdateGroupId GetUpdateGroupId () {
     static_assert(std::is_base_of<IUpdateGroup, T>::value, "Must inherit UpdateGroup to use GetUpdateGroupId");
     return UpdateGroupIdGetter<typename std::remove_const<T>::type>::GetId();
 }
 
 // Job Registration
 template<typename T>
-std::vector<JobFactory> & GetUpdateGroupJobs () {
+inline std::vector<JobFactory> & GetUpdateGroupJobs () {
     static std::vector<JobFactory> s_jobs;
     return s_jobs;
 }
 
 template<typename TJob, typename TUpdateGroup>
-UpdateGroupId RegisterJobForUpdateGroup () {
+inline UpdateGroupId RegisterJobForUpdateGroup () {
     static_assert(std::is_base_of<Job, TJob>::value, "Must inherit Job");
     static_assert(std::is_base_of<IUpdateGroup, TUpdateGroup>::value, "Must inherit IUpdateGroup");
 

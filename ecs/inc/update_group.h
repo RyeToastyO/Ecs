@@ -19,10 +19,10 @@ struct IUpdateGroup {
     virtual ~IUpdateGroup () {}
 };
 
-#define ECS_REGISTER_JOB_FOR_UPDATE_GROUP(job, updateGroup)                                                         \
-static_assert(std::is_base_of<Job, job>::value, #job " does not inherit Job");                                      \
-static_assert(std::is_base_of<IUpdateGroup, updateGroup>::value, #updateGroup " does not inherit IUpdateGroup");    \
-UpdateGroupId ECS_TOKEN_COMBINE(s_##job##updateGroup, __LINE__) = RegisterJobForUpdateGroup<job, updateGroup>();
+#define ECS_REGISTER_JOB_FOR_UPDATE_GROUP(job, updateGroup)                                                             \
+static_assert(std::is_base_of<::ecs::Job, job>::value, #job " does not inherit Job");                                   \
+static_assert(std::is_base_of<::ecs::IUpdateGroup, updateGroup>::value, #updateGroup " does not inherit IUpdateGroup"); \
+::ecs::UpdateGroupId ECS_TOKEN_COMBINE(s_##job##updateGroup, __LINE__) = ::ecs::RegisterJobForUpdateGroup<job, updateGroup>();
 
 // Registration
 typedef Job* (*JobFactory)();
@@ -32,5 +32,8 @@ UpdateGroupId GetUpdateGroupId ();
 
 template<typename T>
 std::vector<JobFactory> & GetUpdateGroupJobs ();
+
+template<typename TJob, typename TUpdateGroup>
+UpdateGroupId RegisterJobForUpdateGroup ();
 
 } // namespace ecs

@@ -8,7 +8,7 @@
 namespace ecs {
 
 // ComponentFlagIterator
-ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags & flags)
+inline ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags & flags)
     : m_flags(flags)
     , m_current(0)
 {
@@ -16,69 +16,67 @@ ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags & flags)
         ++(*this);
 }
 
-ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags & flags, ComponentId id)
+inline ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags & flags, ComponentId id)
     : m_flags(flags)
     , m_current(id)
 {
 }
 
-bool ComponentFlagIterator::operator!= (const ComponentFlagIterator & rhs) const {
+inline bool ComponentFlagIterator::operator!= (const ComponentFlagIterator & rhs) const {
     return m_current != rhs.m_current;
 }
-ComponentFlagIterator & ComponentFlagIterator::operator++ () {
+inline ComponentFlagIterator & ComponentFlagIterator::operator++ () {
     while (++m_current < ECS_MAX_COMPONENTS && !m_flags.Has(m_current));
     return *this;
 }
-const ComponentId & ComponentFlagIterator::operator* () const {
+inline const ComponentId & ComponentFlagIterator::operator* () const {
     return m_current;
 }
 
-ComponentFlagIterator ComponentFlagIterator::begin () const { return *this; }
-ComponentFlagIterator ComponentFlagIterator::end () const { return ComponentFlagIterator(m_flags, ECS_MAX_COMPONENTS); }
+inline ComponentFlagIterator ComponentFlagIterator::begin () const { return *this; }
+inline ComponentFlagIterator ComponentFlagIterator::end () const { return ComponentFlagIterator(m_flags, ECS_MAX_COMPONENTS); }
 
 
 // ComponentFlags
-ComponentFlags::ComponentFlags () {
+inline ComponentFlags::ComponentFlags () {
     Clear();
 }
 
-void ComponentFlags::Clear () {
+inline void ComponentFlags::Clear () {
     memset(flags, 0, COMPONENT_FLAG_DATA_COUNT * sizeof(ComponentFlagDataType));
 }
 
-void ComponentFlags::ClearFlag (ComponentId id) {
+inline void ComponentFlags::ClearFlag (ComponentId id) {
     flags[id / COMPONENT_FLAG_DATA_BITS] &= ~(static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS);
 }
 
 template<typename T, typename...Args>
-void ComponentFlags::ClearFlags () {
+inline void ComponentFlags::ClearFlags () {
     ClearFlag(GetComponentId<T>());
-    if constexpr (sizeof...(Args) > 0)
-        ClearFlags<Args...>();
+    ClearFlags<Args...>();
 }
 
-void ComponentFlags::ClearFlags (const ComponentFlags & rhs) {
+inline void ComponentFlags::ClearFlags (const ComponentFlags & rhs) {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i)
         flags[i] &= ~rhs.flags[i];
 }
 
-void ComponentFlags::SetFlag (ComponentId id) {
+inline void ComponentFlags::SetFlag (ComponentId id) {
     flags[id / COMPONENT_FLAG_DATA_BITS] |= static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS;
 }
 
 template<typename T, typename...Args>
-void ComponentFlags::SetFlags () {
+inline void ComponentFlags::SetFlags () {
     SetFlag(GetComponentId<T>());
-    if constexpr (sizeof...(Args) > 0)
-        SetFlags<Args...>();
+    SetFlags<Args...>();
 }
 
-void ComponentFlags::SetFlags (const ComponentFlags & rhs) {
+inline void ComponentFlags::SetFlags (const ComponentFlags & rhs) {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i)
         flags[i] |= rhs.flags[i];
 }
 
-ComponentInfo ComponentFlags::GetComponentInfo () const {
+inline ComponentInfo ComponentFlags::GetComponentInfo () const {
     ComponentInfo ret;
     auto iter = GetIterator();
     for (const auto & compId : iter) {
@@ -90,18 +88,18 @@ ComponentInfo ComponentFlags::GetComponentInfo () const {
     return ret;
 }
 
-size_t ComponentFlags::GetHash () const {
+inline size_t ComponentFlags::GetHash () const {
     size_t hash = 0;
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i)
         HashCombine(hash, flags[i]);
     return hash;
 }
 
-ComponentFlagIterator ComponentFlags::GetIterator () const {
+inline ComponentFlagIterator ComponentFlags::GetIterator () const {
     return ComponentFlagIterator(*this);
 }
 
-bool ComponentFlags::HasAll (const ComponentFlags & rhs) const {
+inline bool ComponentFlags::HasAll (const ComponentFlags & rhs) const {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i) {
         if ((flags[i] & rhs.flags[i]) != rhs.flags[i])
             return false;
@@ -109,7 +107,7 @@ bool ComponentFlags::HasAll (const ComponentFlags & rhs) const {
     return true;
 }
 
-bool ComponentFlags::HasAny (const ComponentFlags & rhs) const {
+inline bool ComponentFlags::HasAny (const ComponentFlags & rhs) const {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i) {
         if (flags[i] & rhs.flags[i])
             return true;
@@ -117,15 +115,15 @@ bool ComponentFlags::HasAny (const ComponentFlags & rhs) const {
     return false;
 }
 
-bool ComponentFlags::HasNone (const ComponentFlags & rhs) const {
+inline bool ComponentFlags::HasNone (const ComponentFlags & rhs) const {
     return !HasAny(rhs);
 }
 
-bool ComponentFlags::Has (ComponentId id) const {
+inline bool ComponentFlags::Has (ComponentId id) const {
     return !!(flags[id / COMPONENT_FLAG_DATA_BITS] & static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS);
 }
 
-bool ComponentFlags::operator== (const ComponentFlags & rhs) const {
+inline bool ComponentFlags::operator== (const ComponentFlags & rhs) const {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i) {
         if (flags[i] != rhs.flags[i])
             return false;

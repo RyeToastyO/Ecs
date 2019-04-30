@@ -8,74 +8,74 @@
 namespace ecs {
 
 // Job
-void Job::AddExclude (IComponentAccess * access) {
+inline void Job::AddExclude (IComponentAccess * access) {
     access->ApplyTo(m_exclude);
 }
 
-void Job::AddRead (IComponentAccess * access) {
+inline void Job::AddRead (IComponentAccess * access) {
     access->ApplyTo(m_read);
     access->ApplyTo(m_required);
     m_dataAccess.push_back(access);
 }
 
-void Job::AddReadOther (IComponentAccess * access) {
+inline void Job::AddReadOther (IComponentAccess * access) {
     access->ApplyTo(m_read);
 }
 
-void Job::AddReadSingleton (IComponentAccess * access) {
+inline void Job::AddReadSingleton (IComponentAccess * access) {
     access->ApplyTo(m_read);
     m_singletonAccess.push_back(access);
 }
 
-void Job::AddRequire (IComponentAccess * access) {
+inline void Job::AddRequire (IComponentAccess * access) {
     access->ApplyTo(m_required);
 }
 
-void Job::AddRequireAny (IComponentAccess * access) {
+inline void Job::AddRequireAny (IComponentAccess * access) {
     ComponentFlags any;
     access->ApplyTo(any);
     m_requireAny.push_back(any);
 }
 
-void Job::AddWrite (IComponentAccess * access) {
+inline void Job::AddWrite (IComponentAccess * access) {
     access->ApplyTo(m_write);
     access->ApplyTo(m_required);
     m_dataAccess.push_back(access);
 }
 
-void Job::AddWriteOther (IComponentAccess * access) {
+inline void Job::AddWriteOther (IComponentAccess * access) {
     access->ApplyTo(m_write);
 }
 
-void Job::AddWriteSingleton (IComponentAccess * access) {
+inline void Job::AddWriteSingleton (IComponentAccess * access) {
     access->ApplyTo(m_write);
     m_singletonAccess.push_back(access);
 }
 
-void Job::ApplyQueuedCommands () {
+inline void Job::ApplyQueuedCommands () {
     m_commands.Apply(m_manager);
 }
 
-const ComponentFlags & Job::GetReadFlags () const {
+inline const ComponentFlags & Job::GetReadFlags () const {
     return m_read;
 }
 
-const ComponentFlags & Job::GetWriteFlags () const {
+inline const ComponentFlags & Job::GetWriteFlags () const {
     return m_write;
 }
 
 template<typename T>
-bool Job::HasComponent (Entity entity) const {
+inline bool Job::HasComponent (Entity entity) const {
     return m_manager->HasComponent<T>(entity);
 }
 
-void Job::OnChunkAdded (Chunk * chunk) {
+inline void Job::OnChunkAdded (Chunk * chunk) {
     if (!IsValid(chunk))
         return;
     m_chunks.push_back(chunk);
 }
 
-void Job::OnRegistered (Manager * manager) {
+inline void Job::OnRegistered (Manager * manager) {
     m_manager = manager;
     m_chunks.clear();
 
@@ -83,7 +83,7 @@ void Job::OnRegistered (Manager * manager) {
         singletonAccess->UpdateManager();
 }
 
-bool Job::IsValid (const Chunk * chunk) const {
+inline bool Job::IsValid (const Chunk * chunk) const {
     const auto & composition = chunk->GetComposition();
     if (!composition.HasAll(m_required))
         return false;
@@ -96,7 +96,7 @@ bool Job::IsValid (const Chunk * chunk) const {
     return true;
 }
 
-void Job::Run (Timestep dt) {
+inline void Job::Run (Timestep dt) {
     for (auto chunk : m_chunks) {
         for (auto dataAccess : m_dataAccess)
             dataAccess->UpdateChunk(chunk);
@@ -106,21 +106,21 @@ void Job::Run (Timestep dt) {
 }
 
 template<typename T, typename...Args>
-void Job::QueueAddComponents (Entity entity, T component, Args...args) {
+inline void Job::QueueAddComponents (Entity entity, T component, Args...args) {
     m_commands.AddComponents(entity, component, args...);
 }
 
 template<typename T, typename...Args>
-void Job::QueueCreateEntity (T component, Args...args) {
+inline void Job::QueueCreateEntity (T component, Args...args) {
     m_commands.CreateEntity(component, args...);
 }
 
-void Job::QueueDestroyEntity (Entity entity) {
+inline void Job::QueueDestroyEntity (Entity entity) {
     m_commands.DestroyEntity(entity);
 }
 
 template<typename T, typename...Args>
-void Job::QueueRemoveComponents (Entity entity) {
+inline void Job::QueueRemoveComponents (Entity entity) {
     m_commands.RemoveComponents<T, Args...>(entity);
 }
 
@@ -129,7 +129,7 @@ struct JobRegistry {
     static JobId RegisterJob ();
 };
 
-JobId JobRegistry::RegisterJob () {
+inline JobId JobRegistry::RegisterJob () {
     static JobId s_idCounter = 0;
     return s_idCounter++;
 }
@@ -140,13 +140,13 @@ struct JobIdGetter {
 };
 
 template<typename T>
-JobId JobIdGetter<T>::GetId () {
+inline JobId JobIdGetter<T>::GetId () {
     static JobId id = JobRegistry::RegisterJob();
     return id;
 }
 
 template<typename T>
-static JobId GetJobId () {
+inline static JobId GetJobId () {
     static_assert(std::is_base_of<Job, T>::value, "Must inherit Job to use GetJobId");
     return JobIdGetter<typename std::remove_const<T>::type>::GetId();
 }

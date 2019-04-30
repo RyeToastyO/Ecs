@@ -9,7 +9,7 @@
 namespace ecs {
 
 template<typename T>
-T * Chunk::Find () {
+inline T * Chunk::Find () {
     // Give a valid pointer if a tag component is requested, but don't
     // bother looking it up in the component arrays since we didn't allocate memory for it
     if (std::is_empty<T>())
@@ -22,7 +22,7 @@ T * Chunk::Find () {
 }
 
 template<typename T>
-T * Chunk::Find (uint32_t index) {
+inline T * Chunk::Find (uint32_t index) {
     if (index >= m_count)
         return nullptr;
 
@@ -30,18 +30,18 @@ T * Chunk::Find (uint32_t index) {
     return arrayStart ? arrayStart + index : nullptr;
 }
 
-Chunk::Chunk (const ComponentFlags & composition)
+inline Chunk::Chunk (const ComponentFlags & composition)
     : m_composition(composition)
     , m_componentInfo(composition.GetComponentInfo())
 {
     AllocateComponentArrays(kDefaultChunkSize);
 }
 
-Chunk::~Chunk () {
+inline Chunk::~Chunk () {
     Clear();
 }
 
-void Chunk::AllocateComponentArrays (uint32_t capacity) {
+inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
     Clear();
 
     // Allocate all memory for this chunk as one allocation
@@ -64,7 +64,7 @@ void Chunk::AllocateComponentArrays (uint32_t capacity) {
     }
 }
 
-void Chunk::Resize (uint32_t capacity) {
+inline void Chunk::Resize (uint32_t capacity) {
     byte_t * newMemory = new byte_t[m_componentInfo.TotalSize * capacity];
     m_capacity = capacity;
 
@@ -83,13 +83,13 @@ void Chunk::Resize (uint32_t capacity) {
     m_componentMemory = newMemory;
 }
 
-uint32_t Chunk::AllocateEntity () {
+inline uint32_t Chunk::AllocateEntity () {
     if (m_count == m_capacity)
         Resize(m_capacity * kGrowthFactor);
     return m_count++;
 }
 
-void Chunk::Clear () {
+inline void Chunk::Clear () {
     m_count = 0;
     m_capacity = 0;
 
@@ -100,19 +100,19 @@ void Chunk::Clear () {
     m_componentArrays.clear();
 }
 
-uint32_t Chunk::GetCapacity () const {
+inline uint32_t Chunk::GetCapacity () const {
     return m_capacity;
 }
 
-const ComponentFlags & Chunk::GetComposition () const {
+inline const ComponentFlags & Chunk::GetComposition () const {
     return m_composition;
 }
 
-uint32_t Chunk::GetCount () const {
+inline uint32_t Chunk::GetCount () const {
     return m_count;
 }
 
-uint32_t Chunk::MoveTo (uint32_t from, Chunk & to) {
+inline uint32_t Chunk::MoveTo (uint32_t from, Chunk & to) {
     // Make space in the chunk we are moving to
     auto newIndex = to.AllocateEntity();
 
@@ -133,7 +133,7 @@ uint32_t Chunk::MoveTo (uint32_t from, Chunk & to) {
     return newIndex;
 }
 
-void Chunk::RemoveEntity (uint32_t index) {
+inline void Chunk::RemoveEntity (uint32_t index) {
     if (index >= m_count)
         return;
 
@@ -141,7 +141,7 @@ void Chunk::RemoveEntity (uint32_t index) {
     CopyTo(--m_count, index);
 }
 
-void Chunk::CopyTo (uint32_t from, uint32_t to) {
+inline void Chunk::CopyTo (uint32_t from, uint32_t to) {
     if (from == to)
         return;
 

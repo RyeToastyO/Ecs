@@ -6,7 +6,7 @@
 namespace ecs {
 
 template<typename T, typename...Args>
-void Manager::AddComponents (Entity entity, T component, Args...args) {
+inline void Manager::AddComponents (Entity entity, T component, Args...args) {
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not add Entity as a component");
 
     if (!Exists(entity))
@@ -21,7 +21,7 @@ void Manager::AddComponents (Entity entity, T component, Args...args) {
 }
 
 template<typename T, typename...Args>
-Entity Manager::CreateEntityImmediate (T component, Args...args) {
+inline Entity Manager::CreateEntityImmediate (T component, Args...args) {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be added to entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not add Entity as a component");
 
@@ -39,7 +39,7 @@ Entity Manager::CreateEntityImmediate (T component, Args...args) {
 }
 
 template<typename T>
-T * Manager::GetSingletonComponent () {
+inline T * Manager::GetSingletonComponent () {
     static_assert(std::is_base_of<ISingletonComponent, T>::value, "GetSingletonComponent<T> must inherit ISingletonComponent");
     static_assert(!std::is_empty<T>(), "Singleton components must have data, they always exist so they can't be used as tags");
 
@@ -53,7 +53,7 @@ T * Manager::GetSingletonComponent () {
 }
 
 template<typename T>
-bool Manager::HasComponent (Entity entity) const {
+inline bool Manager::HasComponent (Entity entity) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Yes, it does. Use Exists to check for deletion");
 
@@ -64,7 +64,7 @@ bool Manager::HasComponent (Entity entity) const {
 }
 
 template<typename T>
-T * Manager::FindComponent (Entity entity) const {
+inline T * Manager::FindComponent (Entity entity) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Why are you finding an Entity with that Entity?");
 
@@ -75,7 +75,7 @@ T * Manager::FindComponent (Entity entity) const {
 }
 
 template<typename T, typename...Args>
-void Manager::RemoveComponents (Entity entity) {
+inline void Manager::RemoveComponents (Entity entity) {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not remove Entity as a component");
 
@@ -90,17 +90,16 @@ void Manager::RemoveComponents (Entity entity) {
 }
 
 template<typename T, typename...Args>
-void Manager::SetComponentsInternal (const EntityData & entity, T component, Args...args) const {
+inline void Manager::SetComponentsInternal (const EntityData & entity, T component, Args...args) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be set on entities");
     *(entity.chunk->Find<T>(entity.chunkIndex)) = component;
-    if constexpr (sizeof...(Args) > 0)
-        SetComponentsInternal(entity, args...);
+    SetComponentsInternal(entity, args...);
 }
 
-Manager::Manager () {
+inline Manager::Manager () {
 }
 
-Manager::~Manager () {
+inline Manager::~Manager () {
     for (auto & chunk : m_chunks)
         delete chunk.second;
     for (auto & job : m_manualJobs)
@@ -115,17 +114,17 @@ Manager::~Manager () {
     m_singletonComponents.clear();
 }
 
-bool Manager::Exists (Entity entity) const {
+inline bool Manager::Exists (Entity entity) const {
     if (!entity.generation || m_entityData.size() <= entity.index)
         return false;
     return m_entityData[entity.index].generation == entity.generation;
 }
 
-Entity Manager::CreateEntityImmediate () {
+inline Entity Manager::CreateEntityImmediate () {
     return CreateEntityImmediateInternal(ComponentFlags());
 }
 
-Entity Manager::CreateEntityImmediateInternal (ComponentFlags composition) {
+inline Entity Manager::CreateEntityImmediateInternal (ComponentFlags composition) {
     // All entities have their entity handle added as a component
     // This is so that jobs can have the entity array easily passed along
     // using the same APIs as components
@@ -158,7 +157,7 @@ Entity Manager::CreateEntityImmediateInternal (ComponentFlags composition) {
     return entity;
 }
 
-void Manager::DestroyImmediate (Entity entity) {
+inline void Manager::DestroyImmediate (Entity entity) {
     if (!Exists(entity))
         return;
     const auto & data = m_entityData[entity.index];
@@ -175,7 +174,7 @@ void Manager::DestroyImmediate (Entity entity) {
         m_freeList.push_back(entity.index);
 }
 
-Chunk * Manager::GetOrCreateChunk (const ComponentFlags & composition) {
+inline Chunk * Manager::GetOrCreateChunk (const ComponentFlags & composition) {
     auto chunkIter = m_chunks.find(composition);
     if (chunkIter == m_chunks.end()) {
         m_chunks.emplace(composition, new Chunk(composition));
@@ -185,7 +184,7 @@ Chunk * Manager::GetOrCreateChunk (const ComponentFlags & composition) {
     return chunkIter->second;
 }
 
-void Manager::NotifyChunkCreated (Chunk * chunk) {
+inline void Manager::NotifyChunkCreated (Chunk * chunk) {
     for (const auto & jobIter : m_manualJobs)
         jobIter.second->OnChunkAdded(chunk);
     for (const auto & groupIter : m_updateGroups) {
@@ -196,7 +195,7 @@ void Manager::NotifyChunkCreated (Chunk * chunk) {
 }
 
 template<typename T>
-void Manager::RunJob (Timestep dt) {
+inline void Manager::RunJob (Timestep dt) {
     static_assert(std::is_base_of<Job, T>::value, "Must inherit from Job");
 
     Job * job = nullptr;
@@ -218,7 +217,7 @@ void Manager::RunJob (Timestep dt) {
 }
 
 template<typename T>
-void Manager::RunUpdateGroup (Timestep dt) {
+inline void Manager::RunUpdateGroup (Timestep dt) {
     static_assert(std::is_base_of<IUpdateGroup, T>::value, "Must inherit from IUpdateGroup");
 
     auto iter = m_updateGroups.find(GetUpdateGroupId<T>());
@@ -230,7 +229,7 @@ void Manager::RunUpdateGroup (Timestep dt) {
     RunJobTree(iter->second, dt);
 }
 
-void Manager::RunJobList (std::vector<JobNode*> & list, Timestep dt) {
+inline void Manager::RunJobList (std::vector<JobNode*> & list, Timestep dt) {
     for (JobNode * node : list) {
         m_runningTasks.push_back(std::async(std::launch::async, [node, dt]() {
             // Run the assigned job
@@ -249,7 +248,7 @@ void Manager::RunJobList (std::vector<JobNode*> & list, Timestep dt) {
     }
 }
 
-void Manager::RunJobTree (JobTree * tree, Timestep dt) {
+inline void Manager::RunJobTree (JobTree * tree, Timestep dt) {
     RunJobList(tree->topNodes, dt);
 
     for (auto i = 0; i < m_runningTasks.size(); ++i) {
@@ -265,7 +264,7 @@ void Manager::RunJobTree (JobTree * tree, Timestep dt) {
     });
 }
 
-void Manager::BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
+inline void Manager::BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
     JobTree * tree = NewJobTree(factories);
 
     ForEachNode(tree, [this](JobNode * node) {
@@ -275,13 +274,13 @@ void Manager::BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & 
     m_updateGroups.emplace(id, tree);
 }
 
-void Manager::RegisterJobInternal (Job * job) {
+inline void Manager::RegisterJobInternal (Job * job) {
     job->OnRegistered(this);
     for (auto & chunk : m_chunks)
         job->OnChunkAdded(chunk.second);
 }
 
-void Manager::SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition) {
+inline void Manager::SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition) {
     auto chunk = GetOrCreateChunk(composition);
     if (chunk == entityData.chunk)
         return;

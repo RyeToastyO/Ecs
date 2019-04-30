@@ -46,11 +46,15 @@ struct ComponentFlags {
     void Clear ();
 
     void ClearFlag (ComponentId id);
+    template<typename...Args>
+    typename std::enable_if<(sizeof...(Args) == 0)>::type ClearFlags () {};
     template<typename T, typename...Args>
     void ClearFlags ();
     void ClearFlags (const ComponentFlags & flags);
 
     void SetFlag (ComponentId id);
+    template<typename...Args>
+    typename std::enable_if<(sizeof...(Args) == 0)>::type SetFlags () {};
     template<typename T, typename...Args>
     void SetFlags ();
     void SetFlags (const ComponentFlags & flags);

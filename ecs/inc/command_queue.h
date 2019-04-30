@@ -58,6 +58,8 @@ struct CommandQueue {
 
     void Apply (Manager * mgr);
 
+    template<typename...Args>
+    typename std::enable_if<(sizeof...(Args) == 0)>::type AddComponents (Entity, Args...) {}
     template<typename T, typename...Args>
     void AddComponents (Entity entity, T component, Args...args);
 
@@ -66,6 +68,8 @@ struct CommandQueue {
 
     void DestroyEntity (Entity entity);
 
+    template<typename...Args>
+    typename std::enable_if<(sizeof...(Args) == 0)>::type RemoveComponents (Entity) {}
     template<typename T, typename...Args>
     void RemoveComponents (Entity entity);
 
