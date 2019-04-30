@@ -6,7 +6,6 @@
 #include "../composition.h"
 
 namespace ecs {
-
 namespace impl {
 
 // Component Access
@@ -45,13 +44,11 @@ struct LookupComponentAccess : public IComponentAccess {
     inline void ApplyTo (ComponentFlags & flags) override { flags.SetFlags<T>(); }
 };
 
-} // namespace impl
-
 template<typename T>
-struct SingletonComponentAccess : public impl::IComponentAccess {
+struct SingletonComponentAccess : public IComponentAccess {
     static_assert(std::is_base_of<ISingletonComponent, T>::value, "Can only access components that inherit ISingletonComponent");
-    inline SingletonComponentAccess (Job & job) : impl::IComponentAccess(job) {}
-    inline void ApplyTo (impl::ComponentFlags & flags) override { flags.SetFlags<T>(); }
+    inline SingletonComponentAccess (Job & job) : IComponentAccess(job) {}
+    inline void ApplyTo (ComponentFlags & flags) override { flags.SetFlags<T>(); }
     inline void UpdateManager () override { m_singletonComponent = this->m_job.m_manager->template GetSingletonComponent<T>(); }
 protected:
     T * m_singletonComponent = nullptr;
@@ -59,22 +56,22 @@ protected:
 
 // Actual component access
 template<typename T, typename...Args>
-struct Exclude : public impl::CompositionAccess<T, Args...> {
-    inline Exclude (Job & job) : impl::CompositionAccess<T, Args...>(job) { OnCreate(); }
+struct Exclude : public CompositionAccess<T, Args...> {
+    inline Exclude (Job & job) : CompositionAccess<T, Args...>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddExclude(this); }
 };
 
 template<typename T>
-struct Read : public impl::DataComponentAccess<T> {
-    inline Read (Job & job) : impl::DataComponentAccess<T>(job) { OnCreate(); }
+struct Read : public DataComponentAccess<T> {
+    inline Read (Job & job) : DataComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddRead(this); }
     inline const T & operator* () const { return this->m_componentArray[this->m_job.m_currentIndex]; }
     inline const T * operator-> () const { return this->m_componentArray + this->m_job.m_currentIndex; }
 };
 
 template<typename T>
-struct ReadOther : public impl::LookupComponentAccess<T> {
-    inline ReadOther (Job & job) : impl::LookupComponentAccess<T>(job) { OnCreate(); }
+struct ReadOther : public LookupComponentAccess<T> {
+    inline ReadOther (Job & job) : LookupComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddReadOther(this); }
     inline const T * operator[] (Entity entity) const { return this->m_job.m_manager->FindComponent<T>(entity); }
 };
@@ -88,28 +85,28 @@ struct ReadSingleton : public SingletonComponentAccess<T> {
 };
 
 template<typename T, typename...Args>
-struct Require : public impl::CompositionAccess<T, Args...> {
-    inline Require (Job & job) : impl::CompositionAccess<T, Args...>(job) { OnCreate(); }
+struct Require : public CompositionAccess<T, Args...> {
+    inline Require (Job & job) : CompositionAccess<T, Args...>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddRequire(this); }
 };
 
 template<typename T, typename...Args>
-struct RequireAny : public impl::CompositionAccess<T, Args...> {
-    inline RequireAny (Job & job) : impl::CompositionAccess<T, Args...>(job) { OnCreate(); }
+struct RequireAny : public CompositionAccess<T, Args...> {
+    inline RequireAny (Job & job) : CompositionAccess<T, Args...>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddRequireAny(this); }
 };
 
 template<typename T>
-struct Write : public impl::DataComponentAccess<T> {
-    inline Write (Job & job) : impl::DataComponentAccess<T>(job) { OnCreate(); }
+struct Write : public DataComponentAccess<T> {
+    inline Write (Job & job) : DataComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddWrite(this); }
     inline T & operator* () const { return this->m_componentArray[this->m_job.m_currentIndex]; }
     inline T * operator-> () const { return this->m_componentArray + this->m_job.m_currentIndex; }
 };
 
 template<typename T>
-struct WriteOther : public impl::LookupComponentAccess<T> {
-    inline WriteOther (Job & job) : impl::LookupComponentAccess<T>(job) { OnCreate(); }
+struct WriteOther : public LookupComponentAccess<T> {
+    inline WriteOther (Job & job) : LookupComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddWriteOther(this); }
     inline T * operator[] (Entity entity) const { return this->m_job.m_manager->FindComponent<T>(entity); }
 };
@@ -122,4 +119,5 @@ struct WriteSingleton : public SingletonComponentAccess<T> {
     inline T * operator-> () const { return this->m_singletonComponent; }
 };
 
-}
+} // namespace impl
+} // namespace ecs

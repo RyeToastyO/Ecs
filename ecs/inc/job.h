@@ -19,8 +19,21 @@ namespace ecs {
 class Manager;
 
 namespace impl {
-struct IComponentAccess;
+
 typedef uint32_t JobId;
+
+struct IComponentAccess;
+template<typename T> struct SingletonComponentAccess;
+template<typename T, typename...Args> struct Exclude;
+template<typename T> struct Read;
+template<typename T> struct ReadOther;
+template<typename T> struct ReadSingleton;
+template<typename T, typename...Args> struct Require;
+template<typename T, typename...Args> struct RequireAny;
+template<typename T> struct Write;
+template<typename T> struct WriteOther;
+template<typename T> struct WriteSingleton;
+
 } // namespace impl
 
 // Job base class
@@ -76,24 +89,24 @@ private:
     void OnRegistered (Manager * manager);
 
 private:
-    template<typename T, typename...Args> friend struct Exclude;
+    template<typename T, typename...Args> friend struct impl::Exclude;
     void AddExclude (impl::IComponentAccess * access);
-    template<typename T> friend struct Read;
+    template<typename T> friend struct impl::Read;
     void AddRead (impl::IComponentAccess * access);
-    template<typename T> friend struct ReadOther;
+    template<typename T> friend struct impl::ReadOther;
     void AddReadOther (impl::IComponentAccess * access);
-    template<typename T> friend struct SingletonComponentAccess;
-    template<typename T> friend struct ReadSingleton;
+    template<typename T> friend struct impl::SingletonComponentAccess;
+    template<typename T> friend struct impl::ReadSingleton;
     void AddReadSingleton (impl::IComponentAccess * access);
-    template<typename T, typename...Args> friend struct Require;
+    template<typename T, typename...Args> friend struct impl::Require;
     void AddRequire (impl::IComponentAccess * access);
-    template<typename T, typename...Args> friend struct RequireAny;
+    template<typename T, typename...Args> friend struct impl::RequireAny;
     void AddRequireAny (impl::IComponentAccess * access);
-    template<typename T> friend struct Write;
+    template<typename T> friend struct impl::Write;
     void AddWrite (impl::IComponentAccess * access);
-    template<typename T> friend struct WriteOther;
+    template<typename T> friend struct impl::WriteOther;
     void AddWriteOther (impl::IComponentAccess * access);
-    template<typename T> friend struct WriteSingleton;
+    template<typename T> friend struct impl::WriteSingleton;
     void AddWriteSingleton (impl::IComponentAccess * access);
 };
 
