@@ -7,7 +7,10 @@
 
 #include <functional>
 
-inline void HashCombine (size_t & /* seed */) { }
+namespace ecs {
+namespace impl {
+
+inline void HashCombine (size_t & /* seed */) {}
 
 template <typename T, typename... Rest>
 inline void HashCombine (size_t & seed, const T & v, Rest... rest) {
@@ -15,3 +18,6 @@ inline void HashCombine (size_t & seed, const T & v, Rest... rest) {
     seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     HashCombine(seed, rest...);
 }
+
+} // namespace impl
+} // namespace ecs

@@ -15,6 +15,8 @@ namespace ecs {
 
 class Manager;
 
+namespace impl {
+
 struct IComponentRemover {
     virtual void Apply (Entity entity, Manager * mgr) = 0;
 };
@@ -80,4 +82,5 @@ private:
     std::unordered_map<ComponentId, IQueuedComponentCollection*> m_queuedComponents;
 };
 
+} // namespace impl
 } // namespace ecs

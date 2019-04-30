@@ -12,11 +12,13 @@
 
 namespace ecs {
 
-typedef uint32_t ComponentId;
-
 struct ISingletonComponent {
     virtual ~ISingletonComponent () {}
 };
+
+namespace impl {
+
+typedef uint32_t ComponentId;
 
 struct ComponentRegistry {
     static std::unordered_map<ComponentId, size_t> & GetComponentSizeMap ();
@@ -30,4 +32,5 @@ static ComponentId GetComponentId ();
 
 static size_t GetComponentSize (ComponentId id);
 
+} // namespace impl
 } // namespace ecs

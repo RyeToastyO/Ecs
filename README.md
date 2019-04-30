@@ -133,8 +133,7 @@ struct QueuedChange : ecs::Job {
 - additional, more complicated job tree unit tests
 - Job ordering control
 - Run component destructors
-- Hide implementation detail global functions in another namespace
-- Add support for custom allocators/use new instead of malloc
+- Support for custom allocators
 
 ## License
 See [LICENSE](LICENSE)

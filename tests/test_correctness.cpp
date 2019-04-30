@@ -67,13 +67,13 @@ void TestEntityCreationDestruction () {
 }
 
 void TestComponentFlags () {
-    ecs::ComponentFlags all;
+    ecs::impl::ComponentFlags all;
     all.SetFlags<test::FloatA, test::FloatB, test::FloatC>();
 
-    ecs::ComponentFlags some;
+    ecs::impl::ComponentFlags some;
     some.SetFlags<test::FloatA, test::FloatB>();
 
-    ecs::ComponentFlags none;
+    ecs::impl::ComponentFlags none;
 
     EXPECT_TRUE(all.HasAll(all));
     EXPECT_TRUE(all.HasAll(some));
@@ -111,7 +111,7 @@ void TestComponentFlags () {
     EXPECT_TRUE(none.HasNone(some));
     EXPECT_TRUE(none.HasNone(none));
 
-    ecs::ComponentFlags other;
+    ecs::impl::ComponentFlags other;
     other.SetFlags<test::FloatC>();
 
     EXPECT_FALSE(some.HasAll(other));

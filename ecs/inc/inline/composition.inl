@@ -6,20 +6,19 @@
 #include "../../helpers/hash.h"
 
 namespace ecs {
+namespace impl {
 
 // ComponentFlagIterator
 inline ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags & flags)
     : m_flags(flags)
-    , m_current(0)
-{
+    , m_current(0) {
     if (!m_flags.Has(m_current))
         ++(*this);
 }
 
 inline ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags & flags, ComponentId id)
     : m_flags(flags)
-    , m_current(id)
-{
+    , m_current(id) {
 }
 
 inline bool ComponentFlagIterator::operator!= (const ComponentFlagIterator & rhs) const {
@@ -131,4 +130,5 @@ inline bool ComponentFlags::operator== (const ComponentFlags & rhs) const {
     return true;
 }
 
+} // namespace impl
 } // namespace ecs

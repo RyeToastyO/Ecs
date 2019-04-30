@@ -18,11 +18,15 @@
 
 namespace ecs {
 
+namespace impl {
+
 struct EntityData {
     uint32_t generation = UINT32_MAX;
     uint32_t chunkIndex = 0;
     Chunk * chunk = nullptr;
 };
+
+} // namespace impl
 
 class Manager {
 public:
@@ -61,34 +65,34 @@ public:
     void RunUpdateGroup (Timestep dt);
 
 private:
-    std::vector<EntityData> m_entityData;
+    std::vector<impl::EntityData> m_entityData;
     std::vector<uint32_t> m_freeList;
-    std::unordered_map<JobId, Job*> m_manualJobs;
-    std::unordered_map<UpdateGroupId, JobTree*> m_updateGroups;
-    std::unordered_map<ComponentFlags, Chunk*> m_chunks;
-    std::unordered_map<ComponentId, ISingletonComponent*> m_singletonComponents;
-    std::vector<std::future<std::vector<JobNode*>*>> m_runningTasks;
+    std::unordered_map<impl::JobId, Job*> m_manualJobs;
+    std::unordered_map<impl::UpdateGroupId, impl::JobTree*> m_updateGroups;
+    std::unordered_map<impl::ComponentFlags, impl::Chunk*> m_chunks;
+    std::unordered_map<impl::ComponentId, ISingletonComponent*> m_singletonComponents;
+    std::vector<std::future<std::vector<impl::JobNode*>*>> m_runningTasks;
 
 private:
-    void BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories);
+    void BuildJobTreeInternal (impl::UpdateGroupId id, std::vector<impl::JobFactory> & factories);
 
-    Entity CreateEntityImmediateInternal (ComponentFlags composition);
+    Entity CreateEntityImmediateInternal (impl::ComponentFlags composition);
 
-    Chunk * GetOrCreateChunk (const ComponentFlags & composition);
+    impl::Chunk * GetOrCreateChunk (const impl::ComponentFlags & composition);
 
-    void NotifyChunkCreated (Chunk * chunk);
+    void NotifyChunkCreated (impl::Chunk * chunk);
 
     template<typename...Args>
-    typename std::enable_if<(sizeof...(Args) == 0)>::type SetComponentsInternal (const EntityData &, Args...) const {}
+    typename std::enable_if<(sizeof...(Args) == 0)>::type SetComponentsInternal (const impl::EntityData &, Args...) const {}
     template<typename T, typename...Args>
-    void SetComponentsInternal (const EntityData & entity, T component, Args...args) const;
+    void SetComponentsInternal (const impl::EntityData & entity, T component, Args...args) const;
 
-    void SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition);
+    void SetCompositionInternal (impl::EntityData & entityData, const impl::ComponentFlags & composition);
 
     void RegisterJobInternal (Job * job);
 
-    void RunJobList (std::vector<JobNode*> & list, Timestep dt);
-    void RunJobTree (JobTree * tree, Timestep dt);
+    void RunJobList (std::vector<impl::JobNode*> & list, Timestep dt);
+    void RunJobTree (impl::JobTree * tree, Timestep dt);
 };
 
 } // namespace ecs

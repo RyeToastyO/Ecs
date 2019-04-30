@@ -6,6 +6,7 @@
 #include <cassert>
 
 namespace ecs {
+namespace impl {
 
 inline std::unordered_map<ComponentId, size_t> & ComponentRegistry::GetComponentSizeMap () {
     static std::unordered_map<ComponentId, size_t> s_sizeMap;
@@ -49,4 +50,5 @@ inline static size_t GetComponentSize (ComponentId id) {
     return ComponentRegistry::GetComponentSize(id);
 }
 
+} // namespace impl
 } // namespace ecs

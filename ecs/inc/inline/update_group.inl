@@ -6,6 +6,7 @@
 #include <vector>
 
 namespace ecs {
+namespace impl {
 
 // UpdateGroupId Registration
 struct UpdateGroupRegistry {
@@ -52,4 +53,5 @@ inline UpdateGroupId RegisterJobForUpdateGroup () {
     return GetUpdateGroupId<TUpdateGroup>();
 }
 
-}
+} // namespace impl
+} // namespace ecs

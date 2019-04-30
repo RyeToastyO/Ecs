@@ -4,6 +4,7 @@
  */
 
 namespace ecs {
+namespace impl {
 
 inline JobNode::~JobNode () {
     if (job) {
@@ -167,4 +168,5 @@ inline JobTree * NewJobTree (const std::vector<JobFactory> & factories) {
     return tree;
 }
 
+} // namespace impl
 } // namespace ecs

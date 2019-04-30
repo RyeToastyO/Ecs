@@ -12,6 +12,7 @@
 #include <functional>
 
 namespace ecs {
+namespace impl {
 
 typedef uint64_t ComponentFlagDataType;
 const auto COMPONENT_FLAG_DATA_BITS = sizeof(ComponentFlagDataType) * 8;
@@ -77,11 +78,12 @@ private:
     ComponentFlagDataType flags[COMPONENT_FLAG_DATA_COUNT];
 };
 
+} // namespace impl
 } // namespace ecs
 
 namespace std {
-    template <> struct hash<::ecs::ComponentFlags> {
-        size_t operator() (const ::ecs::ComponentFlags & flags) const {
+    template <> struct hash<::ecs::impl::ComponentFlags> {
+        size_t operator() (const ::ecs::impl::ComponentFlags & flags) const {
             return flags.GetHash();
         }
     };

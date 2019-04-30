@@ -16,15 +16,17 @@
 
 namespace ecs {
 
-struct IComponentAccess;
 class Manager;
 
+namespace impl {
+struct IComponentAccess;
 typedef uint32_t JobId;
+} // namespace impl
 
 // Job base class
 struct Job {
-    const ComponentFlags & GetReadFlags () const;
-    const ComponentFlags & GetWriteFlags () const;
+    const impl::ComponentFlags & GetReadFlags () const;
+    const impl::ComponentFlags & GetWriteFlags () const;
 
     template<typename T>
     bool HasComponent (Entity entity) const;
@@ -47,52 +49,52 @@ public:
     virtual void ForEach (Timestep dt) { ECS_REF(dt); }
 
 private:
-    bool IsValid (const Chunk * chunk) const;
+    bool IsValid (const impl::Chunk * chunk) const;
 
 private:
     uint32_t m_currentIndex = 0;
-    std::vector<Chunk *> m_chunks;
+    std::vector<impl::Chunk *> m_chunks;
 
-    std::vector<IComponentAccess *> m_dataAccess;
-    std::vector<IComponentAccess *> m_singletonAccess;
+    std::vector<impl::IComponentAccess *> m_dataAccess;
+    std::vector<impl::IComponentAccess *> m_singletonAccess;
 
-    std::vector<ComponentFlags> m_requireAny;
-    ComponentFlags m_exclude;
-    ComponentFlags m_required;
+    std::vector<impl::ComponentFlags> m_requireAny;
+    impl::ComponentFlags m_exclude;
+    impl::ComponentFlags m_required;
 
-    ComponentFlags m_read;
-    ComponentFlags m_write;
+    impl::ComponentFlags m_read;
+    impl::ComponentFlags m_write;
 
-    CommandQueue m_commands;
+    impl::CommandQueue m_commands;
 
     Manager * m_manager = nullptr;
 
 private:
     friend class Manager;
     void ApplyQueuedCommands ();
-    void OnChunkAdded (Chunk * chunk);
+    void OnChunkAdded (impl::Chunk * chunk);
     void OnRegistered (Manager * manager);
 
 private:
     template<typename T, typename...Args> friend struct Exclude;
-    void AddExclude (IComponentAccess * access);
+    void AddExclude (impl::IComponentAccess * access);
     template<typename T> friend struct Read;
-    void AddRead (IComponentAccess * access);
+    void AddRead (impl::IComponentAccess * access);
     template<typename T> friend struct ReadOther;
-    void AddReadOther (IComponentAccess * access);
+    void AddReadOther (impl::IComponentAccess * access);
     template<typename T> friend struct SingletonComponentAccess;
     template<typename T> friend struct ReadSingleton;
-    void AddReadSingleton (IComponentAccess * access);
+    void AddReadSingleton (impl::IComponentAccess * access);
     template<typename T, typename...Args> friend struct Require;
-    void AddRequire (IComponentAccess * access);
+    void AddRequire (impl::IComponentAccess * access);
     template<typename T, typename...Args> friend struct RequireAny;
-    void AddRequireAny (IComponentAccess * access);
+    void AddRequireAny (impl::IComponentAccess * access);
     template<typename T> friend struct Write;
-    void AddWrite (IComponentAccess * access);
+    void AddWrite (impl::IComponentAccess * access);
     template<typename T> friend struct WriteOther;
-    void AddWriteOther (IComponentAccess * access);
+    void AddWriteOther (impl::IComponentAccess * access);
     template<typename T> friend struct WriteSingleton;
-    void AddWriteSingleton (IComponentAccess * access);
+    void AddWriteSingleton (impl::IComponentAccess * access);
 };
 
 } // namespace ecs

@@ -26,7 +26,7 @@ inline Entity Manager::CreateEntityImmediate (T component, Args...args) {
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not add Entity as a component");
 
     // Compile the composition flags
-    ComponentFlags composition;
+    impl::ComponentFlags composition;
     composition.SetFlags<T, Args...>();
 
     // Create the entity
@@ -43,10 +43,10 @@ inline T * Manager::GetSingletonComponent () {
     static_assert(std::is_base_of<ISingletonComponent, T>::value, "GetSingletonComponent<T> must inherit ISingletonComponent");
     static_assert(!std::is_empty<T>(), "Singleton components must have data, they always exist so they can't be used as tags");
 
-    auto iter = m_singletonComponents.find(GetComponentId<T>());
+    auto iter = m_singletonComponents.find(impl::GetComponentId<T>());
     if (iter == m_singletonComponents.end()) {
         T * component = new T();
-        m_singletonComponents.emplace(GetComponentId<T>(), component);
+        m_singletonComponents.emplace(impl::GetComponentId<T>(), component);
         return component;
     }
     return static_cast<T*>(iter->second);
@@ -90,7 +90,7 @@ inline void Manager::RemoveComponents (Entity entity) {
 }
 
 template<typename T, typename...Args>
-inline void Manager::SetComponentsInternal (const EntityData & entity, T component, Args...args) const {
+inline void Manager::SetComponentsInternal (const impl::EntityData & entity, T component, Args...args) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be set on entities");
     *(entity.chunk->Find<T>(entity.chunkIndex)) = component;
     SetComponentsInternal(entity, args...);
@@ -121,10 +121,10 @@ inline bool Manager::Exists (Entity entity) const {
 }
 
 inline Entity Manager::CreateEntityImmediate () {
-    return CreateEntityImmediateInternal(ComponentFlags());
+    return CreateEntityImmediateInternal(impl::ComponentFlags());
 }
 
-inline Entity Manager::CreateEntityImmediateInternal (ComponentFlags composition) {
+inline Entity Manager::CreateEntityImmediateInternal (impl::ComponentFlags composition) {
     // All entities have their entity handle added as a component
     // This is so that jobs can have the entity array easily passed along
     // using the same APIs as components
@@ -140,7 +140,7 @@ inline Entity Manager::CreateEntityImmediateInternal (ComponentFlags composition
         m_freeList.pop_back();
     }
     else {
-        m_entityData.push_back(EntityData());
+        m_entityData.push_back(impl::EntityData());
         index = (uint32_t)m_entityData.size() - 1;
     }
 
@@ -174,21 +174,21 @@ inline void Manager::DestroyImmediate (Entity entity) {
         m_freeList.push_back(entity.index);
 }
 
-inline Chunk * Manager::GetOrCreateChunk (const ComponentFlags & composition) {
+inline impl::Chunk * Manager::GetOrCreateChunk (const impl::ComponentFlags & composition) {
     auto chunkIter = m_chunks.find(composition);
     if (chunkIter == m_chunks.end()) {
-        m_chunks.emplace(composition, new Chunk(composition));
+        m_chunks.emplace(composition, new impl::Chunk(composition));
         chunkIter = m_chunks.find(composition);
         NotifyChunkCreated(chunkIter->second);
     }
     return chunkIter->second;
 }
 
-inline void Manager::NotifyChunkCreated (Chunk * chunk) {
+inline void Manager::NotifyChunkCreated (impl::Chunk * chunk) {
     for (const auto & jobIter : m_manualJobs)
         jobIter.second->OnChunkAdded(chunk);
     for (const auto & groupIter : m_updateGroups) {
-        ForEachNode(groupIter.second, [chunk](JobNode * node) {
+        ForEachNode(groupIter.second, [chunk](impl::JobNode * node) {
             node->job->OnChunkAdded(chunk);
         });
     }
@@ -200,13 +200,13 @@ inline void Manager::RunJob (Timestep dt) {
 
     Job * job = nullptr;
 
-    auto iter = m_manualJobs.find(GetJobId<T>());
+    auto iter = m_manualJobs.find(impl::GetJobId<T>());
     if (iter == m_manualJobs.end()) {
         job = new T();
 
         RegisterJobInternal(job);
 
-        m_manualJobs.emplace(GetJobId<T>(), job);
+        m_manualJobs.emplace(impl::GetJobId<T>(), job);
     }
     else {
         job = iter->second;
@@ -220,23 +220,23 @@ template<typename T>
 inline void Manager::RunUpdateGroup (Timestep dt) {
     static_assert(std::is_base_of<IUpdateGroup, T>::value, "Must inherit from IUpdateGroup");
 
-    auto iter = m_updateGroups.find(GetUpdateGroupId<T>());
+    auto iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
     if (iter == m_updateGroups.end()) {
-        BuildJobTreeInternal(GetUpdateGroupId<T>(), GetUpdateGroupJobs<T>());
-        iter = m_updateGroups.find(GetUpdateGroupId<T>());
+        BuildJobTreeInternal(impl::GetUpdateGroupId<T>(), impl::GetUpdateGroupJobs<T>());
+        iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
     }
 
     RunJobTree(iter->second, dt);
 }
 
-inline void Manager::RunJobList (std::vector<JobNode*> & list, Timestep dt) {
-    for (JobNode * node : list) {
+inline void Manager::RunJobList (std::vector<impl::JobNode*> & list, Timestep dt) {
+    for (impl::JobNode * node : list) {
         m_runningTasks.push_back(std::async(std::launch::async, [node, dt]() {
             // Run the assigned job
             node->job->Run(dt);
 
             // Just continue down our dependents if we only have one
-            std::vector<JobNode*> * deps = &(node->dependents);
+            std::vector<impl::JobNode*> * deps = &(node->dependents);
             while (deps->size() == 1) {
                 (*deps)[0]->job->Run(dt);
                 deps = &((*deps)[0]->dependents);
@@ -248,7 +248,7 @@ inline void Manager::RunJobList (std::vector<JobNode*> & list, Timestep dt) {
     }
 }
 
-inline void Manager::RunJobTree (JobTree * tree, Timestep dt) {
+inline void Manager::RunJobTree (impl::JobTree * tree, Timestep dt) {
     RunJobList(tree->topNodes, dt);
 
     for (auto i = 0; i < m_runningTasks.size(); ++i) {
@@ -259,15 +259,15 @@ inline void Manager::RunJobTree (JobTree * tree, Timestep dt) {
 
     m_runningTasks.clear();
 
-    ForEachNode(tree, [this](JobNode * node) {
+    ForEachNode(tree, [this](impl::JobNode * node) {
         node->job->ApplyQueuedCommands();
     });
 }
 
-inline void Manager::BuildJobTreeInternal (UpdateGroupId id, std::vector<JobFactory> & factories) {
-    JobTree * tree = NewJobTree(factories);
+inline void Manager::BuildJobTreeInternal (impl::UpdateGroupId id, std::vector<impl::JobFactory> & factories) {
+    impl::JobTree * tree = impl::NewJobTree(factories);
 
-    ForEachNode(tree, [this](JobNode * node) {
+    ForEachNode(tree, [this](impl::JobNode * node) {
         RegisterJobInternal(node->job);
     });
 
@@ -280,7 +280,7 @@ inline void Manager::RegisterJobInternal (Job * job) {
         job->OnChunkAdded(chunk.second);
 }
 
-inline void Manager::SetCompositionInternal (EntityData & entityData, const ComponentFlags & composition) {
+inline void Manager::SetCompositionInternal (impl::EntityData & entityData, const impl::ComponentFlags & composition) {
     auto chunk = GetOrCreateChunk(composition);
     if (chunk == entityData.chunk)
         return;

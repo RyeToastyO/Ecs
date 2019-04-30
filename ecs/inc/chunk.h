@@ -12,6 +12,7 @@
 #include <vector>
 
 namespace ecs {
+namespace impl {
 
 typedef uint8_t byte_t;
 
@@ -51,4 +52,5 @@ private: // Helpers
     void Resize (uint32_t capacity);
 };
 
+} // namespace impl
 } // namespace ecs

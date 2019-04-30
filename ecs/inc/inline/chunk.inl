@@ -7,6 +7,7 @@
 #include <cassert>
 
 namespace ecs {
+namespace impl {
 
 template<typename T>
 inline T * Chunk::Find () {
@@ -32,8 +33,7 @@ inline T * Chunk::Find (uint32_t index) {
 
 inline Chunk::Chunk (const ComponentFlags & composition)
     : m_composition(composition)
-    , m_componentInfo(composition.GetComponentInfo())
-{
+    , m_componentInfo(composition.GetComponentInfo()) {
     AllocateComponentArrays(kDefaultChunkSize);
 }
 
@@ -152,4 +152,5 @@ inline void Chunk::CopyTo (uint32_t from, uint32_t to) {
     }
 }
 
-}
+} // namespace impl
+} // namespace ecs

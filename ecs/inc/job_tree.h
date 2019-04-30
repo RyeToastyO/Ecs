@@ -12,6 +12,7 @@
 #include <vector>
 
 namespace ecs {
+namespace impl {
 
 struct JobNode {
     Job * job = nullptr;
@@ -32,4 +33,5 @@ void ForEachNode (JobTree * tree, T func);
 
 JobTree * NewJobTree (const std::vector<JobFactory> & factories);
 
+} // namespace impl
 } // namespace ecs
