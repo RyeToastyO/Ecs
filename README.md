@@ -97,12 +97,12 @@ int main () {
 ### Update groups
 Jobs within update groups are automatically run multi-threaded
 ```C++
-struct UpdateGroupA : IUpdateGroup {};
+struct UpdateGroupA : ecs::IUpdateGroup {};
 
 ECS_REGISTER_JOB_FOR_UPDATE_GROUP(ExampleJob, UpdateGroupA);
 
 int main () {
-    Manager mgr;
+    ecs::Manager mgr;
     mgr->RunUpdateGroup<UpdateGroupA>(0.0f /* dt */);
 }
 ```
@@ -131,8 +131,6 @@ struct QueuedChange : ecs::Job {
 
 ## TODO
 - additional, more complicated job tree unit tests
-- inline everything
-- c++11 support?
 - Job ordering control
 - Run component destructors
 - Hide implementation detail global functions in another namespace
