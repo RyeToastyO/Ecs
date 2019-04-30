@@ -46,7 +46,7 @@ void Chunk::AllocateComponentArrays (uint32_t capacity) {
 
     // Allocate all memory for this chunk as one allocation
     m_componentArrays.reserve(m_componentInfo.DataComponentCount);
-    m_componentMemory = static_cast<byte_t*>(malloc(m_componentInfo.TotalSize * capacity));
+    m_componentMemory = new byte_t[m_componentInfo.TotalSize * capacity];
     m_capacity = capacity;
 
     assert(m_componentMemory);
@@ -65,7 +65,7 @@ void Chunk::AllocateComponentArrays (uint32_t capacity) {
 }
 
 void Chunk::Resize (uint32_t capacity) {
-    byte_t * newMemory = static_cast<byte_t*>(malloc(m_componentInfo.TotalSize * capacity));
+    byte_t * newMemory = new byte_t[m_componentInfo.TotalSize * capacity];
     m_capacity = capacity;
 
     auto newArrayStart = newMemory;
@@ -79,7 +79,7 @@ void Chunk::Resize (uint32_t capacity) {
         newArrayStart += size * m_capacity;
     }
 
-    free(m_componentMemory);
+    delete[] m_componentMemory;
     m_componentMemory = newMemory;
 }
 
@@ -94,7 +94,7 @@ void Chunk::Clear () {
     m_capacity = 0;
 
     if (m_componentMemory) {
-        free(m_componentMemory);
+        delete[] m_componentMemory;
         m_componentMemory = nullptr;
     }
     m_componentArrays.clear();
