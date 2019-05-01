@@ -284,8 +284,19 @@ inline void Manager::SetCompositionInternal (impl::EntityData & entityData, cons
     auto chunk = GetOrCreateChunk(composition);
     if (chunk == entityData.chunk)
         return;
+
+    auto fromChunk = entityData.chunk;
+    auto fromIndex = entityData.chunkIndex;
+
     entityData.chunkIndex = entityData.chunk->MoveTo(entityData.chunkIndex, *chunk);
     entityData.chunk = chunk;
+
+    // This code makes the assumption that removing an entity swaps the tail
+    // entity with the removed entity in order to accomplish the removal
+    // TODO: Find a way to make this systemic and the same code path as Delete
+    Entity * swappedEntity = fromChunk->Find<Entity>(fromIndex);
+    if (swappedEntity)
+        m_entityData[swappedEntity->index].chunkIndex = fromIndex;
 }
 
 } // namespace ecs
