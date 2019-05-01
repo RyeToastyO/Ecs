@@ -13,7 +13,7 @@ namespace test {
 int s_errorCount = 0;
 std::mutex s_errorLock;
 
-}
+} // namespace test
 
 // Main
 int main () {

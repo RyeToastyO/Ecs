@@ -22,6 +22,7 @@ inline JobTree::~JobTree () {
 
 struct JobDependencyData {
     JobNode * node = nullptr;
+    JobId id = UINT32_MAX;
     bool isGrouped = false;
     std::vector<Job*> hardDeps; // Writes and RUN_BEFORE/AFTER
     std::vector<Job*> outReadDeps;
@@ -52,7 +53,14 @@ inline void ForEachNode (JobTree * tree, T func) {
         ForEachNode(node, func);
 }
 
-inline void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results) {
+inline void JobTree::AddToDependencyGroup (JobDependencyData * data, DependencyGroup * group) {
+    data->isGrouped = true;
+    group->read.SetFlags(data->node->job->GetReadFlags());
+    group->write.SetFlags(data->node->job->GetWriteFlags());
+    group->jobs.push_back(data);
+}
+
+inline void JobTree::FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results) {
     if (results.depth < depth) {
         if (node->job->GetWriteFlags().HasAny(flags)) {
             results.node = node;
@@ -63,21 +71,17 @@ inline void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const Comp
         FindLowestSatisfyingNode(dependent, depth + 1, flags, results);
 }
 
-inline void AddToDependencyGroup (JobDependencyData * data, DependencyGroup * group) {
-    data->isGrouped = true;
-    group->read.SetFlags(data->node->job->GetReadFlags());
-    group->write.SetFlags(data->node->job->GetWriteFlags());
-    group->jobs.push_back(data);
-}
+template<typename T>
+inline JobTree * JobTree::Create () {
+    std::vector<UpdateGroupJob> & updateGroupJobs = GetUpdateGroupJobs<T>();
 
-inline JobTree * NewJobTree (const std::vector<JobFactory> & factories) {
     JobTree * tree = new JobTree();
-    tree->nodeMemory = new JobNode[factories.size()];
+    tree->nodeMemory = new JobNode[updateGroupJobs.size()];
 
     std::vector<JobDependencyData> depData;
-    for (auto i = 0; i < factories.size(); ++i) {
-        depData.push_back(JobDependencyData{ tree->nodeMemory + i });
-        tree->nodeMemory[i].job = factories[i]();
+    for (auto i = 0; i < updateGroupJobs.size(); ++i) {
+        depData.push_back(JobDependencyData{ tree->nodeMemory + i, updateGroupJobs[i].id });
+        tree->nodeMemory[i].job = updateGroupJobs[i].factory();
     }
 
     // Gather dependency graph data
@@ -85,13 +89,23 @@ inline JobTree * NewJobTree (const std::vector<JobFactory> & factories) {
         auto & depI = depData[i];
         auto & readI = depI.node->job->GetReadFlags();
         auto & writeI = depI.node->job->GetWriteFlags();
+        auto & runAfterI = depI.node->job->GetRunAfter();
+        auto & runBeforeI = depI.node->job->GetRunBefore();
 
         for (auto j = i + 1; j < depData.size(); ++j) {
             auto & depJ = depData[j];
             auto & readJ = depJ.node->job->GetReadFlags();
             auto & writeJ = depJ.node->job->GetWriteFlags();
+            auto & runAfterJ = depJ.node->job->GetRunAfter();
+            auto & runBeforeJ = depJ.node->job->GetRunBefore();
 
-            if (writeI.HasAny(writeJ) || writeI.HasAny(readJ) && writeJ.HasAny(readI)) {
+            bool after = runAfterI.find(depJ.id) != runAfterI.end() || runAfterJ.find(depI.id) != runAfterJ.end();
+            bool before = runBeforeI.find(depJ.id) != runBeforeI.end() || runBeforeJ.find(depI.id) != runBeforeJ.end();
+
+            bool writeMatch = writeI.HasAny(writeJ);
+            bool circularRead = writeI.HasAny(readJ) && writeJ.HasAny(readI);
+            bool explicitOrder = before || after;
+            if (writeMatch || circularRead || explicitOrder) {
                 depI.hardDeps.push_back(depJ.node->job);
                 depJ.hardDeps.push_back(depI.node->job);
             }
@@ -140,6 +154,9 @@ inline JobTree * NewJobTree (const std::vector<JobFactory> & factories) {
     std::sort(hardGroups.begin(), hardGroups.end(), [](const DependencyGroup & a, const DependencyGroup & b) {
         return a.jobs.size() < b.jobs.size();
     });
+
+    // Selection sort by explicit order
+    // TODO:
 
     // Insert groups into the tree at the lowest node that satisfies their combined read dependencies
     for (auto & group : hardGroups) {

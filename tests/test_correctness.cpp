@@ -369,6 +369,8 @@ ECS_REGISTER_JOB_FOR_UPDATE_GROUP(UpdateGroupJobA, UpdateGroupA);
 ECS_REGISTER_JOB_FOR_UPDATE_GROUP(UpdateGroupJobA, UpdateGroupB);
 
 struct UpdateGroupJobB : ecs::Job {
+    ECS_RUN_THIS_AFTER(UpdateGroupJobA);
+
     ECS_WRITE(test::FloatA, A);
     ECS_READ(test::FloatC, C);
 

@@ -8,9 +8,12 @@
 #include "chunk.h"
 #include "entity.h"
 #include "command_queue.h"
+#include "component_access.h"
+#include "job_order.h"
 #include "helpers/ref.h"
 
 #include <cstdint>
+#include <set>
 #include <type_traits>
 #include <vector>
 
@@ -34,13 +37,16 @@ template<typename T> struct Write;
 template<typename T> struct WriteOther;
 template<typename T> struct WriteSingleton;
 
+struct IJobOrdering;
+template<typename T, typename...Args> struct RunAfter;
+template<typename T, typename...Args> struct RunBefore;
+
+struct JobTree;
+
 } // namespace impl
 
 // Job base class
 struct Job {
-    const impl::ComponentFlags & GetReadFlags () const;
-    const impl::ComponentFlags & GetWriteFlags () const;
-
     template<typename T>
     bool HasComponent (Entity entity) const;
 
@@ -67,6 +73,9 @@ private:
 private:
     uint32_t m_currentIndex = 0;
     std::vector<impl::Chunk *> m_chunks;
+
+    std::set<impl::JobId> m_runAfter;
+    std::set<impl::JobId> m_runBefore;
 
     std::vector<impl::IComponentAccess *> m_dataAccess;
     std::vector<impl::IComponentAccess *> m_singletonAccess;
@@ -108,6 +117,26 @@ private:
     void AddWriteOther (impl::IComponentAccess * access);
     template<typename T> friend struct impl::WriteSingleton;
     void AddWriteSingleton (impl::IComponentAccess * access);
+
+private:
+    template<typename T, typename...Args> friend struct impl::RunAfter;
+    void AddRunAfter (impl::IJobOrdering * ordering);
+    template<typename T, typename...Args> friend struct impl::RunBefore;
+    void AddRunBefore (impl::IJobOrdering * ordering);
+
+private:
+    friend struct impl::JobTree;
+    const std::set<impl::JobId> & GetRunAfter () const;
+    const std::set<impl::JobId> & GetRunBefore () const;
+    const impl::ComponentFlags & GetReadFlags () const;
+    const impl::ComponentFlags & GetWriteFlags () const;
 };
+
+namespace impl {
+
+// Registration
+template<typename T> JobId GetJobId ();
+
+} // namespace impl
 
 } // namespace ecs

@@ -37,8 +37,8 @@ inline UpdateGroupId GetUpdateGroupId () {
 
 // Job Registration
 template<typename T>
-inline std::vector<JobFactory> & GetUpdateGroupJobs () {
-    static std::vector<JobFactory> s_jobs;
+inline std::vector<UpdateGroupJob> & GetUpdateGroupJobs () {
+    static std::vector<UpdateGroupJob> s_jobs;
     return s_jobs;
 }
 
@@ -48,7 +48,7 @@ inline UpdateGroupId RegisterJobForUpdateGroup () {
     static_assert(std::is_base_of<IUpdateGroup, TUpdateGroup>::value, "Must inherit IUpdateGroup");
 
     auto & jobs = GetUpdateGroupJobs<TUpdateGroup>();
-    jobs.push_back([]() { return static_cast<Job*>(new TJob()); });
+    jobs.push_back({ []() { return static_cast<Job*>(new TJob()); }, GetJobId<TJob>()});
 
     return GetUpdateGroupId<TUpdateGroup>();
 }

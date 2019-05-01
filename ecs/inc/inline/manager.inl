@@ -222,7 +222,7 @@ inline void Manager::RunUpdateGroup (Timestep dt) {
 
     auto iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
     if (iter == m_updateGroups.end()) {
-        BuildJobTreeInternal(impl::GetUpdateGroupId<T>(), impl::GetUpdateGroupJobs<T>());
+        BuildJobTreeInternal<T>();
         iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
     }
 
@@ -264,14 +264,15 @@ inline void Manager::RunJobTree (impl::JobTree * tree, Timestep dt) {
     });
 }
 
-inline void Manager::BuildJobTreeInternal (impl::UpdateGroupId id, std::vector<impl::JobFactory> & factories) {
-    impl::JobTree * tree = impl::NewJobTree(factories);
+template<typename T>
+inline void Manager::BuildJobTreeInternal () {
+    impl::JobTree * tree = impl::JobTree::Create<T>();
 
     ForEachNode(tree, [this](impl::JobNode * node) {
         RegisterJobInternal(node->job);
     });
 
-    m_updateGroups.emplace(id, tree);
+    m_updateGroups.emplace(impl::GetUpdateGroupId<T>(), tree);
 }
 
 inline void Manager::RegisterJobInternal (Job * job) {

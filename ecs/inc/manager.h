@@ -74,7 +74,8 @@ private:
     std::vector<std::future<std::vector<impl::JobNode*>*>> m_runningTasks;
 
 private:
-    void BuildJobTreeInternal (impl::UpdateGroupId id, std::vector<impl::JobFactory> & factories);
+    template<typename T>
+    void BuildJobTreeInternal ();
 
     Entity CreateEntityImmediateInternal (impl::ComponentFlags composition);
 

@@ -131,7 +131,6 @@ struct QueuedChange : ecs::Job {
 
 ## TODO
 - additional, more complicated job tree unit tests
-- Job ordering control
 - Run component destructors
 - Support for custom allocators
 
