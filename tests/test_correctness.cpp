@@ -20,6 +20,8 @@ void TestEntityComparison () {
     EXPECT_FALSE((ecs::Entity{ 1, 1 }) == (ecs::Entity{ 1, 2 }));
     EXPECT_FALSE((ecs::Entity{ 1, 1 }) == (ecs::Entity{ 2, 1 }));
     EXPECT_TRUE((ecs::Entity{ 1, 1 }) == (ecs::Entity{ 1, 1 }));
+    EXPECT_FALSE((ecs::Entity{ 2, 2 }) != (ecs::Entity{ 2, 2 }));
+    EXPECT_TRUE((ecs::Entity{ 2, 1 }) != (ecs::Entity{ 2, 2 }));
 }
 
 void TestEntityCreationDestruction () {

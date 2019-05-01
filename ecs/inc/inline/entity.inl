@@ -9,4 +9,8 @@ inline bool Entity::operator== (const Entity & rhs) const {
     return index == rhs.index && generation == rhs.generation;
 }
 
+inline bool Entity::operator!= (const Entity & rhs) const {
+    return !(*this == rhs);
+}
+
 } // namespace ecs

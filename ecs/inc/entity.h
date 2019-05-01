@@ -16,6 +16,7 @@ struct Entity {
     uint32_t generation = 0;
 
     bool operator== (const Entity & rhs) const;
+    bool operator!= (const Entity & rhs) const;
 };
 
 } // namespace ecs
