@@ -80,9 +80,9 @@ struct ExampleJob : public ecs::Job {
     }
 
     void ForEach (ecs::Timestep dt) override {
-        if (ComponentI * i = I[B->Value])
+        if (ComponentI * i = I.Find(B->Value))
             A->Value += i->Value * dt;
-        if (ComponentJ * j = J[B->Value])
+        if (ComponentJ * j = J.Find(B->Value))
             j->Value = A->Value;
         m_internalData += A->Value;
     }

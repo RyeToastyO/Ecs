@@ -273,7 +273,7 @@ struct ReadOtherTestJob : ecs::Job {
     ECS_READ_OTHER(test::FloatC, ReadC);
 
     void ForEach (ecs::Timestep) override {
-        A->Value = ReadC[Ref->Value]->Value;
+        A->Value = ReadC.Find(Ref->Value)->Value;
     }
 };
 
@@ -285,7 +285,7 @@ struct WriteOtherTestJob : ecs::Job {
 
     void ForEach (ecs::Timestep) override {
         if (HasComponent<test::TagA>(Ref->Value))
-            WriteC[Ref->Value]->Value = B->Value;
+            WriteC.Find(Ref->Value)->Value = B->Value;
     }
 };
 

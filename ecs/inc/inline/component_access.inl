@@ -73,7 +73,7 @@ template<typename T>
 struct ReadOther : public LookupComponentAccess<T> {
     inline ReadOther (Job & job) : LookupComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddReadOther(this); }
-    inline const T * operator[] (Entity entity) const { return this->m_job.m_manager->FindComponent<T>(entity); }
+    inline const T * Find (Entity entity) const { return this->m_job.m_manager->FindComponent<T>(entity); }
 };
 
 template<typename T>
@@ -108,7 +108,7 @@ template<typename T>
 struct WriteOther : public LookupComponentAccess<T> {
     inline WriteOther (Job & job) : LookupComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddWriteOther(this); }
-    inline T * operator[] (Entity entity) const { return this->m_job.m_manager->FindComponent<T>(entity); }
+    inline T * Find (Entity entity) const { return this->m_job.m_manager->FindComponent<T>(entity); }
 };
 
 template<typename T>
