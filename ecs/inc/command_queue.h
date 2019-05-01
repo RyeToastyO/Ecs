@@ -19,16 +19,22 @@ namespace impl {
 
 struct IComponentRemover {
     virtual void Apply (Entity entity, Manager * mgr) = 0;
+
+    virtual ~IComponentRemover () {}
 };
 
 template<typename T>
 struct ComponentRemover : public IComponentRemover {
     void Apply (Entity entity, Manager * mgr) override;
+
+    virtual ~ComponentRemover () {}
 };
 
 struct IQueuedComponentCollection {
     virtual void Apply (Entity entity, uint32_t index, Manager * mgr) = 0;
     virtual void Clear () = 0;
+
+    virtual ~IQueuedComponentCollection () {}
 };
 
 template<typename T>
@@ -36,6 +42,8 @@ struct QueuedComponentCollection : public IQueuedComponentCollection {
     void Apply (Entity entity, uint32_t index, Manager * mgr) override;
     void Clear () override;
     uint32_t Push (T && component);
+
+    virtual ~QueuedComponentCollection () {}
 
 private:
     std::vector<T> m_components;
