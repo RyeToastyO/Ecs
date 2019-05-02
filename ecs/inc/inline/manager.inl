@@ -188,7 +188,7 @@ inline void Manager::NotifyChunkCreated (impl::Chunk * chunk) {
     for (const auto & jobIter : m_manualJobs)
         jobIter.second->OnChunkAdded(chunk);
     for (const auto & groupIter : m_updateGroups) {
-        ForEachNode(groupIter.second, [chunk](impl::JobNode * node) {
+        groupIter.second->ForEachNode([chunk](impl::JobNode * node) {
             node->job->OnChunkAdded(chunk);
         });
     }
@@ -259,7 +259,7 @@ inline void Manager::RunJobTree (impl::JobTree * tree, Timestep dt) {
 
     m_runningTasks.clear();
 
-    ForEachNode(tree, [this](impl::JobNode * node) {
+    tree->ForEachNode([this](impl::JobNode * node) {
         node->job->ApplyQueuedCommands();
     });
 }
@@ -268,7 +268,7 @@ template<typename T>
 inline void Manager::BuildJobTreeInternal () {
     impl::JobTree * tree = impl::JobTree::Create<T>();
 
-    ForEachNode(tree, [this](impl::JobNode * node) {
+    tree->ForEachNode([this](impl::JobNode * node) {
         RegisterJobInternal(node->job);
     });
 

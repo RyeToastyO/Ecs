@@ -4,6 +4,7 @@
  */
 
 #include "test_correctness.h"
+#include "test_job_sorting.h"
 #include "test_multi_threading.h"
 #include "test_speed.h"
 
@@ -20,6 +21,7 @@ int main () {
     test::TestCorrectness();
     test::TestSpeed();
     test::TestMultipleManagers();
+    test::TestJobSorting();
 
     return test::s_errorCount;
 }

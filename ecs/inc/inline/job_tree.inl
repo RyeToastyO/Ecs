@@ -41,16 +41,16 @@ struct LowestNode {
 };
 
 template<typename T>
-inline void ForEachNode (JobNode * node, T func) {
+inline void JobTree::ForEachNodeInternal (JobNode * node, T func) const {
     func(node);
     for (auto dep : node->dependents)
-        ForEachNode(dep, func);
+        ForEachNodeInternal(dep, func);
 }
 
 template<typename T>
-inline void ForEachNode (JobTree * tree, T func) {
-    for (auto node : tree->topNodes)
-        ForEachNode(node, func);
+inline void JobTree::ForEachNode (T func) const {
+    for (auto node : topNodes)
+        ForEachNodeInternal(node, func);
 }
 
 inline void JobTree::AddToDependencyGroup (JobDependencyData * data, DependencyGroup * group) {
@@ -135,6 +135,7 @@ inline JobTree * JobTree::Create () {
             if (depJ.isGrouped)
                 continue;
 
+            // TODO: Take into account run before/after
             if (group.write.HasAny(depJ.node->job->GetWriteFlags())) {
                 AddToDependencyGroup(&depJ, &group);
 
@@ -145,20 +146,62 @@ inline JobTree * JobTree::Create () {
 
         // Sort jobs in the group by incoming reads
         std::sort(group.jobs.begin(), group.jobs.end(), [](const JobDependencyData * a, const JobDependencyData * b) {
-            return a->inReadDeps.size() < b->inReadDeps.size();
+            return a->inReadDeps.size() > b->inReadDeps.size();
         });
+
+        // A (Before B)
+        // D (After A)
+        // D, E, B, F, C, A, G
+        // D, E, A, B, F, C, G
+        // E, A, D, B, F, C, G
+
+        // Selection sort by explicit order
+        // TODO: validate that we don't have any cycles, currently causes infinite loop
+        for (auto mainIndex = 0; mainIndex < group.jobs.size(); ++mainIndex) {
+            for (auto secondIndex = mainIndex + 1; secondIndex < group.jobs.size(); ++secondIndex) {
+                auto mainId = group.jobs[mainIndex]->id;
+                auto secondId = group.jobs[secondIndex]->id;
+                auto & mainAfter = group.jobs[mainIndex]->node->job->GetRunAfter();
+                auto & secondBefore = group.jobs[secondIndex]->node->job->GetRunBefore();
+
+                if (mainAfter.find(secondId) != mainAfter.end() || secondBefore.find(mainId) != secondBefore.end()) {
+                    auto secondJobDepData = group.jobs[secondIndex];
+                    group.jobs.erase(group.jobs.begin() + secondIndex);
+                    group.jobs.insert(group.jobs.begin() + mainIndex, secondJobDepData);
+
+                    // This is required for correctness, but can create infinite loops
+                    secondIndex = mainIndex;
+                }
+            }
+        }
+        for (auto mainIndex = (int32_t)group.jobs.size() - 1; mainIndex >= 0; --mainIndex) {
+            for (auto secondIndex = mainIndex - 1; secondIndex >= 0; --secondIndex) {
+                auto mainId = group.jobs[mainIndex]->id;
+                auto secondId = group.jobs[secondIndex]->id;
+                auto & mainBefore = group.jobs[mainIndex]->node->job->GetRunBefore();
+                auto & secondAfter = group.jobs[secondIndex]->node->job->GetRunAfter();
+
+                if (mainBefore.find(secondId) != mainBefore.end() || secondAfter.find(mainId) != secondAfter.end()) {
+                    auto secondJobDepData = group.jobs[secondIndex];
+                    group.jobs.erase(group.jobs.begin() + secondIndex);
+                    group.jobs.insert(group.jobs.begin() + mainIndex, secondJobDepData);
+
+                    // This is required for correctness, but can create infinite loops
+                    secondIndex = mainIndex;
+                }
+            }
+        }
+
         hardGroups.push_back(std::move(group));
     }
 
     // Sort groups by longest chain
     std::sort(hardGroups.begin(), hardGroups.end(), [](const DependencyGroup & a, const DependencyGroup & b) {
-        return a.jobs.size() < b.jobs.size();
+        return a.jobs.size() > b.jobs.size();
     });
 
-    // Selection sort by explicit order
-    // TODO:
-
     // Insert groups into the tree at the lowest node that satisfies their combined read dependencies
+    // TODO: there is a bug in this
     for (auto & group : hardGroups) {
         LowestNode results;
         results.depth = 0;
