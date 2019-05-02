@@ -89,17 +89,16 @@ ECS_REGISTER_JOB_FOR_UPDATE_GROUP(Job5, JobDataSortingGroup);
 ECS_REGISTER_JOB_FOR_UPDATE_GROUP(Job4, JobDataSortingGroup);
 
 void TestDataSorting () {
-    //ecs::impl::JobTree * tree = ecs::impl::JobTree::Create<JobDataSortingGroup>();
+    ecs::impl::JobTree * tree = ecs::impl::JobTree::New<JobDataSortingGroup>();
 
-    //tree->ForEachNode([](ecs::impl::JobNode * node) {
-    //    std::cout << node->dependents.size() << std::endl;
-    //});
+    // TODO: Figure out how to validate this tree automatically
+
+    delete tree;
 }
 
 // Explicit Sort
-
 void TestExplicitSorting () {
-    //ecs::Manager mgr;
+    // TODO:
 }
 
 struct CycleA { float Value; };
@@ -121,15 +120,43 @@ struct CycleJob3 : ecs::Job {
     ECS_WRITE(CycleA, A);
 };
 
+struct CycleD { float Value; };
+
+struct CycleJob4 : ecs::Job {
+    ECS_READ(CycleA, A);
+    ECS_READ(CycleB, B);
+    ECS_READ(CycleC, C);
+
+    ECS_WRITE(CycleD, D);
+};
+
+struct CycleJob5 : ecs::Job {
+    ECS_READ(CycleD, D);
+};
+
+struct CycleJob6 : ecs::Job {
+    ECS_READ(CycleD, D);
+};
+
+struct CycleJob7 : ecs::Job {
+    ECS_READ(CycleD, D);
+};
+
 struct CycleUpdateGroup : ecs::IUpdateGroup {};
 
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob7, CycleUpdateGroup);
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob6, CycleUpdateGroup);
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob5, CycleUpdateGroup);
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob4, CycleUpdateGroup);
 ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob1, CycleUpdateGroup);
 ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob2, CycleUpdateGroup);
 ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob3, CycleUpdateGroup);
 
 void TestDataCycle () {
     ecs::impl::JobTree * tree = ecs::impl::JobTree::New<CycleUpdateGroup>();
-    ECS_REF(tree);
+
+    // TODO: figure out how to validate this tree automatically
+    // It is currently wrong
 
     delete tree;
 }
