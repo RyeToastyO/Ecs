@@ -72,7 +72,7 @@ inline void JobTree::FindLowestSatisfyingNode (JobNode * node, uint32_t depth, c
 }
 
 template<typename T>
-inline JobTree * JobTree::Create () {
+inline JobTree * JobTree::New () {
     std::vector<UpdateGroupJob> & updateGroupJobs = GetUpdateGroupJobs<T>();
 
     JobTree * tree = new JobTree();

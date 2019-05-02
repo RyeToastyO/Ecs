@@ -102,9 +102,42 @@ void TestExplicitSorting () {
     //ecs::Manager mgr;
 }
 
+struct CycleA { float Value; };
+struct CycleB { float Value; };
+struct CycleC { float Value; };
+
+struct CycleJob1 : ecs::Job {
+    ECS_READ(CycleA, A);
+    ECS_WRITE(CycleB, B);
+};
+
+struct CycleJob2 : ecs::Job {
+    ECS_READ(CycleB, B);
+    ECS_WRITE(CycleC, C);
+};
+
+struct CycleJob3 : ecs::Job {
+    ECS_READ(CycleC, C);
+    ECS_WRITE(CycleA, A);
+};
+
+struct CycleUpdateGroup : ecs::IUpdateGroup {};
+
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob1, CycleUpdateGroup);
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob2, CycleUpdateGroup);
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(CycleJob3, CycleUpdateGroup);
+
+void TestDataCycle () {
+    ecs::impl::JobTree * tree = ecs::impl::JobTree::New<CycleUpdateGroup>();
+    ECS_REF(tree);
+
+    delete tree;
+}
+
 void TestJobSorting () {
     TestDataSorting();
     TestExplicitSorting();
+    TestDataCycle();
 }
 
 } // namespace test

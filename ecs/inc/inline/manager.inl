@@ -266,7 +266,7 @@ inline void Manager::RunJobTree (impl::JobTree * tree, Timestep dt) {
 
 template<typename T>
 inline void Manager::BuildJobTreeInternal () {
-    impl::JobTree * tree = impl::JobTree::Create<T>();
+    impl::JobTree * tree = impl::JobTree::New<T>();
 
     tree->ForEachNode([this](impl::JobNode * node) {
         RegisterJobInternal(node->job);

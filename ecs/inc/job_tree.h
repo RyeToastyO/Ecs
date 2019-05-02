@@ -32,7 +32,7 @@ struct JobTree {
     ~JobTree ();
 
     template<typename T>
-    static JobTree * Create ();
+    static JobTree * New ();
 
     template<typename T>
     void ForEachNode (T func) const;
