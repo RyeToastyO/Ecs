@@ -195,13 +195,15 @@ inline JobTree * JobTree::New () {
         hardGroups.push_back(std::move(group));
     }
 
+    // Build new dependency graph using these combined hard depedencies as nodes, and reads on them as dependencies
+    // TODO: everything past this point is wrong
+
     // Sort groups by longest chain
     std::sort(hardGroups.begin(), hardGroups.end(), [](const DependencyGroup & a, const DependencyGroup & b) {
         return a.jobs.size() > b.jobs.size();
     });
 
     // Insert groups into the tree at the lowest node that satisfies their combined read dependencies
-    // TODO: there is a bug in this
     for (auto & group : hardGroups) {
         LowestNode results;
         results.depth = 0;
