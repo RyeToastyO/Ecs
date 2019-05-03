@@ -84,6 +84,15 @@ inline JobTree * JobTree::New () {
         tree->nodeMemory[i].job = updateGroupJobs[i].factory();
     }
 
+    // New plan for building job tree:
+    // Stage 1: Group by hard dependencies (write collision, circular read, before/after)
+    // Stage 2: Build dependency graph for each group with run before/after as the deps
+    // Stage 3: Topological sort groups, preferring nodes that have the most incoming reads first
+    //          Note: Circular dependency in this stage is a user created failure and should assert
+    // Stage 4: Build dependency graph of groups with reads as the dependencies
+    // Stage 5: Topological sort dependency graph preferring largest group size first
+    //          Note: Circular dependency in this stage should be allowed
+
     // Gather dependency graph data
     for (auto i = 0; i < depData.size(); ++i) {
         auto & depI = depData[i];
