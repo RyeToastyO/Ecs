@@ -10,7 +10,7 @@ struct Current { float Value; };
 struct Regen { float Value; };
 }
 
-struct RegenJob : public ecs::Job {
+struct RegenJob : ecs::Job {
     ECS_WRITE(health::Current, Current);
     ECS_READ(health::Regen, Regen);
 
@@ -55,24 +55,33 @@ mgr.GetSingletonComponent<CameraPosition>()->Value = float3(1.0f, 1.0f, 1.0f);
 ### Jobs
 ```C++
 struct ExampleJob : public ecs::Job {
+    // ForEach will run once per entity that satisfies
+    // all of these conditions
     ECS_WRITE(ComponentA, A);
     ECS_READ(ComponentB, B);
     ECS_REQUIRE(ComponentC, ComponentD);
     ECS_EXCLUDE(ComponentE, ComponentF);
     ECS_REQUIRE_ANY(ComponentG, ComponentH);
 
+    // These are random accessors for components on other entites
     ECS_READ_OTHER(ComponentI, I);
     ECS_WRITE_OTHER(ComponentJ, J);
 
+    // Singleton components are guaranteed to have one instance per Manager
     ECS_READ_SINGLETON(SingletonK, K);
     ECS_WRITE_SINGLETON(SingletonL, L);
 
-    int m_inerntalData = 0;
+    // These can explicitly control the order jobs within an update group
+    // Use sparingly, as data depedencies can sort most jobs automatically
+    ECS_RUN_THIS_AFTER(PrereqJob);
+    ECS_RUN_THIS_BEFORE(DependentJob);
+
+    int m_internalData = 0;
 
     void Run (ecs::Timestep dt) override {
         m_internalData = K->Value;
 
-        // Executes the ForEach on each entity that matches the
+        // Executes the ForEach on each entity that matches all
         // WRITE/READ/REQUIRE/EXCLUDE/REQUIRE_ANY filters
         ecs::Job::Run(dt);
 
@@ -96,6 +105,7 @@ int main () {
 
 ### Update groups
 Jobs within update groups are automatically run multi-threaded
+See Jobs section for explicit ordering within an UpdateGroup
 ```C++
 struct UpdateGroupA : ecs::IUpdateGroup {};
 
@@ -130,10 +140,21 @@ struct QueuedChange : ecs::Job {
 ```
 
 ## TODO
-- unit test for changing composition of a middle of chunk entity
-- additional, more complicated job tree unit tests
-- Run component destructors
-- Support for custom allocators
+Current Version: v0.8.0
+
+Requirements for:
+- v0.9.0
+  - shared components
+- v1.0.0
+  - fix any additional known bugs
+    - run component destructors
+  - add unit tests for any additional known edge cases
+    - changing composition of an entity in the middle of chunk
+    - automate job tree validation
+    - more complicated job tree unit tests
+
+Potential future features
+  - Support for custom allocators
 
 ## License
 See [LICENSE](LICENSE)
