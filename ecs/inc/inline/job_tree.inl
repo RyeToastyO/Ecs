@@ -303,7 +303,7 @@ inline void JobTree::RunJobList (std::vector<impl::JobNode*> & list, std::vector
             }
 
             // Schedule our dependents to be run
-            RunJobList(node->dependents, node->runningTasks, dt);
+            RunJobList(currentNode->dependents, currentNode->runningTasks, dt);
         }));
     }
 
