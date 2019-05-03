@@ -248,6 +248,8 @@ inline void JobTree::SortDependencyGroups (std::vector<DependencyGroup> & groups
 
 template<typename T>
 inline JobTree * JobTree::New () {
+    static_assert(std::is_base_of<IUpdateGroup, T>::value, "JobTree only works on IUpdateGroups");
+
     // Stage 1: Gather job dependency data
     // Stage 2: Group by hard dependencies (write collision, circular read, before/after)
     // Stage 3: Build dependency graph for each group with run before/after as the deps

@@ -98,9 +98,35 @@ void TestDataSorting () {
     delete tree;
 }
 
-// Explicit Sort
+struct ExplicitGroup : ecs::IUpdateGroup {};
+
+struct Explicit1;
+struct Explicit2;
+struct Explicit3;
+
+struct Explicit1 : ecs::Job {
+    ECS_RUN_THIS_BEFORE(Explicit2);
+};
+
+struct Explicit2 : ecs::Job {
+    ECS_RUN_THIS_AFTER(Explicit1);
+    ECS_RUN_THIS_BEFORE(Explicit3);
+};
+
+struct Explicit3 : ecs::Job {
+    ECS_RUN_THIS_AFTER(Explicit2);
+};
+
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(Explicit3, ExplicitGroup);
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(Explicit2, ExplicitGroup);
+ECS_REGISTER_JOB_FOR_UPDATE_GROUP(Explicit1, ExplicitGroup);
+
 void TestExplicitSorting () {
-    // TODO:
+    ecs::impl::JobTree * tree = ecs::impl::JobTree::New<ExplicitGroup>();
+
+    // TODO: Figure out how to validate this tree automatically
+
+    delete tree;
 }
 
 struct CycleA { float Value; };
@@ -158,7 +184,6 @@ void TestDataCycle () {
     ecs::impl::JobTree * tree = ecs::impl::JobTree::New<CycleUpdateGroup>();
 
     // TODO: figure out how to validate this tree automatically
-    // It is currently wrong
 
     delete tree;
 }
