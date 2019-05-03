@@ -240,5 +240,36 @@ inline JobTree * JobTree::New () {
     return tree;
 }
 
+inline void JobTree::RunJobList (std::vector<impl::JobNode*> & list, std::vector<std::future<void>> & tasks, Timestep dt) {
+    for (impl::JobNode * node : list) {
+        tasks.push_back(std::async(std::launch::async, [node, dt]() {
+            impl::JobNode * currentNode = node;
+            // Run the assigned job
+            currentNode->job->Run(dt);
+
+            // Just continue down our dependents if we only have one
+            while (currentNode->dependents.size() == 1) {
+                currentNode = currentNode->dependents[0];
+                currentNode->job->Run(dt);
+            }
+
+            // Schedule our dependents to be run
+            RunJobList(node->dependents, node->runningTasks, dt);
+        }));
+    }
+
+    for (auto & task : tasks)
+        task.wait();
+    tasks.clear();
+}
+
+inline void JobTree::Run (Timestep dt) {
+    RunJobList(topNodes, runningTasks, dt);
+
+    ForEachNode([this](impl::JobNode * node) {
+        node->job->ApplyQueuedCommands();
+    });
+}
+
 } // namespace impl
 } // namespace ecs

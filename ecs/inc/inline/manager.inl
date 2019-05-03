@@ -226,42 +226,7 @@ inline void Manager::RunUpdateGroup (Timestep dt) {
         iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
     }
 
-    RunJobTree(iter->second, dt);
-}
-
-inline void Manager::RunJobList (std::vector<impl::JobNode*> & list, Timestep dt) {
-    for (impl::JobNode * node : list) {
-        m_runningTasks.push_back(std::async(std::launch::async, [node, dt]() {
-            // Run the assigned job
-            node->job->Run(dt);
-
-            // Just continue down our dependents if we only have one
-            std::vector<impl::JobNode*> * deps = &(node->dependents);
-            while (deps->size() == 1) {
-                (*deps)[0]->job->Run(dt);
-                deps = &((*deps)[0]->dependents);
-            }
-
-            // Let the manager figure out what to do otherwise
-            return deps->size() == 0 ? nullptr : deps;
-        }));
-    }
-}
-
-inline void Manager::RunJobTree (impl::JobTree * tree, Timestep dt) {
-    RunJobList(tree->topNodes, dt);
-
-    for (auto i = 0; i < m_runningTasks.size(); ++i) {
-        auto additionalTasks = m_runningTasks[i].get();
-        if (additionalTasks)
-            RunJobList(*additionalTasks, dt);
-    }
-
-    m_runningTasks.clear();
-
-    tree->ForEachNode([this](impl::JobNode * node) {
-        node->job->ApplyQueuedCommands();
-    });
+    iter->second->Run(dt);
 }
 
 template<typename T>
