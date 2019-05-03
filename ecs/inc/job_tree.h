@@ -46,12 +46,16 @@ private:
     template<typename T>
     void ForEachNodeInternal (JobNode * node, T func) const;
 
+    void InsertIntoTree (const std::vector<DependencyGroup*> & groups);
+
 private:
     static void AddToDependencyGroup (JobDependencyData * data, DependencyGroup * group);
+    static void BuildGroupDependencyData (std::vector<DependencyGroup> & groups);
     static void BuildHardDependencyGroups (std::vector<DependencyGroup> & groups, std::vector<JobDependencyData> & depData);
     static void BuildJobDependencyData (std::vector<JobDependencyData> & depData);
-    static void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results);
+    static void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & read, const ComponentFlags & write, LowestNode & results);
     static void RunJobList (std::vector<impl::JobNode*> & list, std::vector<std::future<void>> & tasks, Timestep dt);
+    static void SortDependencyGroups (std::vector<DependencyGroup> & groups, std::vector<DependencyGroup*> & sortedGroups);
 };
 
 } // namespace impl

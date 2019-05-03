@@ -35,10 +35,13 @@ struct JobDependencyData {
 };
 
 struct DependencyGroup {
-    ComponentFlags read;
-    ComponentFlags write;
     std::vector<JobDependencyData*> jobs;
     std::vector<JobDependencyData*> sortedJobs;
+
+    ComponentFlags read;
+    ComponentFlags write;
+
+    bool isSorted = false;
 
     std::unordered_set<JobNode*> hardDeps;
     std::unordered_set<DependencyGroup*> outReadDeps;
@@ -71,6 +74,25 @@ inline void JobTree::AddToDependencyGroup (JobDependencyData * data, DependencyG
 
     for (auto node : data->hardDeps)
         group->hardDeps.emplace(node);
+}
+
+inline void JobTree::BuildGroupDependencyData (std::vector<DependencyGroup> & groups) {
+    for (auto i = 0; i < groups.size(); ++i) {
+        auto & groupI = groups[i];
+
+        for (auto j = i + 1; j < groups.size(); ++j) {
+            auto & groupJ = groups[j];
+
+            if (groupI.read.HasAny(groupJ.write)) {
+                groupI.outReadDeps.emplace(&groupJ);
+                groupJ.inReadDeps.emplace(&groupI);
+            }
+            if (groupJ.read.HasAny(groupI.write)) {
+                groupJ.outReadDeps.emplace(&groupI);
+                groupI.inReadDeps.emplace(&groupJ);
+            }
+        }
+    }
 }
 
 inline void JobTree::BuildHardDependencyGroups (std::vector<DependencyGroup> & groups, std::vector<JobDependencyData> & depData) {
@@ -167,15 +189,61 @@ inline void JobTree::BuildJobDependencyData (std::vector<JobDependencyData> & de
     }
 }
 
-inline void JobTree::FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results) {
+inline void JobTree::FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & read, const ComponentFlags & write, LowestNode & results) {
     if (results.depth < depth) {
-        if (node->job->GetWriteFlags().HasAny(flags)) {
+        if (node->job->GetWriteFlags().HasAny(read) || node->job->GetReadFlags().HasAny(write)) {
             results.node = node;
             results.depth = depth;
         }
     }
     for (auto dependent : node->dependents)
-        FindLowestSatisfyingNode(dependent, depth + 1, flags, results);
+        FindLowestSatisfyingNode(dependent, depth + 1, read, write, results);
+}
+
+inline void JobTree::InsertIntoTree (const std::vector<DependencyGroup*> & groups) {
+    for (auto & group : groups) {
+        LowestNode results;
+        results.depth = 0;
+        results.node = nullptr;
+
+        for (auto topNode : topNodes)
+            FindLowestSatisfyingNode(topNode, 1, group->read, group->write, results);
+
+        JobNode * toInsert = group->sortedJobs[0]->node;
+        if (results.node)
+            results.node->dependents.push_back(toInsert);
+        else
+            topNodes.push_back(toInsert);
+    }
+}
+
+inline void JobTree::SortDependencyGroups (std::vector<DependencyGroup> & groups, std::vector<DependencyGroup*> & sortedGroups) {
+    while (groups.size() > sortedGroups.size()) {
+        DependencyGroup * bestGroup = nullptr;
+        uint32_t bestIncompleteDeps = UINT32_MAX;
+        for (auto & group : groups) {
+            if (group.isSorted)
+                continue;
+            uint32_t incompleteDeps = 0;
+            for (auto outRead : group.outReadDeps) {
+                if (outRead->isSorted)
+                    continue;
+                ++incompleteDeps;
+            }
+            if (incompleteDeps > bestIncompleteDeps)
+                continue;
+            if (bestGroup && bestGroup->sortedJobs.size() > group.sortedJobs.size())
+                continue;
+            if (bestGroup && bestGroup->inReadDeps.size() > group.inReadDeps.size())
+                continue;
+            bestGroup = &group;
+            bestIncompleteDeps = incompleteDeps;
+        }
+        assert(bestGroup != nullptr); // Sort logic is broken if this is triggered
+
+        bestGroup->isSorted = true;
+        sortedGroups.push_back(bestGroup);
+    }
 }
 
 template<typename T>
@@ -188,6 +256,7 @@ inline JobTree * JobTree::New () {
     // Stage 5: Build dependency graph of groups with reads as the dependencies
     // Stage 6: Topological sort dependency graph preferring largest group size, followed by incoming reads
     //          Note: Circular dependency in this stage should be allowed
+    // Stage 7: Insert groups into the tree at their lowest depended on node
 
     std::vector<UpdateGroupJob> & updateGroupJobs = GetUpdateGroupJobs<T>();
 
@@ -207,35 +276,15 @@ inline JobTree * JobTree::New () {
     std::vector<DependencyGroup> hardGroups;
     BuildHardDependencyGroups(hardGroups, depData);
 
-    // Build new dependency graph using these combined hard depedencies as nodes, and reads on them as dependencies
-    // TODO: everything past this point is wrong
+    // Stage 5: Build dependency graph between groups
+    BuildGroupDependencyData(hardGroups);
 
-    // Sort groups by longest chain
-    std::sort(hardGroups.begin(), hardGroups.end(), [](const DependencyGroup & a, const DependencyGroup & b) {
-        return a.jobs.size() > b.jobs.size();
-    });
+    // Stage 6: Topological sort the groups
+    std::vector<DependencyGroup*> sortedGroups;
+    SortDependencyGroups(hardGroups, sortedGroups);
 
-    // Insert groups into the tree at the lowest node that satisfies their combined read dependencies
-    for (auto & group : hardGroups) {
-        LowestNode results;
-        results.depth = 0;
-        results.node = nullptr;
-
-        for (auto topNode : tree->topNodes)
-            FindLowestSatisfyingNode(topNode, 1, group.read, results);
-
-        JobNode * currentNode = results.node;
-        for (auto jobData : group.jobs) {
-            if (currentNode)
-                currentNode->dependents.push_back(jobData->node);
-            else
-                tree->topNodes.push_back(jobData->node);
-
-            currentNode = jobData->node;
-        }
-    }
-
-    // TODO: Sort children by depth (this mostly happens by above sorts, but not 100%)
+    // Stage 7: Insert groups into the tree at their lowest depended on node
+    tree->InsertIntoTree(sortedGroups);
 
     return tree;
 }
