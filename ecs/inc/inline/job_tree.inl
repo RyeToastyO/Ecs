@@ -3,6 +3,9 @@
  * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
  */
 
+#include "../job_tree.h"
+#include <unordered_set>
+
 namespace ecs {
 namespace impl {
 
@@ -24,15 +27,22 @@ struct JobDependencyData {
     JobNode * node = nullptr;
     JobId id = UINT32_MAX;
     bool isGrouped = false;
-    std::vector<Job*> hardDeps; // Writes and RUN_BEFORE/AFTER
-    std::vector<Job*> outReadDeps;
-    std::vector<Job*> inReadDeps;
+    bool isSorted = false;
+    std::unordered_set<JobNode*> hardDeps; // Writes and RUN_BEFORE/AFTER
+    std::unordered_set<JobNode*> outReadDeps;
+    std::unordered_set<JobNode*> inReadDeps;
+    std::unordered_set<JobDependencyData*> orderDeps;
 };
 
 struct DependencyGroup {
     ComponentFlags read;
     ComponentFlags write;
     std::vector<JobDependencyData*> jobs;
+    std::vector<JobDependencyData*> sortedJobs;
+
+    std::unordered_set<JobNode*> hardDeps;
+    std::unordered_set<DependencyGroup*> outReadDeps;
+    std::unordered_set<DependencyGroup*> inReadDeps;
 };
 
 struct LowestNode {
@@ -58,6 +68,103 @@ inline void JobTree::AddToDependencyGroup (JobDependencyData * data, DependencyG
     group->read.SetFlags(data->node->job->GetReadFlags());
     group->write.SetFlags(data->node->job->GetWriteFlags());
     group->jobs.push_back(data);
+
+    for (auto node : data->hardDeps)
+        group->hardDeps.emplace(node);
+}
+
+inline void JobTree::BuildHardDependencyGroups (std::vector<DependencyGroup> & groups, std::vector<JobDependencyData> & depData) {
+    for (auto i = 0; i < depData.size(); ++i) {
+        auto & depI = depData[i];
+        if (depI.isGrouped)
+            continue;
+
+        DependencyGroup group;
+        AddToDependencyGroup(&depI, &group);
+
+        for (auto j = i + 1; j < depData.size(); ++j) {
+            auto & depJ = depData[j];
+            if (depJ.isGrouped)
+                continue;
+
+            if (group.hardDeps.find(depJ.node) != group.hardDeps.end()) {
+                AddToDependencyGroup(&depJ, &group);
+
+                // Reset our iterator since we might need to group other jobs that didn't previously
+                j = i;
+            }
+        }
+
+        // Stage 3-4: Topological sort group by order specs, preferring incoming read counts
+        while (group.jobs.size() > group.sortedJobs.size()) {
+            JobDependencyData * bestJob = nullptr;
+            for (auto job : group.jobs) {
+                if (job->isSorted)
+                    continue;
+                if (bestJob && bestJob->inReadDeps.size() >= job->inReadDeps.size())
+                    continue;
+                bool waitingOnOrderDep = false;
+                for (auto orderDep : job->orderDeps) {
+                    if (orderDep->isSorted)
+                        continue;
+                    waitingOnOrderDep = true;
+                    break;
+                }
+                if (waitingOnOrderDep)
+                    continue;
+                bestJob = job;
+            }
+            assert(bestJob != nullptr); // This means that there is a circular depedency in RUN_THIS_BEFORE/AFTER
+
+            bestJob->isSorted = true;
+            group.sortedJobs.push_back(bestJob);
+        }
+        for (auto j = 0; j < group.sortedJobs.size() - 1; ++j)
+            group.sortedJobs[j]->node->dependents.push_back(group.sortedJobs[j+1]->node);
+
+        groups.push_back(std::move(group));
+    }
+}
+
+inline void JobTree::BuildJobDependencyData (std::vector<JobDependencyData> & depData) {
+    for (auto i = 0; i < depData.size(); ++i) {
+        auto & depI = depData[i];
+        auto & readI = depI.node->job->GetReadFlags();
+        auto & writeI = depI.node->job->GetWriteFlags();
+        auto & runAfterI = depI.node->job->GetRunAfter();
+        auto & runBeforeI = depI.node->job->GetRunBefore();
+
+        for (auto j = i + 1; j < depData.size(); ++j) {
+            auto & depJ = depData[j];
+            auto & readJ = depJ.node->job->GetReadFlags();
+            auto & writeJ = depJ.node->job->GetWriteFlags();
+            auto & runAfterJ = depJ.node->job->GetRunAfter();
+            auto & runBeforeJ = depJ.node->job->GetRunBefore();
+
+            bool iAfterJ = runAfterI.find(depJ.id) != runAfterI.end() || runBeforeJ.find(depI.id) != runBeforeJ.end();
+            bool jAfterI = runBeforeI.find(depJ.id) != runBeforeI.end() || runAfterJ.find(depI.id) != runAfterJ.end();
+
+            bool writeMatch = writeI.HasAny(writeJ);
+            bool circularRead = writeI.HasAny(readJ) && writeJ.HasAny(readI);
+            bool explicitOrder = iAfterJ || jAfterI;
+            if (writeMatch || circularRead || explicitOrder) {
+                depI.hardDeps.emplace(depJ.node);
+                depJ.hardDeps.emplace(depI.node);
+                if (iAfterJ)
+                    depI.orderDeps.emplace(&depJ);
+                if (jAfterI)
+                    depJ.orderDeps.emplace(&depI);
+            }
+            else if (writeI.HasAny(readJ)) {
+                depI.inReadDeps.emplace(depJ.node);
+                depJ.outReadDeps.emplace(depI.node);
+            }
+            else if (writeJ.HasAny(readI)) {
+                depJ.inReadDeps.emplace(depI.node);
+                depI.outReadDeps.emplace(depJ.node);
+            }
+        }
+    }
 }
 
 inline void JobTree::FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results) {
@@ -73,6 +180,15 @@ inline void JobTree::FindLowestSatisfyingNode (JobNode * node, uint32_t depth, c
 
 template<typename T>
 inline JobTree * JobTree::New () {
+    // Stage 1: Gather job dependency data
+    // Stage 2: Group by hard dependencies (write collision, circular read, before/after)
+    // Stage 3: Build dependency graph for each group with run before/after as the deps
+    // Stage 4: Topological sort groups, preferring nodes that have the most incoming reads first
+    //          Note: Circular dependency in this stage is a user created failure and should assert
+    // Stage 5: Build dependency graph of groups with reads as the dependencies
+    // Stage 6: Topological sort dependency graph preferring largest group size, followed by incoming reads
+    //          Note: Circular dependency in this stage should be allowed
+
     std::vector<UpdateGroupJob> & updateGroupJobs = GetUpdateGroupJobs<T>();
 
     JobTree * tree = new JobTree();
@@ -84,125 +200,12 @@ inline JobTree * JobTree::New () {
         tree->nodeMemory[i].job = updateGroupJobs[i].factory();
     }
 
-    // New plan for building job tree:
-    // Stage 1: Group by hard dependencies (write collision, circular read, before/after)
-    // Stage 2: Build dependency graph for each group with run before/after as the deps
-    // Stage 3: Topological sort groups, preferring nodes that have the most incoming reads first
-    //          Note: Circular dependency in this stage is a user created failure and should assert
-    // Stage 4: Build dependency graph of groups with reads as the dependencies
-    // Stage 5: Topological sort dependency graph preferring largest group size first
-    //          Note: Circular dependency in this stage should be allowed
+    // Stage 1: Gather job dependency data
+    BuildJobDependencyData(depData);
 
-    // Gather dependency graph data
-    for (auto i = 0; i < depData.size(); ++i) {
-        auto & depI = depData[i];
-        auto & readI = depI.node->job->GetReadFlags();
-        auto & writeI = depI.node->job->GetWriteFlags();
-        auto & runAfterI = depI.node->job->GetRunAfter();
-        auto & runBeforeI = depI.node->job->GetRunBefore();
-
-        for (auto j = i + 1; j < depData.size(); ++j) {
-            auto & depJ = depData[j];
-            auto & readJ = depJ.node->job->GetReadFlags();
-            auto & writeJ = depJ.node->job->GetWriteFlags();
-            auto & runAfterJ = depJ.node->job->GetRunAfter();
-            auto & runBeforeJ = depJ.node->job->GetRunBefore();
-
-            bool after = runAfterI.find(depJ.id) != runAfterI.end() || runAfterJ.find(depI.id) != runAfterJ.end();
-            bool before = runBeforeI.find(depJ.id) != runBeforeI.end() || runBeforeJ.find(depI.id) != runBeforeJ.end();
-
-            bool writeMatch = writeI.HasAny(writeJ);
-            bool circularRead = writeI.HasAny(readJ) && writeJ.HasAny(readI);
-            bool explicitOrder = before || after;
-            if (writeMatch || circularRead || explicitOrder) {
-                depI.hardDeps.push_back(depJ.node->job);
-                depJ.hardDeps.push_back(depI.node->job);
-            }
-            else if (writeI.HasAny(readJ)) {
-                depI.inReadDeps.push_back(depJ.node->job);
-                depJ.outReadDeps.push_back(depI.node->job);
-            }
-            else if (writeJ.HasAny(readI)) {
-                depJ.inReadDeps.push_back(depI.node->job);
-                depI.outReadDeps.push_back(depJ.node->job);
-            }
-        }
-    }
-
-    // Build hard dependency groups that will need to run in serial
+    // Stage 2-4: Build hard dependency groups that will need to run in serial
     std::vector<DependencyGroup> hardGroups;
-    for (auto i = 0; i < depData.size(); ++i) {
-        auto & depI = depData[i];
-        if (depI.isGrouped)
-            continue;
-
-        DependencyGroup group;
-        AddToDependencyGroup(&depI, &group);
-
-        for (auto j = i + 1; j < depData.size(); ++j) {
-            auto & depJ = depData[j];
-            if (depJ.isGrouped)
-                continue;
-
-            // TODO: Take into account run before/after
-            if (group.write.HasAny(depJ.node->job->GetWriteFlags())) {
-                AddToDependencyGroup(&depJ, &group);
-
-                // Reset our iterator since we might need to group other jobs that didn't previously
-                j = i;
-            }
-        }
-
-        // Sort jobs in the group by incoming reads
-        std::sort(group.jobs.begin(), group.jobs.end(), [](const JobDependencyData * a, const JobDependencyData * b) {
-            return a->inReadDeps.size() > b->inReadDeps.size();
-        });
-
-        // A (Before B)
-        // D (After A)
-        // D, E, B, F, C, A, G
-        // D, E, A, B, F, C, G
-        // E, A, D, B, F, C, G
-
-        // Selection sort by explicit order
-        // TODO: validate that we don't have any cycles, currently causes infinite loop
-        for (auto mainIndex = 0; mainIndex < group.jobs.size(); ++mainIndex) {
-            for (auto secondIndex = mainIndex + 1; secondIndex < group.jobs.size(); ++secondIndex) {
-                auto mainId = group.jobs[mainIndex]->id;
-                auto secondId = group.jobs[secondIndex]->id;
-                auto & mainAfter = group.jobs[mainIndex]->node->job->GetRunAfter();
-                auto & secondBefore = group.jobs[secondIndex]->node->job->GetRunBefore();
-
-                if (mainAfter.find(secondId) != mainAfter.end() || secondBefore.find(mainId) != secondBefore.end()) {
-                    auto secondJobDepData = group.jobs[secondIndex];
-                    group.jobs.erase(group.jobs.begin() + secondIndex);
-                    group.jobs.insert(group.jobs.begin() + mainIndex, secondJobDepData);
-
-                    // This is required for correctness, but can create infinite loops
-                    secondIndex = mainIndex;
-                }
-            }
-        }
-        for (auto mainIndex = (int32_t)group.jobs.size() - 1; mainIndex >= 0; --mainIndex) {
-            for (auto secondIndex = mainIndex - 1; secondIndex >= 0; --secondIndex) {
-                auto mainId = group.jobs[mainIndex]->id;
-                auto secondId = group.jobs[secondIndex]->id;
-                auto & mainBefore = group.jobs[mainIndex]->node->job->GetRunBefore();
-                auto & secondAfter = group.jobs[secondIndex]->node->job->GetRunAfter();
-
-                if (mainBefore.find(secondId) != mainBefore.end() || secondAfter.find(mainId) != secondAfter.end()) {
-                    auto secondJobDepData = group.jobs[secondIndex];
-                    group.jobs.erase(group.jobs.begin() + secondIndex);
-                    group.jobs.insert(group.jobs.begin() + mainIndex, secondJobDepData);
-
-                    // This is required for correctness, but can create infinite loops
-                    secondIndex = mainIndex;
-                }
-            }
-        }
-
-        hardGroups.push_back(std::move(group));
-    }
+    BuildHardDependencyGroups(hardGroups, depData);
 
     // Build new dependency graph using these combined hard depedencies as nodes, and reads on them as dependencies
     // TODO: everything past this point is wrong

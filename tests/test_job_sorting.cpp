@@ -49,6 +49,8 @@ struct Job5 : ecs::Job {
 };
 
 struct Job6 : ecs::Job {
+    ECS_RUN_THIS_BEFORE(Job4);
+
     ECS_READ(CC, C);
     ECS_READ(CD, D);
 };

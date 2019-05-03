@@ -43,6 +43,8 @@ private:
 
 private:
     static void AddToDependencyGroup (JobDependencyData * data, DependencyGroup * group);
+    static void BuildHardDependencyGroups (std::vector<DependencyGroup> & groups, std::vector<JobDependencyData> & depData);
+    static void BuildJobDependencyData (std::vector<JobDependencyData> & depData);
     static void FindLowestSatisfyingNode (JobNode * node, uint32_t depth, const ComponentFlags & flags, LowestNode & results);
 };
 
