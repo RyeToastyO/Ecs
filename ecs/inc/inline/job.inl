@@ -62,11 +62,11 @@ inline void Job::ApplyQueuedCommands () {
     m_commands.Apply(m_manager);
 }
 
-inline const std::set<impl::JobId> & Job::GetRunAfter () const {
+inline const std::unordered_set<impl::JobId> & Job::GetRunAfter () const {
     return m_runAfter;
 }
 
-inline const std::set<impl::JobId> & Job::GetRunBefore () const {
+inline const std::unordered_set<impl::JobId> & Job::GetRunBefore () const {
     return m_runBefore;
 }
 

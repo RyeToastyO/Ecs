@@ -13,7 +13,7 @@
 #include "helpers/ref.h"
 
 #include <cstdint>
-#include <set>
+#include <unordered_set>
 #include <type_traits>
 #include <vector>
 
@@ -74,8 +74,8 @@ private:
     uint32_t m_currentIndex = 0;
     std::vector<impl::Chunk *> m_chunks;
 
-    std::set<impl::JobId> m_runAfter;
-    std::set<impl::JobId> m_runBefore;
+    std::unordered_set<impl::JobId> m_runAfter;
+    std::unordered_set<impl::JobId> m_runBefore;
 
     std::vector<impl::IComponentAccess *> m_dataAccess;
     std::vector<impl::IComponentAccess *> m_singletonAccess;
@@ -126,8 +126,8 @@ private:
 
 private:
     friend struct impl::JobTree;
-    const std::set<impl::JobId> & GetRunAfter () const;
-    const std::set<impl::JobId> & GetRunBefore () const;
+    const std::unordered_set<impl::JobId> & GetRunAfter () const;
+    const std::unordered_set<impl::JobId> & GetRunBefore () const;
     const impl::ComponentFlags & GetReadFlags () const;
     const impl::ComponentFlags & GetWriteFlags () const;
 };
