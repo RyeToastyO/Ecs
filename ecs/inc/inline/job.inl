@@ -3,8 +3,6 @@
  * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
  */
 
-#include "../component_access.h"
-
 namespace ecs {
 
 // Job
@@ -52,8 +50,24 @@ inline void Job::AddWriteSingleton (impl::IComponentAccess * access) {
     m_singletonAccess.push_back(access);
 }
 
+inline void Job::AddRunAfter (impl::IJobOrdering * ordering) {
+    ordering->ApplyTo(m_runAfter);
+}
+
+inline void Job::AddRunBefore (impl::IJobOrdering * ordering) {
+    ordering->ApplyTo(m_runBefore);
+}
+
 inline void Job::ApplyQueuedCommands () {
     m_commands.Apply(m_manager);
+}
+
+inline const std::unordered_set<impl::JobId> & Job::GetRunAfter () const {
+    return m_runAfter;
+}
+
+inline const std::unordered_set<impl::JobId> & Job::GetRunBefore () const {
+    return m_runBefore;
 }
 
 inline const impl::ComponentFlags & Job::GetReadFlags () const {
@@ -148,7 +162,7 @@ inline JobId JobIdGetter<T>::GetId () {
 }
 
 template<typename T>
-inline static JobId GetJobId () {
+inline JobId GetJobId () {
     static_assert(std::is_base_of<Job, T>::value, "Must inherit Job to use GetJobId");
     return JobIdGetter<typename std::remove_const<T>::type>::GetId();
 }

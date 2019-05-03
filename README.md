@@ -132,7 +132,6 @@ struct QueuedChange : ecs::Job {
 ## TODO
 - unit test for changing composition of a middle of chunk entity
 - additional, more complicated job tree unit tests
-- Job ordering control
 - Run component destructors
 - Support for custom allocators
 

@@ -12,7 +12,6 @@
 #include "update_group.h"
 
 #include <cstdint>
-#include <future>
 #include <unordered_map>
 #include <vector>
 
@@ -71,10 +70,10 @@ private:
     std::unordered_map<impl::UpdateGroupId, impl::JobTree*> m_updateGroups;
     std::unordered_map<impl::ComponentFlags, impl::Chunk*> m_chunks;
     std::unordered_map<impl::ComponentId, ISingletonComponent*> m_singletonComponents;
-    std::vector<std::future<std::vector<impl::JobNode*>*>> m_runningTasks;
 
 private:
-    void BuildJobTreeInternal (impl::UpdateGroupId id, std::vector<impl::JobFactory> & factories);
+    template<typename T>
+    void BuildJobTreeInternal ();
 
     Entity CreateEntityImmediateInternal (impl::ComponentFlags composition);
 
@@ -90,9 +89,6 @@ private:
     void SetCompositionInternal (impl::EntityData & entityData, const impl::ComponentFlags & composition);
 
     void RegisterJobInternal (Job * job);
-
-    void RunJobList (std::vector<impl::JobNode*> & list, Timestep dt);
-    void RunJobTree (impl::JobTree * tree, Timestep dt);
 };
 
 } // namespace ecs

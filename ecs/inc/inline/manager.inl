@@ -188,7 +188,7 @@ inline void Manager::NotifyChunkCreated (impl::Chunk * chunk) {
     for (const auto & jobIter : m_manualJobs)
         jobIter.second->OnChunkAdded(chunk);
     for (const auto & groupIter : m_updateGroups) {
-        ForEachNode(groupIter.second, [chunk](impl::JobNode * node) {
+        groupIter.second->ForEachNode([chunk](impl::JobNode * node) {
             node->job->OnChunkAdded(chunk);
         });
     }
@@ -222,56 +222,22 @@ inline void Manager::RunUpdateGroup (Timestep dt) {
 
     auto iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
     if (iter == m_updateGroups.end()) {
-        BuildJobTreeInternal(impl::GetUpdateGroupId<T>(), impl::GetUpdateGroupJobs<T>());
+        BuildJobTreeInternal<T>();
         iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
     }
 
-    RunJobTree(iter->second, dt);
+    iter->second->Run(dt);
 }
 
-inline void Manager::RunJobList (std::vector<impl::JobNode*> & list, Timestep dt) {
-    for (impl::JobNode * node : list) {
-        m_runningTasks.push_back(std::async(std::launch::async, [node, dt]() {
-            // Run the assigned job
-            node->job->Run(dt);
+template<typename T>
+inline void Manager::BuildJobTreeInternal () {
+    impl::JobTree * tree = impl::JobTree::New<T>();
 
-            // Just continue down our dependents if we only have one
-            std::vector<impl::JobNode*> * deps = &(node->dependents);
-            while (deps->size() == 1) {
-                (*deps)[0]->job->Run(dt);
-                deps = &((*deps)[0]->dependents);
-            }
-
-            // Let the manager figure out what to do otherwise
-            return deps->size() == 0 ? nullptr : deps;
-        }));
-    }
-}
-
-inline void Manager::RunJobTree (impl::JobTree * tree, Timestep dt) {
-    RunJobList(tree->topNodes, dt);
-
-    for (auto i = 0; i < m_runningTasks.size(); ++i) {
-        auto additionalTasks = m_runningTasks[i].get();
-        if (additionalTasks)
-            RunJobList(*additionalTasks, dt);
-    }
-
-    m_runningTasks.clear();
-
-    ForEachNode(tree, [this](impl::JobNode * node) {
-        node->job->ApplyQueuedCommands();
-    });
-}
-
-inline void Manager::BuildJobTreeInternal (impl::UpdateGroupId id, std::vector<impl::JobFactory> & factories) {
-    impl::JobTree * tree = impl::NewJobTree(factories);
-
-    ForEachNode(tree, [this](impl::JobNode * node) {
+    tree->ForEachNode([this](impl::JobNode * node) {
         RegisterJobInternal(node->job);
     });
 
-    m_updateGroups.emplace(id, tree);
+    m_updateGroups.emplace(impl::GetUpdateGroupId<T>(), tree);
 }
 
 inline void Manager::RegisterJobInternal (Job * job) {

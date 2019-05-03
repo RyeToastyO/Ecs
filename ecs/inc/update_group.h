@@ -29,11 +29,16 @@ typedef uint32_t UpdateGroupId;
 // Registration
 typedef Job* (*JobFactory)();
 
+struct UpdateGroupJob {
+    JobFactory factory;
+    JobId id;
+};
+
 template<typename T>
 UpdateGroupId GetUpdateGroupId ();
 
 template<typename T>
-std::vector<JobFactory> & GetUpdateGroupJobs ();
+std::vector<UpdateGroupJob> & GetUpdateGroupJobs ();
 
 template<typename TJob, typename TUpdateGroup>
 UpdateGroupId RegisterJobForUpdateGroup ();

@@ -4,6 +4,7 @@
  */
 
 #include "test_correctness.h"
+#include "test_job_sorting.h"
 #include "test_multi_threading.h"
 #include "test_speed.h"
 
@@ -13,13 +14,14 @@ namespace test {
 int s_errorCount = 0;
 std::mutex s_errorLock;
 
-}
+} // namespace test
 
 // Main
 int main () {
     test::TestCorrectness();
     test::TestSpeed();
     test::TestMultipleManagers();
+    test::TestJobSorting();
 
     return test::s_errorCount;
 }
