@@ -152,7 +152,6 @@ struct QueuedChange : ecs::Job {
 ### Configurable Settings
 ```C++
 #define ECS_MAX_COMPONENTS 256
-#define ECS_MAX_THREADS 4
 #define ECS_TIMESTEP_TYPE float
 ```
 
