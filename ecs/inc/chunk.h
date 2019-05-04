@@ -49,6 +49,7 @@ private: // Helpers
     void AllocateComponentArrays (uint32_t capacity);
     void Clear ();
     void CopyTo (uint32_t from, uint32_t to);
+    void RemoveEntityInternal (uint32_t index, bool destruct);
     void Resize (uint32_t capacity);
 };
 

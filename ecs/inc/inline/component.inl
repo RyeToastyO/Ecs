@@ -8,6 +8,10 @@
 namespace ecs {
 namespace impl {
 
+inline std::unordered_map<ComponentId, ComponentDestructor> & ComponentRegistry::GetComponentDestructorMap () {
+    static std::unordered_map<ComponentId, ComponentDestructor> s_destructorMap;
+    return s_destructorMap;
+}
 inline std::unordered_map<ComponentId, size_t> & ComponentRegistry::GetComponentSizeMap () {
     static std::unordered_map<ComponentId, size_t> s_sizeMap;
     return s_sizeMap;
@@ -23,9 +27,10 @@ inline size_t ComponentRegistry::GetComponentSize (ComponentId id) {
     return iter->second;
 }
 
-inline ComponentId ComponentRegistry::RegisterComponent (size_t size) {
+inline ComponentId ComponentRegistry::RegisterComponent (size_t size, ComponentDestructor destructor) {
     static ComponentId s_idCounter = 0;
     GetComponentSizeMap().emplace(s_idCounter, size);
+    GetComponentDestructorMap().emplace(s_idCounter, destructor);
     return s_idCounter++;
 }
 
@@ -36,7 +41,10 @@ struct Component {
 
 template<typename T>
 inline ComponentId Component<T>::GetId () {
-    static ComponentId id = ComponentRegistry::RegisterComponent(std::is_empty<T>() ? 0 : sizeof(T));
+    static ComponentId id = ComponentRegistry::RegisterComponent(
+        std::is_empty<T>() ? 0 : sizeof(T),
+        [](void * component) { reinterpret_cast<T*>(component)->~T(); }
+    );
     assert(id < ECS_MAX_COMPONENTS);
     return id;
 }
@@ -48,6 +56,10 @@ inline static ComponentId GetComponentId () {
 
 inline static size_t GetComponentSize (ComponentId id) {
     return ComponentRegistry::GetComponentSize(id);
+}
+
+inline static void DestructComponent (ComponentId id, void * component) {
+    ComponentRegistry::GetComponentDestructorMap().find(id)->second(component);
 }
 
 } // namespace impl
