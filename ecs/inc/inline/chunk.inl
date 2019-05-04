@@ -90,12 +90,6 @@ inline uint32_t Chunk::AllocateEntity () {
 }
 
 inline void Chunk::Clear () {
-    for (auto & compIter : m_componentArrays) {
-        auto compSize = GetComponentSize(compIter.first);
-        for (uint32_t i = 0; i < m_count; ++i)
-            DestructComponent(compIter.first, compIter.second + (i * compSize));
-    }
-
     m_count = 0;
     m_capacity = 0;
 
@@ -133,28 +127,18 @@ inline uint32_t Chunk::MoveTo (uint32_t from, Chunk & to) {
     }
 
     // Remove from this chunk
-    RemoveEntityInternal(from, false /* !destruct */);
+    RemoveEntity(from);
 
     // Return the new chunk index
     return newIndex;
 }
 
 inline void Chunk::RemoveEntity (uint32_t index) {
-    RemoveEntityInternal(index, true /* destruct */);
-}
-
-inline void Chunk::RemoveEntityInternal (uint32_t index, bool destruct) {
     if (index >= m_count)
         return;
 
     // Copy whatever was in our last slot to the removed index
     CopyTo(--m_count, index);
-
-    if (destruct) {
-        for (const auto & compIter : m_componentArrays) {
-            DestructComponent(compIter.first, compIter.second);
-        }
-    }
 }
 
 inline void Chunk::CopyTo (uint32_t from, uint32_t to) {

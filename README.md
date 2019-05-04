@@ -38,6 +38,7 @@ mgr.DestroyEntityImmediate(entity);
 ```
 
 ### Component Manipulation
+Note: Standard components must be plain old data
 ```C++
 mgr.AddComponents(entity, ComponentC{30.0f}, ComponentD{1});
 mgr.RemoveComponents<ComponentA, ComponentB>(entity);
@@ -161,12 +162,11 @@ Requirements for:
   - shared components
 - v1.0.0
   - fix any additional known bugs
-    - weigh performance cost vs benefits of supporting move assignment
+    - no known
   - add unit tests for any additional known edge cases
     - changing composition of an entity in the middle of chunk
     - automate job tree validation
     - more complicated job tree unit tests
-    - component destructors
 
 Potential future features
   - Support for custom allocators
