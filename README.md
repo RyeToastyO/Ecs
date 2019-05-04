@@ -161,7 +161,7 @@ Requirements for:
   - shared components
 - v1.0.0
   - fix any additional known bugs
-    - (no known)
+    - weigh performance cost vs benefits of supporting move assignment
   - add unit tests for any additional known edge cases
     - changing composition of an entity in the middle of chunk
     - automate job tree validation
