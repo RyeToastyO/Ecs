@@ -154,7 +154,7 @@ struct QueuedChange : ecs::Job {
 ```
 
 ## TODO
-Current Version: v0.8.1
+Current Version: v0.8.2
 
 Requirements for:
 - v0.9.0
@@ -166,6 +166,7 @@ Requirements for:
     - changing composition of an entity in the middle of chunk
     - automate job tree validation
     - more complicated job tree unit tests
+    - component destructors
 
 Potential future features
   - Support for custom allocators
