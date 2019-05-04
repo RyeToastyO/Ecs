@@ -104,7 +104,7 @@ int main () {
 ```
 
 ### Update groups
-Jobs within update groups are automatically run multi-threaded
+Jobs within update groups are automatically run multi-threaded.
 See Jobs section for explicit ordering within an UpdateGroup
 ```C++
 struct UpdateGroupA : ecs::IUpdateGroup {};
@@ -118,10 +118,8 @@ int main () {
 ```
 
 ### Chunk Iteration
-Useful when you can operate on entities in batches, such as
-rendering all entities with the same sprite/model.  Will be more
-useful once shared components are implemented so you can store a
-pointer to the bullet model as a component.
+Useful when you can operate on entities in batches, such as rendering all entities with the same sprite/model.
+Will be more useful once shared components are implemented so you can store a pointer to the bullet model as a component.
 ```C++
 struct ChunkRender : ecs::Job {
     ECS_READ(transform::Position, Pos);
