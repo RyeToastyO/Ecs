@@ -117,6 +117,23 @@ int main () {
 }
 ```
 
+### Chunk Iteration
+Useful when you can operate on entities in batches, such as
+rendering all entities with the same sprite/model.  Will be more
+useful once shared components are implemented so you can store a
+pointer to the bullet model as a component.
+```C++
+struct ChunkRender : ecs::Job {
+    ECS_READ(transform::Position, Pos);
+    ECS_REQUIRE(model::IsBullet);
+
+    void ForEachChunk (ecs::Timestep) override {
+        transform::Position * posArray = Pos.GetChunkComponentArray();
+        RenderSystem::RenderBullets(posArray, GetChunkEntityCount());
+    }
+};
+```
+
 ### Queued Composition Changes from Jobs
 Applied after completion of RunJob<> or RunUpdateGroup<>
 ```C++
@@ -140,7 +157,7 @@ struct QueuedChange : ecs::Job {
 ```
 
 ## TODO
-Current Version: v0.8.0
+Current Version: v0.8.1
 
 Requirements for:
 - v0.9.0

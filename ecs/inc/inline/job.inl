@@ -78,6 +78,11 @@ inline const impl::ComponentFlags & Job::GetWriteFlags () const {
     return m_write;
 }
 
+inline uint32_t Job::GetChunkEntityCount () const {
+    assert(m_chunkIndex < m_chunks.size()); // Don't call this outside ForEachChunk or ForEach
+    return m_chunks[m_chunkIndex]->GetCount();
+}
+
 template<typename T>
 inline bool Job::HasComponent (Entity entity) const {
     return m_manager->HasComponent<T>(entity);
@@ -111,12 +116,18 @@ inline bool Job::IsValid (const impl::Chunk * chunk) const {
 }
 
 inline void Job::Run (Timestep dt) {
-    for (auto chunk : m_chunks) {
+    for (m_chunkIndex = 0; m_chunkIndex < m_chunks.size(); ++m_chunkIndex) {
+        impl::Chunk * chunk = m_chunks[m_chunkIndex];
         for (auto dataAccess : m_dataAccess)
             dataAccess->UpdateChunk(chunk);
-        for (m_currentIndex = 0; m_currentIndex < chunk->GetCount(); ++m_currentIndex)
-            ForEach(dt);
+        ForEachChunk(dt);
     }
+}
+
+inline void Job::ForEachChunk (Timestep dt) {
+    impl::Chunk * chunk = m_chunks[m_chunkIndex];
+    for (m_entityIndex = 0; m_entityIndex < chunk->GetCount(); ++m_entityIndex)
+        ForEach(dt);
 }
 
 template<typename T, typename...Args>

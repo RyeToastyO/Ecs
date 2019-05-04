@@ -47,6 +47,8 @@ struct JobTree;
 
 // Job base class
 struct Job {
+    uint32_t GetChunkEntityCount () const;
+
     template<typename T>
     bool HasComponent (Entity entity) const;
 
@@ -65,13 +67,15 @@ public:
     virtual ~Job () {}
 
     virtual void Run (Timestep dt);
+    virtual void ForEachChunk (Timestep dt);
     virtual void ForEach (Timestep dt) { ECS_REF(dt); }
 
 private:
     bool IsValid (const impl::Chunk * chunk) const;
 
 private:
-    uint32_t m_currentIndex = 0;
+    uint32_t m_chunkIndex = 0;
+    uint32_t m_entityIndex = 0;
     std::vector<impl::Chunk *> m_chunks;
 
     std::unordered_set<impl::JobId> m_runAfter;

@@ -65,8 +65,9 @@ template<typename T>
 struct Read : public DataComponentAccess<T> {
     inline Read (Job & job) : DataComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddRead(this); }
-    inline const T & operator* () const { return this->m_componentArray[this->m_job.m_currentIndex]; }
-    inline const T * operator-> () const { return this->m_componentArray + this->m_job.m_currentIndex; }
+    inline const T * GetChunkComponentArray () const { return this->m_componentArray; }
+    inline const T & operator* () const { return this->m_componentArray[this->m_job.m_entityIndex]; }
+    inline const T * operator-> () const { return this->m_componentArray + this->m_job.m_entityIndex; }
 };
 
 template<typename T>
@@ -100,8 +101,9 @@ template<typename T>
 struct Write : public DataComponentAccess<T> {
     inline Write (Job & job) : DataComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddWrite(this); }
-    inline T & operator* () const { return this->m_componentArray[this->m_job.m_currentIndex]; }
-    inline T * operator-> () const { return this->m_componentArray + this->m_job.m_currentIndex; }
+    inline T * GetChunkComponentArray () const { return this->m_componentArray; }
+    inline T & operator* () const { return this->m_componentArray[this->m_job.m_entityIndex]; }
+    inline T * operator-> () const { return this->m_componentArray + this->m_job.m_entityIndex; }
 };
 
 template<typename T>

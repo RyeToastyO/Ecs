@@ -356,6 +356,40 @@ void TestSingletonComponents () {
     EXPECT_TRUE(singleton && singleton->Value == 15.0f);
 }
 
+struct ChunkJobExecute : ecs::Job {
+    ECS_WRITE(test::FloatA, A);
+    ECS_READ(test::FloatB, B);
+
+    void ForEachChunk (ecs::Timestep) override {
+        auto aArray = A.GetChunkComponentArray();
+        auto bArray = B.GetChunkComponentArray();
+        for (uint32_t i = 0; i < GetChunkEntityCount(); ++i)
+            aArray[i].Value += bArray[i].Value;
+    }
+};
+
+struct ChunkJobValidate : ecs::Job {
+    ECS_READ(test::FloatA, A);
+
+    void ForEach (ecs::Timestep) override {
+        EXPECT_TRUE(A->Value == 3.0f);
+    }
+};
+
+void TestChunkJob () {
+    ecs::Manager mgr;
+
+    mgr.CreateEntityImmediate(test::FloatA{ 1.0f }, test::FloatB{ 2.0f });
+    mgr.CreateEntityImmediate(test::FloatA{ 1.0f }, test::FloatB{ 2.0f });
+    mgr.CreateEntityImmediate(test::FloatA{ 1.0f }, test::FloatB{ 2.0f });
+    mgr.CreateEntityImmediate(test::FloatA{ 1.0f }, test::FloatB{ 2.0f }, test::FloatC{ 3.0f });
+    mgr.CreateEntityImmediate(test::FloatA{ 1.0f }, test::FloatB{ 2.0f }, test::FloatC{ 3.0f });
+    mgr.CreateEntityImmediate(test::FloatA{ 3.0f });
+
+    mgr.RunJob<ChunkJobExecute>(0.0f);
+    mgr.RunJob<ChunkJobValidate>(0.0f);
+}
+
 struct UpdateGroupA : ecs::IUpdateGroup {};
 struct UpdateGroupB : ecs::IUpdateGroup {};
 
@@ -445,6 +479,7 @@ void TestCorrectness () {
     TestJob();
     TestReadWriteOther();
     TestSingletonComponents();
+    TestChunkJob();
     TestUpdateGroups();
     TestManualMultiThreading();
     TestMultiThreading();
