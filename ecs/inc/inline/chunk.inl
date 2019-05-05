@@ -33,7 +33,8 @@ inline T * Chunk::Find (uint32_t index) {
 
 inline Chunk::Chunk (const ComponentFlags & composition)
     : m_composition(composition)
-    , m_componentInfo(composition.GetComponentInfo()) {
+    , m_componentInfo(composition.GetComponentInfo())
+{
     AllocateComponentArrays(kDefaultChunkSize);
 }
 
