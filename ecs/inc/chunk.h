@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "composition.h"
+#include "component_flags.h"
 
 #include <cstdint>
 #include <unordered_map>

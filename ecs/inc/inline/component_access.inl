@@ -3,7 +3,7 @@
  * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
  */
 
-#include "../composition.h"
+#include "../component_flags.h"
 
 namespace ecs {
 namespace impl {

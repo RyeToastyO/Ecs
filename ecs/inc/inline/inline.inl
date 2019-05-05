@@ -9,7 +9,7 @@
 #include "command_queue.inl"
 #include "component.inl"
 #include "component_access.inl"
-#include "composition.inl"
+#include "component_flags.inl"
 #include "entity.inl"
 #include "job_order.inl" // must be before job.inl
 #include "job.inl"
