@@ -12,6 +12,11 @@
 
 namespace ecs {
 
+struct ISharedComponent {
+    virtual ~ISharedComponent () {}
+    virtual bool operator== (const ISharedComponent & rhs) const = 0;
+};
+
 struct ISingletonComponent {
     virtual ~ISingletonComponent () {}
 };
