@@ -8,6 +8,7 @@
 #include "../config.h"
 
 #include <cstdint>
+#include <memory>
 #include <unordered_map>
 
 namespace ecs {
@@ -16,6 +17,7 @@ struct ISharedComponent {
     virtual ~ISharedComponent () {}
     virtual bool operator== (const ISharedComponent & rhs) const = 0;
 };
+typedef std::shared_ptr<ISharedComponent> ISharedComponentPtr;
 
 struct ISingletonComponent {
     virtual ~ISingletonComponent () {}

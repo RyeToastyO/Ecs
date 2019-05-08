@@ -68,16 +68,16 @@ private:
     std::vector<uint32_t> m_freeList;
     std::unordered_map<impl::JobId, Job*> m_manualJobs;
     std::unordered_map<impl::UpdateGroupId, impl::JobTree*> m_updateGroups;
-    std::unordered_map<impl::ComponentFlags, impl::Chunk*> m_chunks;
+    std::unordered_map<impl::Composition, impl::Chunk*> m_chunks;
     std::unordered_map<impl::ComponentId, ISingletonComponent*> m_singletonComponents;
 
 private:
     template<typename T>
     void BuildJobTreeInternal ();
 
-    Entity CreateEntityImmediateInternal (impl::ComponentFlags composition);
+    Entity CreateEntityImmediateInternal (impl::Composition & composition);
 
-    impl::Chunk * GetOrCreateChunk (const impl::ComponentFlags & composition);
+    impl::Chunk * GetOrCreateChunk (const impl::Composition & composition);
 
     void NotifyChunkCreated (impl::Chunk * chunk);
 
@@ -86,7 +86,7 @@ private:
     template<typename T, typename...Args>
     void SetComponentsInternal (const impl::EntityData & entity, T component, Args...args) const;
 
-    void SetCompositionInternal (impl::EntityData & entityData, const impl::ComponentFlags & composition);
+    void SetCompositionInternal (impl::EntityData & entityData, const impl::Composition & composition);
 
     void RegisterJobInternal (Job * job);
 };

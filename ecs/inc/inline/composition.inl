@@ -3,13 +3,25 @@
  * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
  */
 
-#include "../composition.h"
-
 namespace ecs {
 namespace impl {
 
+inline const ComponentFlags & Composition::GetComponentFlags () const {
+    return m_flags;
+}
+
 inline size_t Composition::GetHash () const {
-    return m_flags.GetHash();
+    // Start with the hash of our component flags
+    size_t hash = m_flags.GetHash();
+
+    // Apply our ordered shared component values
+    auto iter = m_shared.begin();
+    while (iter != m_shared.end()) {
+        HashCombine(hash, iter->second);
+        ++iter;
+    }
+
+    return hash;
 }
 
 inline bool Composition::operator== (const Composition & rhs) const {
@@ -28,6 +40,39 @@ inline bool Composition::operator== (const Composition & rhs) const {
     }
 
     return true;
+}
+
+template<typename T, typename...Args>
+inline void Composition::RemoveComponents () {
+    m_flags.ClearFlags<T, Args...>();
+    RemoveSharedComponentsInternal<T, Args...>();
+}
+
+template<typename T, typename...Args>
+inline void Composition::RemoveSharedComponentsInternal () {
+    if (std::is_base_of<ISharedComponent, T>::value)
+        m_shared.erase(GetComponentId<T>());
+    RemoveSharedComponentsInternal<Args...>();
+}
+
+template<typename T, typename...Args>
+inline void Composition::SetComponents (T component, Args...args) {
+    m_flags.SetFlags<T, Args...>();
+    SetSharedComponentsInternal(component, args...);
+}
+
+inline void Composition::SetSharedComponentsInternal () {};
+
+template<typename T, typename...Args>
+inline void Composition::SetSharedComponentsInternal (std::shared_ptr<T> component, Args...args) {
+    m_shared.emplace(GetComponentId<T>(), component);
+    SetSharedComponentsInternal(args...);
+}
+
+template<typename T, typename...Args>
+inline void Composition::SetSharedComponentsInternal (T component, Args...args) {
+    ECS_REF(component);
+    SetSharedComponentsInternal(args...);
 }
 
 } // namespace impl

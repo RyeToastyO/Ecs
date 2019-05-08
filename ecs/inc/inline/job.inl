@@ -103,13 +103,13 @@ inline void Job::OnRegistered (Manager * manager) {
 }
 
 inline bool Job::IsValid (const impl::Chunk * chunk) const {
-    const auto & composition = chunk->GetComposition();
-    if (!composition.HasAll(m_required))
+    const auto & componentFlags = chunk->GetComponentFlags();
+    if (!componentFlags.HasAll(m_required))
         return false;
-    if (!composition.HasNone(m_exclude))
+    if (!componentFlags.HasNone(m_exclude))
         return false;
     for (const auto & any : m_requireAny) {
-        if (!composition.HasAny(any))
+        if (!componentFlags.HasAny(any))
             return false;
     }
     return true;

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "component_flags.h"
+#include "composition.h"
 
 #include <cstdint>
 #include <unordered_map>
@@ -17,7 +17,7 @@ namespace impl {
 typedef uint8_t byte_t;
 
 struct Chunk {
-    Chunk (const ComponentFlags & composition);
+    Chunk (const Composition & composition);
     ~Chunk ();
 
     static const uint32_t kDefaultChunkSize = 1;
@@ -25,7 +25,8 @@ struct Chunk {
 
     uint32_t GetCount () const;
     uint32_t GetCapacity () const;
-    const ComponentFlags & GetComposition () const;
+    const Composition & GetComposition () const;
+    const ComponentFlags & GetComponentFlags () const;
 
     template<typename T>
     T * Find ();
@@ -42,7 +43,7 @@ private: // Data
 
     uint32_t m_count = 0;
     uint32_t m_capacity = 0;
-    ComponentFlags m_composition;
+    Composition m_composition;
     ComponentInfo m_componentInfo;
 
 private: // Helpers
