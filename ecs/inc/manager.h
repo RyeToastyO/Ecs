@@ -27,6 +27,20 @@ struct EntityData {
 
 } // namespace impl
 
+// - Used to:
+//     - Create/Destroy/Modify Entities
+//     - Lookup Entity components
+//     - Get Singleton components
+//     - Run Jobs and UpdateGroups
+// - Recommended usage:
+//     - Create a single, global ecs::Manager (Multiple managers existing is supported)
+//     - Add jobs to as few UpdateGroups are needed to accomplish desired functionality
+//         - This allows for better thread saturation during runs of UpdateGroups
+//         - i.e. Don't create groups per feature, make a group per frame phase
+// - Warnings:
+//     - The Manager itself is not thread-safe
+//         - Do not run multiple UpdateGroups at the same time
+//         - Do not call non-const functions if there could be another thread also accessing the Manager
 class Manager {
 public:
     Manager ();

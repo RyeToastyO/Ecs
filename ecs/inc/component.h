@@ -12,6 +12,10 @@
 
 namespace ecs {
 
+// - Create a struct that inherits ecs::ISingletonComponent
+// - Guaranteed to exist
+// - One per Manager, use Manager->GetSingletonComponent<T>()
+// - Safe to contain dynamically allocated data
 struct ISingletonComponent {
     virtual ~ISingletonComponent () {}
 };

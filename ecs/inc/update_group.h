@@ -13,6 +13,9 @@
 
 namespace ecs {
 
+// - Create an empty struct type that inherits ecs::IUpdateGroup
+// - Use ECS_REGISTER_JOB_FOR_UPDATE_GROUP(JobType, UpdateGroupType) to add jobs to the group
+// - Execute the jobs in the group using Manager->RunUpdateGroup<UpdateGroupType>(Timestep);
 struct IUpdateGroup {
     virtual ~IUpdateGroup () {}
 };

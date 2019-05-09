@@ -11,6 +11,9 @@
 
 namespace ecs {
 
+// - A handle to an Entity
+// - Safe to hold on to
+// - Should only be used with the Manager that created it
 struct Entity {
     uint32_t index = 0;
     uint32_t generation = 0;

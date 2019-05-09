@@ -45,7 +45,20 @@ struct JobTree;
 
 } // namespace impl
 
-// Job base class
+// - Create a struct that inherits ecs::Job
+// - Override one or more of the following (most commonly just ForEach):
+//     - Run
+//         - Used to do work before and after per-entity work
+//         - Call Job::Run(dt) to allow the ForEachChunk and ForEach to run
+//     - ForEachChunk
+//         - Used to do batch work on contiguous chunks of entities
+//         - Call Job::ForEachChunk(dt) to allow ForEach to run
+//     - ForEach
+//         - Used to do work on each entity
+// - Specify your entity filters using the macros from component_access.h
+// - Run manually using Manager->RunJob<JobType>(Timestep)
+// - Register for an IUpdateGroup using ECS_REGISTER_JOB_FOR_UPDATE_GROUP(JobType, UpdateGroupType)
+// - Specify explicit job ordering within a group using the macros from job_order.h
 struct Job {
     uint32_t GetChunkEntityCount () const;
 
