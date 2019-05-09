@@ -11,7 +11,7 @@ namespace impl {
 
 template<typename T>
 inline T * Chunk::Find () {
-    static_assert(!std::is_base_of<ISharedComponent, T>::value, "Write access is not allowed on shared components");
+    static_assert(!std::is_base_of<ISharedComponent, T>::value, "Use FindShared");
 
     // Give a valid pointer if a tag component is requested, but don't
     // bother looking it up in the component arrays since we didn't allocate memory for it
@@ -33,11 +33,22 @@ inline T * Chunk::Find (uint32_t index) {
     return arrayStart ? arrayStart + index : nullptr;
 }
 
+template<typename T>
+inline const T * Chunk::FindShared () const {
+    static_assert(std::is_base_of<ISharedComponent, T>::value, "Must inherit ISharedComponent");
+
+    auto iter = m_sharedComponents.find(GetComponentId<T>());
+    if (iter == m_sharedComponents.end())
+        return nullptr;
+    return static_cast<const T*>(iter->second);
+}
+
 inline Chunk::Chunk (const Composition & composition)
     : m_composition(composition)
     , m_componentInfo(composition.GetComponentFlags().GetComponentInfo())
 {
     AllocateComponentArrays(kDefaultChunkSize);
+    InitializeSharedComponents();
 }
 
 inline Chunk::~Chunk () {
@@ -65,6 +76,13 @@ inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
         m_componentArrays.emplace(compId, arrayStart);
         arrayStart += size * capacity;
     }
+}
+
+inline void Chunk::InitializeSharedComponents () {
+    const auto & sharedComps = m_composition.GetSharedComponents();
+
+    for (const auto & iter : sharedComps)
+        m_sharedComponents.emplace(iter.first, iter.second);
 }
 
 inline void Chunk::Resize (uint32_t capacity) {

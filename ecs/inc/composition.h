@@ -15,6 +15,7 @@ namespace impl {
 
 struct Composition {
     const ComponentFlags & GetComponentFlags () const;
+    const std::map<ComponentId, ISharedComponentPtr> & GetSharedComponents () const;
 
     size_t GetHash () const;
     bool operator== (const Composition & rhs) const;

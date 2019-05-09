@@ -10,6 +10,10 @@ inline const ComponentFlags & Composition::GetComponentFlags () const {
     return m_flags;
 }
 
+inline const std::map<ComponentId, ISharedComponentPtr> & Composition::GetSharedComponents () const {
+    return m_shared;
+}
+
 inline size_t Composition::GetHash () const {
     // Start with the hash of our component flags
     size_t hash = m_flags.GetHash();

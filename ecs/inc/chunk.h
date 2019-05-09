@@ -33,6 +33,9 @@ struct Chunk {
     template<typename T>
     T * Find (uint32_t index);
 
+    template<typename T>
+    const T * FindShared () const;
+
     uint32_t AllocateEntity ();
     uint32_t MoveTo (uint32_t from, Chunk & to);
     void RemoveEntity (uint32_t index);
@@ -40,6 +43,8 @@ struct Chunk {
 private: // Data
     std::unordered_map<ComponentId, byte_t*> m_componentArrays;
     byte_t * m_componentMemory = nullptr;
+
+    std::unordered_map<ComponentId, ISharedComponentPtr> m_sharedComponents;
 
     uint32_t m_count = 0;
     uint32_t m_capacity = 0;
@@ -50,6 +55,7 @@ private: // Helpers
     void AllocateComponentArrays (uint32_t capacity);
     void Clear ();
     void CopyTo (uint32_t from, uint32_t to);
+    void InitializeSharedComponents ();
     void Resize (uint32_t capacity);
 };
 
