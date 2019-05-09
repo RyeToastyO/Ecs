@@ -81,6 +81,7 @@ public:
 
     virtual void Run (Timestep dt);
     virtual void ForEachChunk (Timestep dt);
+    // - Override to do work on each entity that satisfies the job's accessors
     virtual void ForEach (Timestep dt) { ECS_REF(dt); }
 
 private:

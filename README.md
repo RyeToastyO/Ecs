@@ -155,7 +155,7 @@ struct QueuedChange : ecs::Job {
 ```
 
 ## TODO
-Current Version: v0.8.2
+Current Version: v0.8.3
 
 Requirements for:
 - v0.9.0

@@ -78,11 +78,13 @@ inline const impl::ComponentFlags & Job::GetWriteFlags () const {
     return m_write;
 }
 
+// - Call inside ForEachChunk to get the size of component arrays in that chunk
 inline uint32_t Job::GetChunkEntityCount () const {
     assert(m_chunkIndex < m_chunks.size()); // Don't call this outside ForEachChunk or ForEach
     return m_chunks[m_chunkIndex]->GetCount();
 }
 
+// - Use to check existance of a component on an Entity
 template<typename T>
 inline bool Job::HasComponent (Entity entity) const {
     return m_manager->HasComponent<T>(entity);
@@ -115,6 +117,8 @@ inline bool Job::IsValid (const impl::Chunk * chunk) const {
     return true;
 }
 
+// - Override to do work before and after ForEachChunk or ForEach are run
+// - Make sure to call Job::Run(dt) when you want ForEachChunk and ForEach to run
 inline void Job::Run (Timestep dt) {
     for (m_chunkIndex = 0; m_chunkIndex < m_chunks.size(); ++m_chunkIndex) {
         impl::Chunk * chunk = m_chunks[m_chunkIndex];
@@ -124,26 +128,41 @@ inline void Job::Run (Timestep dt) {
     }
 }
 
+// - Override to do batch work on contiguous arrays of entities
+// - Use GetChunkEntityCount() to get the size of the arrays
+// - Use GetChunkComponentArray<T>() on READ/WRITE accessors to get the head of compoennt arrays
 inline void Job::ForEachChunk (Timestep dt) {
     impl::Chunk * chunk = m_chunks[m_chunkIndex];
     for (m_entityIndex = 0; m_entityIndex < chunk->GetCount(); ++m_entityIndex)
         ForEach(dt);
 }
 
+// - Queues components to be added or set on an entity
+// - Executed after Run exits if RunJob<T> was used
+// - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
 template<typename T, typename...Args>
 inline void Job::QueueAddComponents (Entity entity, T component, Args...args) {
     m_commands.AddComponents(entity, component, args...);
 }
 
+// - Queues the creation of an entity with the specified components
+// - Executed after Run exits if RunJob<T> was used
+// - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
 template<typename T, typename...Args>
 inline void Job::QueueCreateEntity (T component, Args...args) {
     m_commands.CreateEntity(component, args...);
 }
 
+// - Queues the destruction of an entity
+// - Executed after Run exits if RunJob<T> was used
+// - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
 inline void Job::QueueDestroyEntity (Entity entity) {
     m_commands.DestroyEntity(entity);
 }
 
+// - Queues the removal of the specified components
+// - Executed after Run exits if RunJob<T> was used
+// - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
 template<typename T, typename...Args>
 inline void Job::QueueRemoveComponents (Entity entity) {
     m_commands.RemoveComponents<T, Args...>(entity);
