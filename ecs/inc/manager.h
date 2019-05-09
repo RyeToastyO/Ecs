@@ -81,8 +81,7 @@ private:
 
     void NotifyChunkCreated (impl::Chunk * chunk);
 
-    template<typename...Args>
-    typename std::enable_if<(sizeof...(Args) == 0)>::type SetComponentsInternal (const impl::EntityData &, Args...) const {}
+    void SetComponentsInternal (const impl::EntityData &) const {}
     template<typename T, typename...Args>
     void SetComponentsInternal (const impl::EntityData & entity, T component, Args...args) const;
 

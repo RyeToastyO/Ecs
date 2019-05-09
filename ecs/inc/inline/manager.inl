@@ -5,6 +5,8 @@
 
 namespace ecs {
 
+// - Adds components to an entity
+// - Sets value if the components already exist
 template<typename T, typename...Args>
 inline void Manager::AddComponents (Entity entity, T component, Args...args) {
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not add Entity as a component");
@@ -20,6 +22,8 @@ inline void Manager::AddComponents (Entity entity, T component, Args...args) {
     SetComponentsInternal(entityData, component, args...);
 }
 
+
+// - Creates an entity and adds the specified components to it
 template<typename T, typename...Args>
 inline Entity Manager::CreateEntityImmediate (T component, Args...args) {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be added to entities");
@@ -38,6 +42,11 @@ inline Entity Manager::CreateEntityImmediate (T component, Args...args) {
     return entity;
 }
 
+
+// - Gets an ISingletonComponent
+// - Guaranteed to exist
+// - One per Manager
+// - Pointer is safe for the Manager's lifetime
 template<typename T>
 inline T * Manager::GetSingletonComponent () {
     static_assert(std::is_base_of<ISingletonComponent, T>::value, "GetSingletonComponent<T> must inherit ISingletonComponent");
@@ -52,6 +61,8 @@ inline T * Manager::GetSingletonComponent () {
     return static_cast<T*>(iter->second);
 }
 
+
+// - Checks for existance of a component on an entity
 template<typename T>
 inline bool Manager::HasComponent (Entity entity) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot exist on entities");
@@ -63,6 +74,8 @@ inline bool Manager::HasComponent (Entity entity) const {
     return entityData.chunk->GetComposition().Has<T>();
 }
 
+
+// - Gets a pointer to a component for an entity, nullptr if the entity doesn't have one
 template<typename T>
 inline T * Manager::FindComponent (Entity entity) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be exist on entities");
@@ -74,6 +87,8 @@ inline T * Manager::FindComponent (Entity entity) const {
     return entityData.chunk->Find<T>(entityData.chunkIndex);
 }
 
+
+// - Removes components from an entity if it has them
 template<typename T, typename...Args>
 inline void Manager::RemoveComponents (Entity entity) {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot exist on entities");
@@ -114,12 +129,17 @@ inline Manager::~Manager () {
     m_singletonComponents.clear();
 }
 
+
+// - Checks if a created entity has been destroyed
 inline bool Manager::Exists (Entity entity) const {
     if (!entity.generation || m_entityData.size() <= entity.index)
         return false;
     return m_entityData[entity.index].generation == entity.generation;
 }
 
+
+// - Creates an empty entity
+// - Prefer initializing with components as it is more efficient than adding after creation
 inline Entity Manager::CreateEntityImmediate () {
     return CreateEntityImmediateInternal(impl::ComponentFlags());
 }
@@ -157,6 +177,10 @@ inline Entity Manager::CreateEntityImmediateInternal (impl::ComponentFlags compo
     return entity;
 }
 
+
+// - Causes Exists(entity) to return false
+// - Removes an entity's component data from its chunk
+// - Safe to call on an already destroyed entity
 inline void Manager::DestroyImmediate (Entity entity) {
     if (!Exists(entity))
         return;
@@ -194,6 +218,9 @@ inline void Manager::NotifyChunkCreated (impl::Chunk * chunk) {
     }
 }
 
+
+// - Executes a job
+// - Flushes any queued composition changes after running
 template<typename T>
 inline void Manager::RunJob (Timestep dt) {
     static_assert(std::is_base_of<Job, T>::value, "Must inherit from Job");
@@ -216,6 +243,10 @@ inline void Manager::RunJob (Timestep dt) {
     job->ApplyQueuedCommands();
 }
 
+
+// - Runs all jobs in the update group
+// - Multi-threaded when possible
+// - Flushes queued composition changes after running, single-threaded, in a consistent order
 template<typename T>
 inline void Manager::RunUpdateGroup (Timestep dt) {
     static_assert(std::is_base_of<IUpdateGroup, T>::value, "Must inherit from IUpdateGroup");
