@@ -75,7 +75,11 @@ inline bool Manager::HasComponent (Entity entity) const {
 }
 
 
-// - Gets a pointer to a component for an entity, nullptr if the entity doesn't have one
+// - Gets a pointer to a component for an entity
+// - nullptr if the entity doesn't have one, or the entity is destroyed
+// - Pointer is not safe to hold on to and should be considered invalidated by:
+//     - Composition changes to this entity or one with the same composition
+//     - Destruction of this entity or one with the same composition
 template<typename T>
 inline T * Manager::FindComponent (Entity entity) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be exist on entities");
