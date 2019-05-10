@@ -11,8 +11,6 @@ namespace impl {
 
 template<typename T>
 inline T * Chunk::Find () {
-    static_assert(!std::is_base_of<ISharedComponent, T>::value, "Use FindShared");
-
     // Give a valid pointer if a tag component is requested, but don't
     // bother looking it up in the component arrays since we didn't allocate memory for it
     if (std::is_empty<T>())
@@ -34,13 +32,13 @@ inline T * Chunk::Find (uint32_t index) {
 }
 
 template<typename T>
-inline const T * Chunk::FindShared () const {
+inline typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>::type Chunk::Find () const {
     static_assert(std::is_base_of<ISharedComponent, T>::value, "Must inherit ISharedComponent");
 
     auto iter = m_sharedComponents.find(GetComponentId<T>());
     if (iter == m_sharedComponents.end())
         return nullptr;
-    return static_cast<const T*>(iter->second);
+    return static_cast<T*>(iter->second);
 }
 
 inline Chunk::Chunk (const Composition & composition)

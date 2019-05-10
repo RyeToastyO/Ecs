@@ -61,6 +61,8 @@ inline void Composition::RemoveSharedComponentsInternal () {
 
 template<typename T, typename...Args>
 inline void Composition::SetComponents (T component, Args...args) {
+    static_assert(!std::is_base_of<ISharedComponent, T>::value, "Don't directly add shared components, must be a std::shared_ptr<ComponentType>");
+
     m_flags.SetFlags<T, Args...>();
     SetSharedComponentsInternal(component, args...);
 }

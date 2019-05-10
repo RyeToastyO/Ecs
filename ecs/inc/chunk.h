@@ -34,7 +34,7 @@ struct Chunk {
     T * Find (uint32_t index);
 
     template<typename T>
-    const T * FindShared () const;
+    typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>::type Find () const;
 
     uint32_t AllocateEntity ();
     uint32_t MoveTo (uint32_t from, Chunk & to);

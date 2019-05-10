@@ -90,8 +90,16 @@ inline void Manager::RemoveComponents (Entity entity) {
 }
 
 template<typename T, typename...Args>
+inline void Manager::SetComponentsInternal (const impl::EntityData & entity, std::shared_ptr<T> component, Args...args) const {
+    static_assert(std::is_base_of<ISharedComponent, T>::value, "Shared components must inherit ISharedComponent");
+    ECS_REF(component);
+    SetComponentsInternal(entity, args...);
+}
+
+template<typename T, typename...Args>
 inline void Manager::SetComponentsInternal (const impl::EntityData & entity, T component, Args...args) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be set on entities");
+    static_assert(!std::is_base_of<ISharedComponent, T>::value, "Don't directly add shared components, must be a std::shared_ptr<SharedComponentType>");
     *(entity.chunk->Find<T>(entity.chunkIndex)) = component;
     SetComponentsInternal(entity, args...);
 }
