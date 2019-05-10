@@ -207,7 +207,10 @@ void TestCompositionChanges () {
     ecs::Manager mgr;
 
     ecs::Entity e1 = mgr.CreateEntityImmediate(test::FloatA{ 10 });
+
+    ecs::Entity firstInChunk = mgr.CreateEntityImmediate(test::FloatA{ 100 }, test::FloatB{ 1000 }, test::FloatC{ 10 });
     ecs::Entity e2 = mgr.CreateEntityImmediate(test::FloatA{ 20 }, test::FloatB{ 200 }, test::FloatC{ 2 });
+    ecs::Entity thirdInChunk = mgr.CreateEntityImmediate(test::FloatA{ 200 }, test::FloatB{ 2000 }, test::FloatC{ 20 });
 
     {
         mgr.AddComponents(e1, test::FloatB{ 100 });
@@ -237,6 +240,54 @@ void TestCompositionChanges () {
         EXPECT_TRUE(floatA && floatA->Value == 10);
         EXPECT_TRUE(floatB && floatB->Value == 100);
         EXPECT_TRUE(floatC && floatC->Value == 1);
+    }
+
+    // Make sure that other entities weren't affected
+    {
+        auto floatA = mgr.FindComponent<test::FloatA>(firstInChunk);
+        auto floatB = mgr.FindComponent<test::FloatB>(firstInChunk);
+        auto floatC = mgr.FindComponent<test::FloatC>(firstInChunk);
+        EXPECT_TRUE(floatA && floatA->Value == 100);
+        EXPECT_TRUE(floatB && floatB->Value == 1000);
+        EXPECT_TRUE(floatC && floatC->Value == 10);
+    }
+
+    {
+        auto floatA = mgr.FindComponent<test::FloatA>(thirdInChunk);
+        auto floatB = mgr.FindComponent<test::FloatB>(thirdInChunk);
+        auto floatC = mgr.FindComponent<test::FloatC>(thirdInChunk);
+        EXPECT_TRUE(floatA && floatA->Value == 200);
+        EXPECT_TRUE(floatB && floatB->Value == 2000);
+        EXPECT_TRUE(floatC && floatC->Value == 20);
+    }
+}
+
+void TestDestroyMiddleOfChunk () {
+    ecs::Manager mgr;
+
+    ecs::Entity firstInChunk = mgr.CreateEntityImmediate(test::FloatA{ 100 }, test::FloatB{ 1000 }, test::FloatC{ 10 });
+    ecs::Entity middleInChunk = mgr.CreateEntityImmediate(test::FloatA{ 20 }, test::FloatB{ 200 }, test::FloatC{ 2 });
+    ecs::Entity thirdInChunk = mgr.CreateEntityImmediate(test::FloatA{ 200 }, test::FloatB{ 2000 }, test::FloatC{ 20 });
+
+    mgr.DestroyImmediate(middleInChunk);
+
+    // Make sure that other entities weren't affected
+    {
+        auto floatA = mgr.FindComponent<test::FloatA>(firstInChunk);
+        auto floatB = mgr.FindComponent<test::FloatB>(firstInChunk);
+        auto floatC = mgr.FindComponent<test::FloatC>(firstInChunk);
+        EXPECT_TRUE(floatA && floatA->Value == 100);
+        EXPECT_TRUE(floatB && floatB->Value == 1000);
+        EXPECT_TRUE(floatC && floatC->Value == 10);
+    }
+
+    {
+        auto floatA = mgr.FindComponent<test::FloatA>(thirdInChunk);
+        auto floatB = mgr.FindComponent<test::FloatB>(thirdInChunk);
+        auto floatC = mgr.FindComponent<test::FloatC>(thirdInChunk);
+        EXPECT_TRUE(floatA && floatA->Value == 200);
+        EXPECT_TRUE(floatB && floatB->Value == 2000);
+        EXPECT_TRUE(floatC && floatC->Value == 20);
     }
 }
 
@@ -595,6 +646,7 @@ void TestCorrectness () {
     TestComposition();
     TestFindingComponents();
     TestCompositionChanges();
+    TestDestroyMiddleOfChunk();
     TestJob();
     TestReadWriteOther();
     TestSingletonComponents();

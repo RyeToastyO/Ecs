@@ -176,7 +176,6 @@ Requirements for:
   - fix any additional known bugs
     - no known
   - add unit tests for any additional known edge cases
-    - changing composition of an entity in the middle of chunk
     - automate job tree validation
     - more complicated job tree unit tests
 
