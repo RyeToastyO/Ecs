@@ -125,6 +125,36 @@ void TestComponentFlags () {
     EXPECT_TRUE(other.HasNone(some));
 }
 
+struct SharedA : ecs::ISharedComponent { uint8_t Value; };
+
+void TestComposition () {
+    std::shared_ptr<SharedA> sharedA1 = std::make_shared<SharedA>();
+    std::shared_ptr<SharedA> sharedA2 = std::make_shared<SharedA>();
+
+    ecs::impl::Composition compA1;
+    compA1.SetComponents(FloatA{ 1.0f }, sharedA1);
+
+    ecs::impl::Composition compA2;
+    compA2.SetComponents(FloatA{ 2.0f }, sharedA2);
+
+    EXPECT_TRUE(compA1.GetComponentFlags() == compA2.GetComponentFlags());
+    EXPECT_FALSE(compA1.GetHash() == compA2.GetHash());
+    EXPECT_FALSE(compA1 == compA2);
+
+    ecs::impl::Composition compA1Dupe;
+    compA1Dupe.SetComponents(sharedA1);
+    compA1Dupe.SetComponents(FloatA{ 11.0f });
+
+    ecs::impl::Composition compA2Dupe;
+    compA2Dupe.SetComponents(FloatA{ 22.0f });
+    compA2Dupe.SetComponents(sharedA2);
+
+    EXPECT_TRUE(compA1.GetHash() == compA1Dupe.GetHash());
+    EXPECT_TRUE(compA1 == compA1Dupe);
+    EXPECT_TRUE(compA2.GetHash() == compA2Dupe.GetHash());
+    EXPECT_TRUE(compA2 == compA2Dupe);
+}
+
 void TestFindingComponents () {
     ecs::Manager mgr;
 
@@ -474,6 +504,7 @@ void TestCorrectness () {
     TestEntityComparison();
     TestEntityCreationDestruction();
     TestComponentFlags();
+    TestComposition();
     TestFindingComponents();
     TestCompositionChanges();
     TestJob();
