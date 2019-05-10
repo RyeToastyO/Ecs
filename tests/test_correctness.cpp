@@ -153,6 +153,11 @@ void TestComposition () {
     EXPECT_TRUE(compA1 == compA1Dupe);
     EXPECT_TRUE(compA2.GetHash() == compA2Dupe.GetHash());
     EXPECT_TRUE(compA2 == compA2Dupe);
+
+    compA1.RemoveComponents<SharedA>();
+    compA2.RemoveComponents<SharedA>();
+
+    EXPECT_TRUE(compA1 == compA2);
 }
 
 void TestFindingComponents () {
