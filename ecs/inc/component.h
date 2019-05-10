@@ -22,7 +22,6 @@ namespace ecs {
 struct ISharedComponent {
     virtual ~ISharedComponent () {}
 };
-typedef std::shared_ptr<ISharedComponent> ISharedComponentPtr;
 
 // - Create a struct that inherits ecs::ISingletonComponent
 // - Guaranteed to exist
@@ -35,6 +34,7 @@ struct ISingletonComponent {
 namespace impl {
 
 typedef uint32_t ComponentId;
+typedef std::shared_ptr<ISharedComponent> ISharedComponentPtr;
 
 struct ComponentRegistry {
     static std::unordered_map<ComponentId, size_t> & GetComponentSizeMap ();
