@@ -181,6 +181,8 @@ Requirements for:
     - more complicated job tree unit tests
 
 Potential future features
+  - Batch operations (add/destroy/remove by filter/chunk)
+  - Clone entity
   - Prefabs
     - An entity that is ignored by jobs
     - Easily cloned with default values for all components
