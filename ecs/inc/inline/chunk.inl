@@ -10,11 +10,13 @@ namespace ecs {
 namespace impl {
 
 template<typename T>
-inline T * Chunk::Find () {
+inline typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>::type Chunk::Find () {
+    static_assert(!std::is_base_of<ISharedComponent, T>::value, "The shared component version should have picked this up");
+
     // Give a valid pointer if a tag component is requested, but don't
     // bother looking it up in the component arrays since we didn't allocate memory for it
     if (std::is_empty<T>())
-        return m_composition.Has<T>() ? reinterpret_cast<T*>(m_componentMemory) : nullptr;
+        return GetComponentFlags().Has<T>() ? reinterpret_cast<T*>(m_componentMemory) : nullptr;
 
     auto iter = m_componentArrays.find(GetComponentId<T>());
     if (iter == m_componentArrays.end())
@@ -23,7 +25,7 @@ inline T * Chunk::Find () {
 }
 
 template<typename T>
-inline T * Chunk::Find (uint32_t index) {
+inline typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>::type Chunk::Find (uint32_t index) {
     if (index >= m_count)
         return nullptr;
 
@@ -31,11 +33,27 @@ inline T * Chunk::Find (uint32_t index) {
     return arrayStart ? arrayStart + index : nullptr;
 }
 
-inline Chunk::Chunk (const ComponentFlags & composition)
+template<typename T>
+inline typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>::type Chunk::Find () const {
+    auto iter = m_sharedComponents.find(GetComponentId<T>());
+    if (iter == m_sharedComponents.end())
+        return nullptr;
+    return static_cast<T*>(iter->second.get());
+}
+
+template<typename T>
+inline typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>::type Chunk::Find (uint32_t index) const {
+    // There's just one shared component on a chunk
+    ECS_REF(index);
+    return Find<T>();
+}
+
+inline Chunk::Chunk (const Composition & composition)
     : m_composition(composition)
-    , m_componentInfo(composition.GetComponentInfo())
+    , m_componentInfo(composition.GetComponentFlags().GetComponentInfo())
 {
     AllocateComponentArrays(kDefaultChunkSize);
+    InitializeSharedComponents();
 }
 
 inline Chunk::~Chunk () {
@@ -54,7 +72,7 @@ inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
 
     auto arrayStart = m_componentMemory;
     // Assign each component array their location in that allocation
-    auto iter = m_composition.GetIterator();
+    auto iter = GetComponentFlags().GetIterator();
     for (const auto & compId : iter) {
         const auto size = GetComponentSize(compId);
         if (size == 0)
@@ -63,6 +81,13 @@ inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
         m_componentArrays.emplace(compId, arrayStart);
         arrayStart += size * capacity;
     }
+}
+
+inline void Chunk::InitializeSharedComponents () {
+    const auto & sharedComps = m_composition.GetSharedComponents();
+
+    for (const auto & iter : sharedComps)
+        m_sharedComponents.emplace(iter.first, iter.second);
 }
 
 inline void Chunk::Resize (uint32_t capacity) {
@@ -105,8 +130,12 @@ inline uint32_t Chunk::GetCapacity () const {
     return m_capacity;
 }
 
-inline const ComponentFlags & Chunk::GetComposition () const {
+inline const Composition & Chunk::GetComposition () const {
     return m_composition;
+}
+
+inline const ComponentFlags & Chunk::GetComponentFlags () const {
+    return m_composition.GetComponentFlags();
 }
 
 inline uint32_t Chunk::GetCount () const {

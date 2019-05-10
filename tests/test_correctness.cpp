@@ -125,6 +125,44 @@ void TestComponentFlags () {
     EXPECT_TRUE(other.HasNone(some));
 }
 
+void TestComposition () {
+    ecs::impl::Composition compA1;
+    compA1.SetComponents(FloatA{ 1.0f }, SharedA1);
+
+    EXPECT_TRUE(compA1.GetComponentFlags().Has<FloatA>());
+    EXPECT_TRUE(compA1.GetComponentFlags().Has<SharedA>());
+    EXPECT_FALSE(compA1.GetSharedComponents().find(ecs::impl::GetComponentId<SharedA>()) == compA1.GetSharedComponents().end());
+
+    ecs::impl::Composition compA2;
+    compA2.SetComponents(FloatA{ 2.0f }, SharedA2);
+
+    EXPECT_TRUE(compA1.GetComponentFlags() == compA2.GetComponentFlags());
+    EXPECT_FALSE(compA1.GetHash() == compA2.GetHash());
+    EXPECT_FALSE(compA1 == compA2);
+
+    ecs::impl::Composition compA1Dupe;
+    compA1Dupe.SetComponents(SharedA1);
+    compA1Dupe.SetComponents(FloatA{ 11.0f });
+
+    ecs::impl::Composition compA2Dupe;
+    compA2Dupe.SetComponents(FloatA{ 22.0f });
+    compA2Dupe.SetComponents(SharedA2);
+
+    EXPECT_TRUE(compA1.GetHash() == compA1Dupe.GetHash());
+    EXPECT_TRUE(compA1 == compA1Dupe);
+    EXPECT_TRUE(compA2.GetHash() == compA2Dupe.GetHash());
+    EXPECT_TRUE(compA2 == compA2Dupe);
+
+    compA1.RemoveComponents<SharedA>();
+    compA2.RemoveComponents<SharedA>();
+
+    EXPECT_TRUE(compA1 == compA2);
+
+    compA1Dupe.SetComponents(SharedA2);
+
+    EXPECT_TRUE(compA1Dupe == compA2Dupe);
+}
+
 void TestFindingComponents () {
     ecs::Manager mgr;
 
@@ -469,11 +507,92 @@ void TestQueuedChanges () {
     EXPECT_TRUE(mgr.GetSingletonComponent<test::SingletonFloat>()->Value == 6.0f);
 }
 
+void TestSharedComponents () {
+    ecs::Manager mgr;
+
+    ecs::Entity entity = mgr.CreateEntityImmediate(SharedA1);
+
+    auto compId = ecs::impl::GetComponentId<SharedA>();
+    ECS_REF(compId);
+
+    EXPECT_TRUE(mgr.HasComponent<SharedA>(entity));
+    EXPECT_TRUE(mgr.FindComponent<SharedA>(entity)->Value == 1);
+
+    mgr.RemoveComponents<SharedA>(entity);
+
+    EXPECT_FALSE(mgr.HasComponent<SharedA>(entity));
+
+    mgr.AddComponents(entity, SharedA2);
+
+    EXPECT_TRUE(mgr.HasComponent<SharedA>(entity));
+    EXPECT_TRUE(mgr.FindComponent<SharedA>(entity)->Value == 2);
+
+    mgr.AddComponents(entity, SharedA1);
+
+    EXPECT_TRUE(mgr.HasComponent<SharedA>(entity));
+    EXPECT_TRUE(mgr.FindComponent<SharedA>(entity)->Value == 1);
+}
+
+struct SharedCompJob : ecs::Job {
+    ECS_READ(SharedA, Shared);
+
+    ECS_WRITE_SINGLETON(SingletonInt, Count1);
+    ECS_WRITE_SINGLETON(SingletonUint, Count2);
+    ECS_WRITE_SINGLETON(SingletonFloat, Count3);
+    ECS_WRITE_SINGLETON(SingletonDouble, Count4);
+
+    void ForEachChunk (ecs::Timestep dt) override {
+        switch (Shared->Value) {
+            case 1:
+                Count1->Value++;
+                break;
+            case 2:
+                Count2->Value++;
+                break;
+        }
+        Job::ForEachChunk(dt);
+    }
+
+    void ForEach (ecs::Timestep) override {
+        switch (Shared->Value) {
+            case 1:
+                Count3->Value++;
+                break;
+            case 2:
+                Count4->Value++;
+                break;
+        }
+    }
+};
+
+void TestSharedComponentJob () {
+    ecs::Manager mgr;
+
+    for (auto i = 0; i < 10; ++i) {
+        mgr.CreateEntityImmediate(SharedA1);
+        mgr.CreateEntityImmediate(SharedA1, FloatA{});
+        mgr.CreateEntityImmediate(SharedA1, TagA{});
+    }
+
+    for (uint32_t i = 0; i < 20; ++i) {
+        mgr.CreateEntityImmediate(SharedA2, TagB{});
+        mgr.CreateEntityImmediate(SharedA2, FloatA{});
+    }
+
+    mgr.RunJob<SharedCompJob>(0.0f);
+
+    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonInt>()->Value == 3);
+    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 2);
+    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonFloat>()->Value == 30.0f);
+    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonDouble>()->Value == 40.0);
+}
+
 void TestCorrectness () {
     TestAssumptions();
     TestEntityComparison();
     TestEntityCreationDestruction();
     TestComponentFlags();
+    TestComposition();
     TestFindingComponents();
     TestCompositionChanges();
     TestJob();
@@ -484,6 +603,8 @@ void TestCorrectness () {
     TestManualMultiThreading();
     TestMultiThreading();
     TestQueuedChanges();
+    TestSharedComponents();
+    TestSharedComponentJob();
 }
 
 }

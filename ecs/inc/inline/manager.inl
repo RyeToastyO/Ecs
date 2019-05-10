@@ -16,7 +16,7 @@ inline void Manager::AddComponents (Entity entity, T component, Args...args) {
     auto & entityData = m_entityData[entity.index];
     auto composition = entityData.chunk->GetComposition();
 
-    composition.SetFlags<T, Args...>();
+    composition.SetComponents(component, args...);
 
     SetCompositionInternal(entityData, composition);
     SetComponentsInternal(entityData, component, args...);
@@ -29,9 +29,9 @@ inline Entity Manager::CreateEntityImmediate (T component, Args...args) {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be added to entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not add Entity as a component");
 
-    // Compile the composition flags
-    impl::ComponentFlags composition;
-    composition.SetFlags<T, Args...>();
+    // Compile the composition
+    impl::Composition composition;
+    composition.SetComponents(component, args...);
 
     // Create the entity
     Entity entity = CreateEntityImmediateInternal(composition);
@@ -71,7 +71,7 @@ inline bool Manager::HasComponent (Entity entity) const {
     if (!Exists(entity))
         return false;
     const auto & entityData = m_entityData[entity.index];
-    return entityData.chunk->GetComposition().Has<T>();
+    return entityData.chunk->GetComponentFlags().Has<T>();
 }
 
 
@@ -103,14 +103,22 @@ inline void Manager::RemoveComponents (Entity entity) {
     auto & entityData = m_entityData[entity.index];
     auto composition = entityData.chunk->GetComposition();
 
-    composition.ClearFlags<T, Args...>();
+    composition.RemoveComponents<T, Args...>();
 
     SetCompositionInternal(entityData, composition);
 }
 
 template<typename T, typename...Args>
+inline void Manager::SetComponentsInternal (const impl::EntityData & entity, std::shared_ptr<T> component, Args...args) const {
+    static_assert(std::is_base_of<ISharedComponent, T>::value, "Shared components must inherit ISharedComponent");
+    ECS_REF(component);
+    SetComponentsInternal(entity, args...);
+}
+
+template<typename T, typename...Args>
 inline void Manager::SetComponentsInternal (const impl::EntityData & entity, T component, Args...args) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be set on entities");
+    static_assert(!std::is_base_of<ISharedComponent, T>::value, "Don't directly add shared components, must be a std::shared_ptr<SharedComponentType>");
     *(entity.chunk->Find<T>(entity.chunkIndex)) = component;
     SetComponentsInternal(entity, args...);
 }
@@ -145,14 +153,15 @@ inline bool Manager::Exists (Entity entity) const {
 // - Creates an empty entity
 // - Prefer initializing with components as it is more efficient than adding after creation
 inline Entity Manager::CreateEntityImmediate () {
-    return CreateEntityImmediateInternal(impl::ComponentFlags());
+    auto emptyComposition = impl::Composition();
+    return CreateEntityImmediateInternal(emptyComposition);
 }
 
-inline Entity Manager::CreateEntityImmediateInternal (impl::ComponentFlags composition) {
+inline Entity Manager::CreateEntityImmediateInternal (impl::Composition & composition) {
     // All entities have their entity handle added as a component
     // This is so that jobs can have the entity array easily passed along
     // using the same APIs as components
-    composition.SetFlags<Entity>();
+    composition.SetComponents(Entity{});
 
     // Find or create a chunk with this composition
     auto chunk = GetOrCreateChunk(composition);
@@ -202,7 +211,7 @@ inline void Manager::DestroyImmediate (Entity entity) {
         m_freeList.push_back(entity.index);
 }
 
-inline impl::Chunk * Manager::GetOrCreateChunk (const impl::ComponentFlags & composition) {
+inline impl::Chunk * Manager::GetOrCreateChunk (const impl::Composition & composition) {
     auto chunkIter = m_chunks.find(composition);
     if (chunkIter == m_chunks.end()) {
         m_chunks.emplace(composition, new impl::Chunk(composition));
@@ -281,7 +290,7 @@ inline void Manager::RegisterJobInternal (Job * job) {
         job->OnChunkAdded(chunk.second);
 }
 
-inline void Manager::SetCompositionInternal (impl::EntityData & entityData, const impl::ComponentFlags & composition) {
+inline void Manager::SetCompositionInternal (impl::EntityData & entityData, const impl::Composition & composition) {
     auto chunk = GetOrCreateChunk(composition);
     if (chunk == entityData.chunk)
         return;
