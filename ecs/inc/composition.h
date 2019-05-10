@@ -38,11 +38,11 @@ private:
     template<typename T, typename...Args>
     void RemoveSharedComponentsInternal ();
 
-    void SetSharedComponentsInternal ();
+    void SetComponentsInternal ();
     template<typename T, typename...Args>
-    void SetSharedComponentsInternal (std::shared_ptr<T> component, Args...args);
+    void SetComponentsInternal (std::shared_ptr<T> component, Args...args);
     template<typename T, typename...Args>
-    void SetSharedComponentsInternal (T component, Args...args);
+    void SetComponentsInternal (T component, Args...args);
 };
 
 } // namespace impl

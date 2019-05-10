@@ -61,24 +61,26 @@ inline void Composition::RemoveSharedComponentsInternal () {
 
 template<typename T, typename...Args>
 inline void Composition::SetComponents (T component, Args...args) {
+    SetComponentsInternal(component, args...);
+}
+
+inline void Composition::SetComponentsInternal () {};
+
+template<typename T, typename...Args>
+inline void Composition::SetComponentsInternal (std::shared_ptr<T> component, Args...args) {
+    m_flags.SetFlags<T>();
+    m_shared.erase(GetComponentId<T>());
+    m_shared.emplace(GetComponentId<T>(), component);
+    SetComponentsInternal(args...);
+}
+
+template<typename T, typename...Args>
+inline void Composition::SetComponentsInternal (T component, Args...args) {
     static_assert(!std::is_base_of<ISharedComponent, T>::value, "Don't directly add shared components, must be a std::shared_ptr<ComponentType>");
 
-    m_flags.SetFlags<T, Args...>();
-    SetSharedComponentsInternal(component, args...);
-}
-
-inline void Composition::SetSharedComponentsInternal () {};
-
-template<typename T, typename...Args>
-inline void Composition::SetSharedComponentsInternal (std::shared_ptr<T> component, Args...args) {
-    m_shared.emplace(GetComponentId<T>(), component);
-    SetSharedComponentsInternal(args...);
-}
-
-template<typename T, typename...Args>
-inline void Composition::SetSharedComponentsInternal (T component, Args...args) {
     ECS_REF(component);
-    SetSharedComponentsInternal(args...);
+    m_flags.SetFlags<T>();
+    SetComponentsInternal(args...);
 }
 
 } // namespace impl

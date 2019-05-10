@@ -29,12 +29,14 @@ struct Chunk {
     const ComponentFlags & GetComponentFlags () const;
 
     template<typename T>
-    T * Find ();
+    typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>::type Find ();
     template<typename T>
-    T * Find (uint32_t index);
+    typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>::type Find (uint32_t index);
 
     template<typename T>
     typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>::type Find () const;
+    template<typename T>
+    typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>::type Find (uint32_t index) const;
 
     uint32_t AllocateEntity ();
     uint32_t MoveTo (uint32_t from, Chunk & to);

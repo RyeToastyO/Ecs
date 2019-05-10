@@ -37,4 +37,18 @@ struct SingletonFloat : ecs::ISingletonComponent { float Value = 0.0f; };
 struct SingletonInt : ecs::ISingletonComponent { int32_t Value = 0; };
 struct SingletonUint : ecs::ISingletonComponent { uint32_t Value = 0; };
 
+struct SharedA : ecs::ISharedComponent {
+    SharedA (uint32_t value) : Value(value) {}
+    uint32_t Value;
+};
+struct SharedB : ecs::ISharedComponent {
+    SharedB (uint32_t value) : Value(value) {}
+    uint32_t Value;
+};
+
+extern std::shared_ptr<SharedA> SharedA1;
+extern std::shared_ptr<SharedA> SharedA2;
+extern std::shared_ptr<SharedB> SharedB1;
+extern std::shared_ptr<SharedB> SharedB2;
+
 } // namespace test
