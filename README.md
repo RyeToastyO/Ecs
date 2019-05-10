@@ -118,19 +118,33 @@ int main () {
 }
 ```
 
-### Chunk Iteration
-Useful when you can operate on entities in batches, such as rendering all entities with the same sprite/model.
-Will be more useful once shared components are implemented so you can store a pointer to the bullet model as a component.
+### Shared Components and Chunk Iteration
+Useful when you can get large benefits from operating on entities in batches, such as rendering all entities with the same sprite/model.
+Example renders 10,000 bullets in a 100x100 grid with a single draw call
 ```C++
-struct ChunkRender : ecs::Job {
+namespace sprite {
+struct Instance16x16 : ecs::ISharedComponent { Color Data[265]; }
+}
+
+struct ChunkRenderSprite16x16 : ecs::Job {
     ECS_READ(transform::Position, Pos);
-    ECS_REQUIRE(model::IsBullet);
+    ECS_READ(sprite::Instance16x16, Sprite);
 
     void ForEachChunk (ecs::Timestep) override {
         transform::Position * posArray = Pos.GetChunkComponentArray();
-        RenderSystem::RenderBullets(posArray, GetChunkEntityCount());
+        RenderSystem::RenderInstanced(Sprite->Data, posArray, GetChunkEntityCount());
     }
 };
+
+int main () {
+    std::shared_ptr<sprite::Instance16x16> bulletModel = std::make_shared<sprite::Instance16x16>(LoadSprite(...));
+
+    ecs::Manager mgr;
+    for (int i = 0; i < 10000; ++i)
+        mgr.CreateEntityImmediate(transform::Position{i % 100, i / 100}, bulletModel);
+
+    mgr->RunJob<ChunkRenderSprite16x16>(0.0f);
+}
 ```
 
 ### Queued Composition Changes from Jobs
@@ -155,11 +169,9 @@ struct QueuedChange : ecs::Job {
 ```
 
 ## TODO
-Current Version: v0.8.3
+Current Version: v0.9.0
 
 Requirements for:
-- v0.9.0
-  - shared components
 - v1.0.0
   - fix any additional known bugs
     - no known
@@ -169,6 +181,9 @@ Requirements for:
     - more complicated job tree unit tests
 
 Potential future features
+  - Prefabs
+    - An entity that is ignored by jobs
+    - Easily cloned with default values for all components
   - Support for custom allocators
 
 ## License
