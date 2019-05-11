@@ -163,6 +163,16 @@ struct QueuedChange : ecs::Job {
 };
 ```
 
+### Prefabs
+Useful for building a composition with default values that are commonly created
+```C++
+ecs::Prefab prefab = mgr.CreatePrefab(ComponentA{1.0f}, ComponentB{2.0f});
+ecs::Entity spawned = mgr.SpawnPrefab(prefab);
+
+mgr.HasComponent<ComponentA>(spawned);          // true
+mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
+```
+
 ### Configurable Settings
 ```C++
 #define ECS_MAX_COMPONENTS 256
@@ -170,7 +180,7 @@ struct QueuedChange : ecs::Job {
 ```
 
 ## TODO
-Current Version: v0.9.1
+Current Version: v0.9.2
 
 Requirements for:
 - v1.0.0
@@ -182,10 +192,6 @@ Requirements for:
 
 Potential future features
   - Batch operations (add/destroy/remove by filter/chunk)
-  - Return entity handles from QueueCreate/QueueClone in jobs
-  - Prefabs
-    - An entity that is ignored by jobs
-    - Easily cloned with default values for all components
   - Support for custom allocators
 
 ## License

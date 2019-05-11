@@ -681,6 +681,56 @@ void TestEntityCloning () {
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 4);
 }
 
+struct PrefabToSpawn : ecs::ISingletonComponent { ecs::Prefab Value; };
+
+struct PrefabJob : ecs::Job {
+    ECS_REQUIRE(FloatA, FloatB, FloatC);
+
+    ECS_READ_SINGLETON(PrefabToSpawn, Prefab);
+    ECS_WRITE_SINGLETON(SingletonUint, Count);
+
+    void Run (ecs::Timestep dt) override {
+        Count->Value = 0;
+        Job::Run(dt);
+    }
+
+    void ForEach (ecs::Timestep) override {
+        QueueSpawnPrefab(Prefab->Value);
+        Count->Value++;
+    }
+};
+
+void TestPrefabs () {
+    ecs::Manager mgr;
+
+    ecs::Prefab prefab = mgr.CreatePrefab(FloatA{ 1.0f }, FloatB{ 2.0f }, FloatC{ 3.0f });
+    ecs::Entity spawned = mgr.SpawnPrefab(prefab);
+
+    EXPECT_TRUE(mgr.FindComponent<FloatA>(spawned)->Value == 1.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatB>(spawned)->Value == 2.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatC>(spawned)->Value == 3.0f);
+
+    mgr.AddComponents(spawned, FloatA{ 10.0f }, FloatB{ 20.0f }, FloatC{ 30.0f });
+
+    EXPECT_TRUE(mgr.FindComponent<FloatA>(spawned)->Value == 10.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatB>(spawned)->Value == 20.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatC>(spawned)->Value == 30.0f);
+
+    ecs::Entity spawned2 = mgr.SpawnPrefab(prefab);
+
+    EXPECT_TRUE(mgr.FindComponent<FloatA>(spawned2)->Value == 1.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatB>(spawned2)->Value == 2.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatC>(spawned2)->Value == 3.0f);
+
+    mgr.GetSingletonComponent<PrefabToSpawn>()->Value = prefab;
+
+    mgr.RunJob<PrefabJob>(0.0f);
+    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 2);
+
+    mgr.RunJob<PrefabJob>(0.0f);
+    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 4);
+}
+
 void TestCorrectness () {
     TestAssumptions();
     TestEntityComparison();
@@ -701,6 +751,7 @@ void TestCorrectness () {
     TestSharedComponents();
     TestSharedComponentJob();
     TestEntityCloning();
+    TestPrefabs();
 }
 
 }

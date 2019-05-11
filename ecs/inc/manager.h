@@ -9,6 +9,7 @@
 #include "entity.h"
 #include "job.h"
 #include "job_tree.h"
+#include "prefab.h"
 #include "update_group.h"
 
 #include <cstdint>
@@ -32,6 +33,7 @@ struct EntityData {
 //     - Lookup Entity components
 //     - Get Singleton components
 //     - Run Jobs and UpdateGroups
+//     - Create and spawn Prefabs
 // - Recommended usage:
 //     - Create a single, global ecs::Manager (Multiple managers existing is supported)
 //     - Add jobs to as few UpdateGroups are needed to accomplish desired functionality
@@ -59,6 +61,9 @@ public:
     template<typename T, typename...Args>
     Entity CreateEntityImmediate (T component, Args...args);
 
+    template<typename T, typename...Args>
+    Prefab CreatePrefab (T component, Args...args);
+
     void DestroyImmediate (Entity entity);
 
     template<typename T>
@@ -78,6 +83,8 @@ public:
 
     template<typename T>
     void RunUpdateGroup (Timestep dt);
+
+    Entity SpawnPrefab (Prefab prefab);
 
 private:
     std::vector<impl::EntityData> m_entityData;

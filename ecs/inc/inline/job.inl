@@ -100,6 +100,9 @@ inline void Job::OnRegistered (Manager * manager) {
     m_manager = manager;
     m_chunks.clear();
 
+    // Jobs always ignore prefab entities
+    m_exclude.SetFlags<impl::PrefabComponent>();
+
     for (auto singletonAccess : m_singletonAccess)
         singletonAccess->UpdateManager();
 }
@@ -137,6 +140,16 @@ inline void Job::ForEachChunk (Timestep dt) {
         ForEach(dt);
 }
 
+// - Queues components to be added or set
+// - Specifying no entity will target the most recently acted on entity
+//     - i.e. Use this to change an entity that was just queued to create or spawn
+// - Executed after Run exits if RunJob<T> was used
+// - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
+template<typename T, typename...Args>
+inline void Job::QueueAddComponents (T component, Args...args) {
+    m_commands.AddComponents(Entity(), component, args...);
+}
+
 // - Queues components to be added or set on an entity
 // - Executed after Run exits if RunJob<T> was used
 // - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
@@ -168,11 +181,28 @@ inline void Job::QueueDestroyEntity (Entity entity) {
 }
 
 // - Queues the removal of the specified components
+// - Specifying no entity will target the most recently acted on entity
+//     - i.e. Use this to change an entity that was just queued to create or spawn
+// - Executed after Run exits if RunJob<T> was used
+// - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
+template<typename T, typename...Args>
+inline void Job::QueueRemoveComponents () {
+    m_commands.RemoveComponents<T, Args...>(Entity());
+}
+
+// - Queues the removal of the specified components
 // - Executed after Run exits if RunJob<T> was used
 // - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
 template<typename T, typename...Args>
 inline void Job::QueueRemoveComponents (Entity entity) {
     m_commands.RemoveComponents<T, Args...>(entity);
+}
+
+// - Queues the rspawning of a prefab
+// - Executed after Run exits if RunJob<T> was used
+// - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
+inline void Job::QueueSpawnPrefab (Prefab prefab) {
+    m_commands.SpawnPrefab(prefab);
 }
 
 // Registration

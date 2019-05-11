@@ -10,6 +10,7 @@
 #include "command_queue.h"
 #include "component_access.h"
 #include "job_order.h"
+#include "prefab.h"
 #include "helpers/ref.h"
 
 #include <cstdint>
@@ -66,6 +67,8 @@ struct Job {
     bool HasComponent (Entity entity) const;
 
     template<typename T, typename...Args>
+    void QueueAddComponents (T component, Args...args);
+    template<typename T, typename...Args>
     void QueueAddComponents (Entity entity, T component, Args...args);
 
     void QueueCloneEntity (Entity entity);
@@ -76,7 +79,11 @@ struct Job {
     void QueueDestroyEntity (Entity entity);
 
     template<typename T, typename...Args>
+    void QueueRemoveComponents ();
+    template<typename T, typename...Args>
     void QueueRemoveComponents (Entity entity);
+
+    void QueueSpawnPrefab (Prefab prefab);
 
 public:
     virtual ~Job () {}

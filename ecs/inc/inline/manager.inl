@@ -204,6 +204,12 @@ inline Entity Manager::CreateEntityImmediateInternal (impl::Composition & compos
     return entity;
 }
 
+// - Creates a composition with default values
+// - Create an entity from this prefab by calling SpawnPrefab(Prefab)
+template<typename T, typename...Args>
+inline Prefab Manager::CreatePrefab (T component, Args...args) {
+    return Prefab{ CreateEntityImmediate(impl::PrefabComponent{}, component, args...) };
+}
 
 // - Causes Exists(entity) to return false
 // - Removes an entity's component data from its chunk
@@ -300,6 +306,20 @@ inline void Manager::RunUpdateGroup (Timestep dt) {
     }
 
     iter->second->Run(dt);
+}
+
+
+// - Creates an entity from a prefab
+// - Will have all the components and values specified in the prefab
+// - Passing an invalid Prefab will return an invalid Entity
+inline Entity Manager::SpawnPrefab (Prefab prefab) {
+    if (!Exists(prefab.m_entity))
+        return Entity();
+
+    Entity spawned = Clone(prefab.m_entity);
+    RemoveComponents<impl::PrefabComponent>(spawned);
+
+    return spawned;
 }
 
 template<typename T>

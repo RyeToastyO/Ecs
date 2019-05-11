@@ -7,6 +7,7 @@
 
 #include "entity.h"
 #include "component.h"
+#include "prefab.h"
 
 #include <cstdint>
 #include <vector>
@@ -49,12 +50,13 @@ private:
     std::vector<T> m_components;
 };
 
-enum ECommandType : uint8_t {
+enum class ECommandType : uint8_t {
     AddComponent,
     CloneEntity,
     CreateEntity,
     DestroyEntity,
     RemoveComponent,
+    SpawnPrefab,
 };
 
 struct Command {
@@ -84,6 +86,8 @@ struct CommandQueue {
     typename std::enable_if<(sizeof...(Args) == 0)>::type RemoveComponents (Entity) {}
     template<typename T, typename...Args>
     void RemoveComponents (Entity entity);
+
+    void SpawnPrefab (Prefab prefab);
 
 private:
     friend class Manager;

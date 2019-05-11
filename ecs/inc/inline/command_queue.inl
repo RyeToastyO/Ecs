@@ -37,27 +37,31 @@ inline CommandQueue::~CommandQueue () {
 }
 
 inline void CommandQueue::Apply (Manager * mgr) {
-    Entity createdEntity;
+    Entity targetEntity;
     for (const auto & command : m_commands) {
         switch (command.type) {
             case ECommandType::AddComponent: {
                 auto iter = m_queuedComponents.find(command.componentId);
-                Entity target = command.entity.generation == 0 ? createdEntity : command.entity;
-                iter->second->Apply(target, command.addComponentIndex, mgr);
+                targetEntity = command.entity.generation == 0 ? targetEntity : command.entity;
+                iter->second->Apply(targetEntity, command.addComponentIndex, mgr);
             } break;
             case ECommandType::CloneEntity:
-                createdEntity = mgr->Clone(command.entity);
+                targetEntity = mgr->Clone(command.entity);
                 break;
             case ECommandType::CreateEntity:
-                createdEntity = mgr->CreateEntityImmediate();
+                targetEntity = mgr->CreateEntityImmediate();
                 break;
             case ECommandType::DestroyEntity:
                 mgr->DestroyImmediate(command.entity);
                 break;
             case ECommandType::RemoveComponent: {
                 auto iter = m_componentRemovers.find(command.componentId);
-                iter->second->Apply(command.entity, mgr);
+                targetEntity = command.entity.generation == 0 ? targetEntity : command.entity;
+                iter->second->Apply(targetEntity, mgr);
             } break;
+            case ECommandType::SpawnPrefab:
+                targetEntity = mgr->SpawnPrefab(Prefab{ command.entity });
+                break;
         }
     }
 
@@ -130,6 +134,15 @@ inline void CommandQueue::RemoveComponents (Entity entity) {
     });
 
     RemoveComponents<Args...>(entity);
+}
+
+inline void CommandQueue::SpawnPrefab (Prefab prefab) {
+    m_commands.push_back(Command{
+        ECommandType::SpawnPrefab,
+        prefab.m_entity,
+        0,  // ComponentId
+        0   // ComponentIndex
+    });
 }
 
 } // namespace impl
