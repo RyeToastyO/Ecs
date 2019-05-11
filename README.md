@@ -154,11 +154,17 @@ Applied after completion of RunJob<> or RunUpdateGroup<>
 struct QueuedChange : ecs::Job {
     ECS_READ(ecs::Entity, CurrentEntity);
 
+    ECS_READ_SINGLETON(EnemyPrefab, Prefab);
+
     void ForEach (ecs::Timestep) override {
         QueueAddComponents(*CurrentEntity, ComponentA{1.0f});
         QueueRemoveComponents<ComponentB>(*CurrentEntity);
+
         QueueCreateEntity(ComponentA{1.0f});
         QueueDestroyEntity(*CurrentEntity);
+
+        QueueCloneEntity(*CurrentEntity);
+        QueueSpawnPrefab(Prefab->Value);
     }
 };
 ```
