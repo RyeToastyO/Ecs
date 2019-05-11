@@ -115,6 +115,20 @@ inline uint32_t Chunk::AllocateEntity () {
     return m_count++;
 }
 
+inline uint32_t Chunk::CloneEntity (uint32_t index) {
+    assert(index < m_count);
+    uint32_t newIndex = AllocateEntity();
+
+    for (auto & compArray : m_componentArrays) {
+        auto arrayStart = compArray.second;
+        auto size = GetComponentSize(compArray.first);
+
+        memcpy(arrayStart + newIndex * size, arrayStart + index * size, size);
+    }
+
+    return newIndex;
+}
+
 inline void Chunk::Clear () {
     m_count = 0;
     m_capacity = 0;

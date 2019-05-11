@@ -34,6 +34,7 @@ int main () {
 ### Creation/Destruction of Entities
 ```C++
 ecs::Entity entity = mgr.CreateEntityImmediate(ComponentA{10.0f}, ComponentB{20.0f}, ...);
+ecs::Entity clone = mgr.Clone(entity);
 mgr.DestroyEntityImmediate(entity);
 ```
 
@@ -169,7 +170,7 @@ struct QueuedChange : ecs::Job {
 ```
 
 ## TODO
-Current Version: v0.9.0
+Current Version: v0.9.1
 
 Requirements for:
 - v1.0.0
@@ -181,7 +182,7 @@ Requirements for:
 
 Potential future features
   - Batch operations (add/destroy/remove by filter/chunk)
-  - Clone entity
+  - Return entity handles from QueueCreate/QueueClone in jobs
   - Prefabs
     - An entity that is ignored by jobs
     - Easily cloned with default values for all components

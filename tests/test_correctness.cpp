@@ -638,6 +638,49 @@ void TestSharedComponentJob () {
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonDouble>()->Value == 40.0);
 }
 
+struct CloneJob : ecs::Job {
+    ECS_READ(ecs::Entity, Ent);
+    ECS_REQUIRE(FloatA, FloatB, FloatC);
+
+    ECS_WRITE_SINGLETON(SingletonUint, Count);
+
+    void Run (ecs::Timestep dt) override {
+        Count->Value = 0;
+        Job::Run(dt);
+    }
+
+    void ForEach (ecs::Timestep) override {
+        QueueCloneEntity(*Ent);
+        Count->Value++;
+    }
+};
+
+void TestEntityCloning () {
+    ecs::Manager mgr;
+
+    ecs::Entity og = mgr.CreateEntityImmediate(FloatA{ 1.0f }, FloatB{ 2.0f }, FloatC{ 3.0f });
+    ecs::Entity clone = mgr.Clone(og);
+
+    EXPECT_TRUE(mgr.FindComponent<FloatA>(clone)->Value == 1.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatB>(clone)->Value == 2.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatC>(clone)->Value == 3.0f);
+
+    mgr.AddComponents(clone, FloatA{ 10.0f }, FloatB{ 20.0f }, FloatC{ 30.0f });
+
+    EXPECT_TRUE(mgr.FindComponent<FloatA>(og)->Value == 1.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatB>(og)->Value == 2.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatC>(og)->Value == 3.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatA>(clone)->Value == 10.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatB>(clone)->Value == 20.0f);
+    EXPECT_TRUE(mgr.FindComponent<FloatC>(clone)->Value == 30.0f);
+
+    mgr.RunJob<CloneJob>(0.0f);
+    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 2);
+
+    mgr.RunJob<CloneJob>(0.0f);
+    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 4);
+}
+
 void TestCorrectness () {
     TestAssumptions();
     TestEntityComparison();
@@ -657,6 +700,7 @@ void TestCorrectness () {
     TestQueuedChanges();
     TestSharedComponents();
     TestSharedComponentJob();
+    TestEntityCloning();
 }
 
 }

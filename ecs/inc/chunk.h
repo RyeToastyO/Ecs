@@ -39,6 +39,7 @@ struct Chunk {
     typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>::type Find (uint32_t index) const;
 
     uint32_t AllocateEntity ();
+    uint32_t CloneEntity (uint32_t index);
     uint32_t MoveTo (uint32_t from, Chunk & to);
     void RemoveEntity (uint32_t index);
 

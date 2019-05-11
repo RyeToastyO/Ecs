@@ -66,7 +66,9 @@ struct Job {
     bool HasComponent (Entity entity) const;
 
     template<typename T, typename...Args>
-    void QueueAddComponents (Entity, T component, Args...args);
+    void QueueAddComponents (Entity entity, T component, Args...args);
+
+    void QueueCloneEntity (Entity entity);
 
     template<typename T, typename...Args>
     void QueueCreateEntity (T component, Args...args);

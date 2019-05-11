@@ -145,6 +145,13 @@ inline void Job::QueueAddComponents (Entity entity, T component, Args...args) {
     m_commands.AddComponents(entity, component, args...);
 }
 
+// - Queues the cloning of an entity
+// - Executed after Run exits if RunJob<T> was used
+// - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used
+inline void Job::QueueCloneEntity (Entity entity) {
+    m_commands.CloneEntity(entity);
+}
+
 // - Queues the creation of an entity with the specified components
 // - Executed after Run exits if RunJob<T> was used
 // - Executed after all jobs in an UpdateGroup are complete if RunUpdateGroup<T> was used

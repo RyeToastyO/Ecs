@@ -52,6 +52,8 @@ public:
     template<typename T, typename...Args>
     void AddComponents (Entity entity, T component, Args...args);
 
+    Entity Clone (Entity entity);
+
     Entity CreateEntityImmediate ();
 
     template<typename T, typename...Args>
@@ -86,6 +88,8 @@ private:
     std::unordered_map<impl::ComponentId, ISingletonComponent*> m_singletonComponents;
 
 private:
+    uint32_t AllocateNewEntityInternal ();
+
     template<typename T>
     void BuildJobTreeInternal ();
 

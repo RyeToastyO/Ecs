@@ -40,20 +40,21 @@ inline void CommandQueue::Apply (Manager * mgr) {
     Entity createdEntity;
     for (const auto & command : m_commands) {
         switch (command.type) {
-            case ECommandType::AddComponent:
-            {
+            case ECommandType::AddComponent: {
                 auto iter = m_queuedComponents.find(command.componentId);
                 Entity target = command.entity.generation == 0 ? createdEntity : command.entity;
                 iter->second->Apply(target, command.addComponentIndex, mgr);
             } break;
+            case ECommandType::CloneEntity:
+                createdEntity = mgr->Clone(command.entity);
+                break;
             case ECommandType::CreateEntity:
                 createdEntity = mgr->CreateEntityImmediate();
                 break;
             case ECommandType::DestroyEntity:
                 mgr->DestroyImmediate(command.entity);
                 break;
-            case ECommandType::RemoveComponent:
-            {
+            case ECommandType::RemoveComponent: {
                 auto iter = m_componentRemovers.find(command.componentId);
                 iter->second->Apply(command.entity, mgr);
             } break;
@@ -80,9 +81,18 @@ inline void CommandQueue::AddComponents (Entity entity, T component, Args...args
         entity,
         GetComponentId<T>(),
         collection->Push(std::move(component))
-        });
+    });
 
     AddComponents(entity, args...);
+}
+
+inline void CommandQueue::CloneEntity (Entity entity) {
+    m_commands.push_back(Command{
+        ECommandType::CloneEntity,
+        entity,
+        0,  // ComponentId
+        0   // ComponentIndex
+    });
 }
 
 template<typename T, typename...Args>
@@ -92,7 +102,7 @@ inline void CommandQueue::CreateEntity (T component, Args...args) {
         Entity{},
         0,  // ComponentId
         0   // ComponentIndex
-        });
+    });
 
     AddComponents(Entity{}, component, args...);
 }
@@ -103,7 +113,7 @@ inline void CommandQueue::DestroyEntity (Entity entity) {
         entity,
         0,  // ComponentId
         0   // ComponentIndex
-        });
+    });
 }
 
 template<typename T, typename...Args>
@@ -117,7 +127,7 @@ inline void CommandQueue::RemoveComponents (Entity entity) {
         entity,
         GetComponentId<T>(),
         0   // ComponentIndex
-        });
+    });
 
     RemoveComponents<Args...>(entity);
 }

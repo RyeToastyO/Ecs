@@ -51,6 +51,7 @@ private:
 
 enum ECommandType : uint8_t {
     AddComponent,
+    CloneEntity,
     CreateEntity,
     DestroyEntity,
     RemoveComponent,
@@ -71,6 +72,8 @@ struct CommandQueue {
     void AddComponents (Entity) {}
     template<typename T, typename...Args>
     void AddComponents (Entity entity, T component, Args...args);
+
+    void CloneEntity (Entity entity);
 
     template<typename T, typename...Args>
     void CreateEntity (T component, Args...args);

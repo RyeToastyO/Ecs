@@ -150,6 +150,28 @@ inline bool Manager::Exists (Entity entity) const {
 }
 
 
+// - Creates a copy of an Entity
+// - Returns an invalid Entity if the passed in entity has been destroyed
+inline Entity Manager::Clone (Entity entity) {
+    if (!Exists(entity))
+        return Entity();
+
+    // Use the chunk to actually copy component data
+    impl::EntityData & entityData = m_entityData[entity.index];
+    uint32_t chunkIndex = entityData.chunk->CloneEntity(entityData.chunkIndex);
+
+    // Allocate a new entity for the entity we just cloned on the chunk
+    uint32_t entityIndex = AllocateNewEntityInternal();
+
+    // Point the entity data at the chunk
+    m_entityData[entityIndex].chunk = m_entityData[entity.index].chunk; // Don't use entityData.chunk, it might be invalidated
+    m_entityData[entityIndex].chunkIndex = chunkIndex;
+
+    // Return the entity handle to the new entity
+    return Entity{ entityIndex, m_entityData[entityIndex].generation };
+}
+
+
 // - Creates an empty entity
 // - Prefer initializing with components as it is more efficient than adding after creation
 inline Entity Manager::CreateEntityImmediate () {
@@ -167,15 +189,7 @@ inline Entity Manager::CreateEntityImmediateInternal (impl::Composition & compos
     auto chunk = GetOrCreateChunk(composition);
 
     // Recycle or create a new EntityData
-    uint32_t index;
-    if (m_freeList.size() > 0) {
-        index = m_freeList[m_freeList.size() - 1];
-        m_freeList.pop_back();
-    }
-    else {
-        m_entityData.push_back(impl::EntityData());
-        index = (uint32_t)m_entityData.size() - 1;
-    }
+    uint32_t index = AllocateNewEntityInternal();
 
     // Assign the chunk data to the EntityData
     m_entityData[index].chunkIndex = chunk->AllocateEntity();
@@ -209,6 +223,21 @@ inline void Manager::DestroyImmediate (Entity entity) {
 
     if (--m_entityData[entity.index].generation)
         m_freeList.push_back(entity.index);
+}
+
+
+inline uint32_t Manager::AllocateNewEntityInternal () {
+    // Recycle or create a new EntityData
+    uint32_t index;
+    if (m_freeList.size() > 0) {
+        index = m_freeList.back();
+        m_freeList.pop_back();
+    }
+    else {
+        index = (uint32_t)m_entityData.size();
+        m_entityData.push_back(impl::EntityData());
+    }
+    return index;
 }
 
 inline impl::Chunk * Manager::GetOrCreateChunk (const impl::Composition & composition) {
