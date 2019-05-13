@@ -16,7 +16,7 @@ namespace ecs {
 
 #ifndef ECS_TIMESTEP_TYPE
 #define ECS_TIMESTEP_TYPE float
-typedef ECS_TIMESTEP_TYPE Timestep;
 #endif
+typedef ECS_TIMESTEP_TYPE Timestep;
 
 }

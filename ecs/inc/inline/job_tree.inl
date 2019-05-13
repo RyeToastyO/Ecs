@@ -77,10 +77,10 @@ inline void JobTree::AddToDependencyGroup (JobDependencyData * data, DependencyG
 }
 
 inline void JobTree::BuildGroupDependencyData (std::vector<DependencyGroup> & groups) {
-    for (auto i = 0; i < groups.size(); ++i) {
+    for (size_t i = 0; i < groups.size(); ++i) {
         auto & groupI = groups[i];
 
-        for (auto j = i + 1; j < groups.size(); ++j) {
+        for (size_t j = i + 1; j < groups.size(); ++j) {
             auto & groupJ = groups[j];
 
             if (groupI.read.HasAny(groupJ.write)) {
@@ -96,7 +96,7 @@ inline void JobTree::BuildGroupDependencyData (std::vector<DependencyGroup> & gr
 }
 
 inline void JobTree::BuildHardDependencyGroups (std::vector<DependencyGroup> & groups, std::vector<JobDependencyData> & depData) {
-    for (auto i = 0; i < depData.size(); ++i) {
+    for (size_t i = 0; i < depData.size(); ++i) {
         auto & depI = depData[i];
         if (depI.isGrouped)
             continue;
@@ -104,7 +104,7 @@ inline void JobTree::BuildHardDependencyGroups (std::vector<DependencyGroup> & g
         DependencyGroup group;
         AddToDependencyGroup(&depI, &group);
 
-        for (auto j = i + 1; j < depData.size(); ++j) {
+        for (size_t j = i + 1; j < depData.size(); ++j) {
             auto & depJ = depData[j];
             if (depJ.isGrouped)
                 continue;
@@ -141,7 +141,7 @@ inline void JobTree::BuildHardDependencyGroups (std::vector<DependencyGroup> & g
             bestJob->isSorted = true;
             group.sortedJobs.push_back(bestJob);
         }
-        for (auto j = 0; j < group.sortedJobs.size() - 1; ++j)
+        for (size_t j = 0; j < group.sortedJobs.size() - 1; ++j)
             group.sortedJobs[j]->node->dependents.push_back(group.sortedJobs[j+1]->node);
 
         groups.push_back(std::move(group));
@@ -149,14 +149,14 @@ inline void JobTree::BuildHardDependencyGroups (std::vector<DependencyGroup> & g
 }
 
 inline void JobTree::BuildJobDependencyData (std::vector<JobDependencyData> & depData) {
-    for (auto i = 0; i < depData.size(); ++i) {
+    for (size_t i = 0; i < depData.size(); ++i) {
         auto & depI = depData[i];
         auto & readI = depI.node->job->GetReadFlags();
         auto & writeI = depI.node->job->GetWriteFlags();
         auto & runAfterI = depI.node->job->GetRunAfter();
         auto & runBeforeI = depI.node->job->GetRunBefore();
 
-        for (auto j = i + 1; j < depData.size(); ++j) {
+        for (size_t j = i + 1; j < depData.size(); ++j) {
             auto & depJ = depData[j];
             auto & readJ = depJ.node->job->GetReadFlags();
             auto & writeJ = depJ.node->job->GetWriteFlags();
@@ -266,7 +266,7 @@ inline JobTree * JobTree::New () {
     tree->nodeMemory = new JobNode[updateGroupJobs.size()];
 
     std::vector<JobDependencyData> depData;
-    for (auto i = 0; i < updateGroupJobs.size(); ++i) {
+    for (size_t i = 0; i < updateGroupJobs.size(); ++i) {
         depData.push_back(JobDependencyData{ tree->nodeMemory + i, updateGroupJobs[i].id });
         tree->nodeMemory[i].job = updateGroupJobs[i].factory();
     }
