@@ -125,6 +125,8 @@ inline bool Job::IsValid (const impl::Chunk * chunk) const {
 inline void Job::Run (Timestep dt) {
     for (m_chunkIndex = 0; m_chunkIndex < m_chunks.size(); ++m_chunkIndex) {
         impl::Chunk * chunk = m_chunks[m_chunkIndex];
+        if (chunk->GetCount() == 0)
+            continue;
         for (auto dataAccess : m_dataAccess)
             dataAccess->UpdateChunk(chunk);
         ForEachChunk(dt);

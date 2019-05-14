@@ -186,7 +186,7 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 ```
 
 ## TODO
-Current Version: v0.9.3
+Current Version: v0.9.4
 
 Requirements for:
 - v1.0.0
@@ -198,6 +198,7 @@ Requirements for:
 
 Potential future features
   - Batch operations (add/destroy/remove by filter/chunk)
+  - Cleanup empty chunks
   - Support for custom allocators
 
 ## License
