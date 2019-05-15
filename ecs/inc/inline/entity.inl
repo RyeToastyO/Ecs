@@ -13,4 +13,25 @@ inline bool Entity::operator!= (const Entity & rhs) const {
     return !(*this == rhs);
 }
 
+inline EntityId Entity::GetId () const {
+    return (static_cast<EntityId>(generation) << 32) | index;
+}
+
+inline Entity Entity::FromId (EntityId id) {
+    Entity ret;
+    ret.generation = static_cast<uint32_t>((id >> 32) & UINT32_MAX);
+    ret.index = static_cast<uint32_t>(id & UINT32_MAX);
+
+    return ret;
+}
+
 } // namespace ecs
+
+namespace std {
+    template <> struct hash<::ecs::Entity> {
+        size_t operator() (const ::ecs::Entity & entity) const {
+            std::hash<ecs::EntityId> hasher;
+            return hasher(entity.GetId());
+        }
+    };
+};

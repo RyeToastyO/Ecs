@@ -22,6 +22,18 @@ void TestEntityComparison () {
     EXPECT_TRUE((ecs::Entity{ 1, 1 }) == (ecs::Entity{ 1, 1 }));
     EXPECT_FALSE((ecs::Entity{ 2, 2 }) != (ecs::Entity{ 2, 2 }));
     EXPECT_TRUE((ecs::Entity{ 2, 1 }) != (ecs::Entity{ 2, 2 }));
+
+    ecs::EntityId id11 = ecs::Entity{ 1, 1 }.GetId();
+    ecs::EntityId id12 = ecs::Entity{ 1, 2 }.GetId();
+    ecs::EntityId id21 = ecs::Entity{ 2, 1 }.GetId();
+    EXPECT_TRUE(ecs::Entity::FromId(id11) == (ecs::Entity{ 1, 1 }));
+    EXPECT_FALSE(id12 == id21);
+    EXPECT_TRUE(ecs::Entity::FromId(id21) == (ecs::Entity{ 2, 1 }));
+
+    std::hash<ecs::Entity> entityHasher;
+    std::hash<ecs::EntityId> idHasher;
+    EXPECT_TRUE(entityHasher(ecs::Entity{ 2, 1 }) == idHasher(id21));
+    EXPECT_FALSE(entityHasher(ecs::Entity{ 1, 2 }) == entityHasher(ecs::Entity{ 2, 1 }));
 }
 
 void TestEntityCreationDestruction () {
