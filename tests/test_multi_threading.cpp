@@ -79,14 +79,7 @@ void InitMultiThreadingTest (ecs::Manager * mgr) {
 void ExecuteMultiThreadingTest (ecs::Manager * mgr, EThreadingType threading) {
     switch (threading) {
         case EThreadingType::Single: {
-            mgr->RunJob<MultiThreadJobDouble>(0.0f);
-            mgr->RunJob<MultiThreadJobFloat>(0.0f);
-            mgr->RunJob<MultiThreadJobInt>(0.0f);
-            mgr->RunJob<MultiThreadJobUint>(0.0f);
-            mgr->RunJob<MultiThreadSingletonJobDouble>(0.0f);
-            mgr->RunJob<MultiThreadSingletonJobFloat>(0.0f);
-            mgr->RunJob<MultiThreadSingletonJobInt>(0.0f);
-            mgr->RunJob<MultiThreadSingletonJobUint>(0.0f);
+            mgr->RunUpdateGroup<UpdateGroupMultiThreading>(0.0f, true /* singleThreaded */);
         } break;
         case EThreadingType::UpdateGroupMulti: {
             mgr->RunUpdateGroup<UpdateGroupMultiThreading>(0.0f);

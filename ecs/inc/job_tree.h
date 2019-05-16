@@ -37,7 +37,7 @@ struct JobTree {
     template<typename T>
     static JobTree * New ();
 
-    void Run (Timestep dt);
+    void Run (Timestep dt, bool singleThreaded);
 
     template<typename T>
     void ForEachNode (T func) const;

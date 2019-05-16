@@ -293,10 +293,12 @@ inline void Manager::RunJob (Timestep dt) {
 
 
 // - Runs all jobs in the update group
-// - Multi-threaded when possible
+// - Multi-threaded when possible, unless singleThreaded is set to true
+//     - Mult-threading has a flat cost that is worth avoiding until your update group
+//       starts getting into the >1ms range
 // - Flushes queued composition changes after running, single-threaded, in a consistent order
 template<typename T>
-inline void Manager::RunUpdateGroup (Timestep dt) {
+inline void Manager::RunUpdateGroup (Timestep dt, bool singleThreaded) {
     static_assert(std::is_base_of<IUpdateGroup, T>::value, "Must inherit from IUpdateGroup");
 
     auto iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
@@ -305,7 +307,7 @@ inline void Manager::RunUpdateGroup (Timestep dt) {
         iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
     }
 
-    iter->second->Run(dt);
+    iter->second->Run(dt, singleThreaded);
 }
 
 

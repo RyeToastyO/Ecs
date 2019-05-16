@@ -314,10 +314,17 @@ inline void JobTree::RunJobList (std::vector<impl::JobNode*> & list, std::vector
     tasks.clear();
 }
 
-inline void JobTree::Run (Timestep dt) {
-    RunJobList(topNodes, runningTasks, dt);
+inline void JobTree::Run (Timestep dt, bool singleThreaded) {
+    if (singleThreaded) {
+        ForEachNode([dt](impl::JobNode * node) {
+            node->job->Run(dt);
+        });
+    }
+    else {
+        RunJobList(topNodes, runningTasks, dt);
+    }
 
-    ForEachNode([this](impl::JobNode * node) {
+    ForEachNode([](impl::JobNode * node) {
         node->job->ApplyQueuedCommands();
     });
 }

@@ -82,7 +82,7 @@ public:
     void RunJob (Timestep dt);
 
     template<typename T>
-    void RunUpdateGroup (Timestep dt);
+    void RunUpdateGroup (Timestep dt, bool singleThreaded = false);
 
     Entity SpawnPrefab (Prefab prefab);
 
