@@ -168,7 +168,12 @@ inline Entity Manager::Clone (Entity entity) {
     m_entityData[entityIndex].chunkIndex = chunkIndex;
 
     // Return the entity handle to the new entity
-    return Entity{ entityIndex, m_entityData[entityIndex].generation };
+    Entity newEntity = Entity{ entityIndex, m_entityData[entityIndex].generation };
+
+    // Set the entity component before we do, since it was just cloned by the chunk
+    SetComponentsInternal(m_entityData[entityIndex], newEntity);
+
+    return newEntity;
 }
 
 

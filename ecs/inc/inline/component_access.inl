@@ -32,7 +32,7 @@ struct DataComponentAccess : public IComponentAccess {
     static_assert(!std::is_empty<T>(), "Cannot access an empty/tag component");
     inline DataComponentAccess (Job & job) : IComponentAccess(job) {}
     inline void ApplyTo (ComponentFlags & flags) override { flags.SetFlags<T>(); }
-    inline void UpdateChunk (Chunk * chunk) { m_componentArray = chunk->Find<T>(); }
+    inline void UpdateChunk (Chunk * chunk) { this->m_componentArray = chunk->Find<T>(); }
 protected:
     T * m_componentArray = nullptr;
 };
@@ -49,7 +49,7 @@ struct SingletonComponentAccess : public IComponentAccess {
     static_assert(std::is_base_of<ISingletonComponent, T>::value, "Can only access components that inherit ISingletonComponent");
     inline SingletonComponentAccess (Job & job) : IComponentAccess(job) {}
     inline void ApplyTo (ComponentFlags & flags) override { flags.SetFlags<T>(); }
-    inline void UpdateManager () override { m_singletonComponent = this->m_job.m_manager->template GetSingletonComponent<T>(); }
+    inline void UpdateManager () override { this->m_singletonComponent = this->m_job.m_manager->template GetSingletonComponent<T>(); }
 protected:
     T * m_singletonComponent = nullptr;
 };

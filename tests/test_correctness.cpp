@@ -667,11 +667,25 @@ struct CloneJob : ecs::Job {
     }
 };
 
+struct CloneValidateJob : ecs::Job {
+    ECS_READ(ecs::Entity, Ent);
+    ECS_READ(test::EntityReference, Ref);
+
+    void ForEach (ecs::Timestep) override {
+        EXPECT_TRUE(*Ent == Ref->Value);
+    }
+};
+
 void TestEntityCloning () {
     ecs::Manager mgr;
 
     ecs::Entity og = mgr.CreateEntityImmediate(FloatA{ 1.0f }, FloatB{ 2.0f }, FloatC{ 3.0f });
     ecs::Entity clone = mgr.Clone(og);
+
+    EXPECT_FALSE(og == clone);
+    mgr.AddComponents(og, EntityReference{ og });
+    mgr.AddComponents(clone, EntityReference{ clone });
+    mgr.RunJob<CloneValidateJob>(0.0f);
 
     EXPECT_TRUE(mgr.FindComponent<FloatA>(clone)->Value == 1.0f);
     EXPECT_TRUE(mgr.FindComponent<FloatB>(clone)->Value == 2.0f);
