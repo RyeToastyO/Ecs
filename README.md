@@ -191,7 +191,8 @@ Current Version: v0.9.7
 Requirements for:
 - v1.0.0
   - fix any additional known bugs
-    - no known
+    - cannot use across dlls due to id registration statics
+      - consider single file instead of header-only
   - add unit tests for any additional known edge cases
     - automate job tree validation
     - more complicated job tree unit tests
@@ -199,7 +200,9 @@ Requirements for:
 Potential future features
   - Batch operations (add/destroy/remove by filter/chunk)
   - Cleanup empty chunks
+  - ExcludeAny
   - Support for custom allocators
+  - Support for custom threading
 
 ## License
 See [LICENSE](LICENSE)
