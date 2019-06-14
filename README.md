@@ -199,6 +199,7 @@ Requirements for:
 
 Potential future features
   - Batch operations (add/destroy/remove by filter/chunk)
+  - QueueCreate/Spawn should return an entity to act on
   - Cleanup empty chunks
   - ExcludeAny
   - Support for custom allocators
