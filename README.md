@@ -202,6 +202,9 @@ Potential future features
   - QueueCreate/Spawn should return an entity to act on
   - Cleanup empty chunks
   - ExcludeAny
+  - Improved cache alignment of chunks
+  - Breaking chunk alocations into cache line sizes
+  - Optimizations for multithreading/scheduling
   - Support for custom allocators
   - Support for custom threading
 
