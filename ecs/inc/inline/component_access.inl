@@ -92,7 +92,7 @@ template<typename T>
 struct ReadSingleton : public SingletonComponentAccess<T> {
     inline ReadSingleton (Job & job) : SingletonComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddReadSingleton(this); }
-    inline const T & operator* () const { return this->m_singletonComponent; }
+    inline const T & operator* () const { return *this->m_singletonComponent; }
     inline const T * operator-> () const { return this->m_singletonComponent; }
 };
 
@@ -128,7 +128,7 @@ template<typename T>
 struct WriteSingleton : public SingletonComponentAccess<T> {
     inline WriteSingleton (Job & job) : SingletonComponentAccess<T>(job) { OnCreate(); }
     inline void OnCreate () override { this->m_job.AddWriteSingleton(this); }
-    inline T & operator* () const { return this->m_singletonComponent; }
+    inline T & operator* () const { return *this->m_singletonComponent; }
     inline T * operator-> () const { return this->m_singletonComponent; }
 };
 

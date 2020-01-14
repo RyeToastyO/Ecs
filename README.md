@@ -186,7 +186,7 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 ```
 
 ## TODO
-Current Version: v0.9.8
+Current Version: v0.9.9
 
 Requirements for:
 - v1.0.0

@@ -426,6 +426,10 @@ struct SingletonWriteJob : ecs::Job {
 
     void ForEach (ecs::Timestep) override {
         Singleton->Value += A->Value;
+
+        // Mostly just to make sure this compiles
+        test::SingletonFloat & singleton = *Singleton;
+        singleton.Value = Singleton->Value;
     }
 };
 
@@ -435,6 +439,9 @@ struct SingletonReadJob : ecs::Job {
 
     void ForEach (ecs::Timestep) override {
         EXPECT_TRUE(Singleton->Value == 10.0f);
+
+        const test::SingletonFloat & singleton = *Singleton;
+        EXPECT_TRUE(singleton.Value == 10.0f);
     }
 };
 
