@@ -106,7 +106,7 @@ Useful when you can get large benefits from operating on entities in batches, su
 Example renders 10,000 bullets in a 100x100 grid with a single draw call
 ```C++
 namespace sprite {
-struct Instance16x16 : ecs::ISharedComponent { Color Data[265]; }
+struct Instance16x16 : ecs::ISharedComponent { Color Data[256]; }
 }
 
 struct ChunkRenderSprite16x16 : ecs::Job {
