@@ -64,18 +64,6 @@ void TestJobSpeed () {
 void TestMultiThreadingSpeed () {
     auto loopCount = 1 * 60 * 60;
 
-    std::chrono::duration<double> elapsedMulti;
-    {
-        ecs::Manager mgr;
-        InitMultiThreadingTest(&mgr);
-
-        auto start = std::chrono::high_resolution_clock::now();
-        for (auto i = 0; i < loopCount; ++i)
-            ExecuteMultiThreadingTest(&mgr, EThreadingType::UpdateGroupMulti);
-        auto end = std::chrono::high_resolution_clock::now();
-        elapsedMulti = end - start;
-    }
-
     std::chrono::duration<double> elapsedManual;
     {
         ecs::Manager mgr;
@@ -101,10 +89,9 @@ void TestMultiThreadingSpeed () {
     }
 
     double maxRatio = 1.0;
-    EXPECT_FALSE(elapsedMulti.count() > elapsedSingle.count() * maxRatio);
-    if (elapsedMulti.count() > elapsedSingle.count() * maxRatio) {
-        std::cout << "  " << elapsedMulti.count() * 1000 << "ms vs " << elapsedSingle.count() * 1000 << "ms (" << 100 * elapsedMulti.count() / elapsedSingle.count() << "%)" << std::endl;
-        std::cout << "  (Manual Multithreading: " << elapsedManual.count() * 1000 << "ms)" << std::endl;
+    EXPECT_FALSE(elapsedManual.count() > elapsedSingle.count() * maxRatio);
+    if (elapsedManual.count() > elapsedSingle.count() * maxRatio) {
+        std::cout << "  " << elapsedManual.count() * 1000 << "ms vs " << elapsedSingle.count() * 1000 << "ms (" << 100 * elapsedManual.count() / elapsedSingle.count() << "%)" << std::endl;
     }
 }
 

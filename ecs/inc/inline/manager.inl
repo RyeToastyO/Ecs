@@ -129,15 +129,12 @@ inline Manager::Manager () {
 inline Manager::~Manager () {
     for (auto & chunk : m_chunks)
         delete chunk.second;
-    for (auto & job : m_manualJobs)
+    for (auto & job : m_jobs)
         delete job.second;
     for (auto & singleton : m_singletonComponents)
         delete singleton.second;
-    for (auto & updateGroup : m_updateGroups)
-        delete updateGroup.second;
     m_chunks.clear();
-    m_manualJobs.clear();
-    m_updateGroups.clear();
+    m_jobs.clear();
     m_singletonComponents.clear();
 }
 
@@ -262,13 +259,8 @@ inline impl::Chunk * Manager::GetOrCreateChunk (const impl::Composition & compos
 }
 
 inline void Manager::NotifyChunkCreated (impl::Chunk * chunk) {
-    for (const auto & jobIter : m_manualJobs)
+    for (const auto & jobIter : m_jobs)
         jobIter.second->OnChunkAdded(chunk);
-    for (const auto & groupIter : m_updateGroups) {
-        groupIter.second->ForEachNode([chunk](impl::JobNode * node) {
-            node->job->OnChunkAdded(chunk);
-        });
-    }
 }
 
 
@@ -280,13 +272,13 @@ inline void Manager::RunJob (Timestep dt) {
 
     Job * job = nullptr;
 
-    auto iter = m_manualJobs.find(impl::GetJobId<T>());
-    if (iter == m_manualJobs.end()) {
+    auto iter = m_jobs.find(impl::GetJobId<T>());
+    if (iter == m_jobs.end()) {
         job = new T();
 
         RegisterJobInternal(job);
 
-        m_manualJobs.emplace(impl::GetJobId<T>(), job);
+        m_jobs.emplace(impl::GetJobId<T>(), job);
     }
     else {
         job = iter->second;
@@ -294,25 +286,6 @@ inline void Manager::RunJob (Timestep dt) {
 
     job->Run(dt);
     job->ApplyQueuedCommands();
-}
-
-
-// - Runs all jobs in the update group
-// - Multi-threaded when possible, unless singleThreaded is set to true
-//     - Mult-threading has a flat cost that is worth avoiding until your update group
-//       starts getting into the >1ms range
-// - Flushes queued composition changes after running, single-threaded, in a consistent order
-template<typename T>
-inline void Manager::RunUpdateGroup (Timestep dt, bool singleThreaded) {
-    static_assert(std::is_base_of<IUpdateGroup, T>::value, "Must inherit from IUpdateGroup");
-
-    auto iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
-    if (iter == m_updateGroups.end()) {
-        BuildJobTreeInternal<T>();
-        iter = m_updateGroups.find(impl::GetUpdateGroupId<T>());
-    }
-
-    iter->second->Run(dt, singleThreaded);
 }
 
 
@@ -327,17 +300,6 @@ inline Entity Manager::SpawnPrefab (Prefab prefab) {
     RemoveComponents<impl::PrefabComponent>(spawned);
 
     return spawned;
-}
-
-template<typename T>
-inline void Manager::BuildJobTreeInternal () {
-    impl::JobTree * tree = impl::JobTree::New<T>();
-
-    tree->ForEachNode([this](impl::JobNode * node) {
-        RegisterJobInternal(node->job);
-    });
-
-    m_updateGroups.emplace(impl::GetUpdateGroupId<T>(), tree);
 }
 
 inline void Manager::RegisterJobInternal (Job * job) {

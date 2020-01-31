@@ -50,24 +50,8 @@ inline void Job::AddWriteSingleton (impl::IComponentAccess * access) {
     m_singletonAccess.push_back(access);
 }
 
-inline void Job::AddRunAfter (impl::IJobOrdering * ordering) {
-    ordering->ApplyTo(m_runAfter);
-}
-
-inline void Job::AddRunBefore (impl::IJobOrdering * ordering) {
-    ordering->ApplyTo(m_runBefore);
-}
-
 inline void Job::ApplyQueuedCommands () {
     m_commands.Apply(m_manager);
-}
-
-inline const std::unordered_set<impl::JobId> & Job::GetRunAfter () const {
-    return m_runAfter;
-}
-
-inline const std::unordered_set<impl::JobId> & Job::GetRunBefore () const {
-    return m_runBefore;
 }
 
 inline const impl::ComponentFlags & Job::GetReadFlags () const {

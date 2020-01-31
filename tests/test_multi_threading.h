@@ -13,14 +13,12 @@ const auto MULTI_THREAD_ENTITY_COUNT = 25000;
 
 enum EThreadingType : uint8_t {
     Single,
-    ManualMulti,
-    UpdateGroupMulti
+    ManualMulti
 };
 
 void InitMultiThreadingTest (ecs::Manager * mgr);
 void ExecuteMultiThreadingTest (ecs::Manager * mgr, EThreadingType threading);
 void TestManualMultiThreading ();
-void TestMultiThreading ();
 void TestMultipleManagers ();
 
 }

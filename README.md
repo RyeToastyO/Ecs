@@ -39,7 +39,7 @@ mgr.DestroyEntityImmediate(entity);
 ```
 
 ### Component Manipulation
-Note: Standard components must be plain old data
+Note: Standard components must be plain old data and do not run destructors
 ```C++
 mgr.AddComponents(entity, ComponentC{30.0f}, ComponentD{1});
 mgr.RemoveComponents<ComponentA, ComponentB>(entity);
@@ -48,6 +48,7 @@ mgr.HasComponent<ComponentD>(entity) == true;
 ```
 
 ### Singleton Components
+Note: Singleton Components do run destructors
 ```C++
 struct CameraPosition : ecs::ISingletonComponent { float3 Value; };
 
@@ -73,11 +74,6 @@ struct ExampleJob : public ecs::Job {
     ECS_READ_SINGLETON(SingletonK, K);
     ECS_WRITE_SINGLETON(SingletonL, L);
 
-    // These can explicitly control the order jobs within an update group
-    // Use sparingly, as data depedencies can sort most jobs automatically
-    ECS_RUN_THIS_AFTER(PrereqJob);
-    ECS_RUN_THIS_BEFORE(DependentJob);
-
     int m_internalData = 0;
 
     void Run (ecs::Timestep dt) override {
@@ -102,20 +98,6 @@ struct ExampleJob : public ecs::Job {
 int main () {
     Manager mgr;
     mgr->RunJob<ExampleJob>(0.0f /* dt */);
-}
-```
-
-### Update groups
-Jobs within update groups are automatically run multi-threaded, unless "singleThreaded" parameter is set to true.
-See Jobs section for explicit ordering within an UpdateGroup
-```C++
-struct UpdateGroupA : ecs::IUpdateGroup {};
-
-ECS_REGISTER_JOB_FOR_UPDATE_GROUP(ExampleJob, UpdateGroupA);
-
-int main () {
-    ecs::Manager mgr;
-    mgr->RunUpdateGroup<UpdateGroupA>(0.0f /* dt */);
 }
 ```
 
@@ -149,7 +131,7 @@ int main () {
 ```
 
 ### Queued Composition Changes from Jobs
-Applied after completion of RunJob<> or RunUpdateGroup<>
+Applied after completion of RunJob<>
 ```C++
 struct QueuedChange : ecs::Job {
     ECS_READ(ecs::Entity, CurrentEntity);
@@ -186,27 +168,17 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 ```
 
 ## TODO
-Current Version: v0.9.9
-
-Requirements for:
-- v1.0.0
-  - fix any additional known bugs
-    - cannot use across dlls due to id registration statics
-      - consider single file instead of header-only
-  - add unit tests for any additional known edge cases
-    - automate job tree validation
-    - more complicated job tree unit tests
+Current Version: v1.0.0
 
 Potential future features
   - Batch operations (add/destroy/remove by filter/chunk)
   - QueueCreate/Spawn should return an entity to act on
-  - Cleanup empty chunks
-  - ExcludeAny
   - Improved cache alignment of chunks
   - Breaking chunk alocations into cache line sizes
-  - Optimizations for multithreading/scheduling
+  - CanMultithread<JobA, JobB>() helper
+  - RunJobsMultithreaded<JobA, JobB>() helper
+  - PruneUnusedChunks(time since empty)
   - Support for custom allocators
-  - Support for custom threading
 
 ## License
 See [LICENSE](LICENSE)

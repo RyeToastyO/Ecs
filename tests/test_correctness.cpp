@@ -498,44 +498,6 @@ void TestChunkJob () {
     mgr.RunJob<ChunkJobValidate>(0.0f);
 }
 
-struct UpdateGroupA : ecs::IUpdateGroup {};
-struct UpdateGroupB : ecs::IUpdateGroup {};
-
-struct UpdateGroupJobA : ecs::Job {
-    ECS_WRITE(test::FloatA, A);
-    ECS_READ(test::FloatB, B);
-
-    void ForEach (ecs::Timestep) override {
-        A->Value += B->Value;
-    }
-};
-ECS_REGISTER_JOB_FOR_UPDATE_GROUP(UpdateGroupJobA, UpdateGroupA);
-ECS_REGISTER_JOB_FOR_UPDATE_GROUP(UpdateGroupJobA, UpdateGroupB);
-
-struct UpdateGroupJobB : ecs::Job {
-    ECS_WRITE(test::FloatA, A);
-    ECS_READ(test::FloatC, C);
-
-    void ForEach (ecs::Timestep) override {
-        A->Value += C->Value;
-    }
-};
-ECS_REGISTER_JOB_FOR_UPDATE_GROUP(UpdateGroupJobB, UpdateGroupA);
-
-void TestUpdateGroups () {
-    ecs::Manager mgr;
-
-    ecs::Entity e = mgr.CreateEntityImmediate(test::FloatA{ 1.0f }, test::FloatB{ 2.0f }, test::FloatC{ 3.0f });
-
-    mgr.RunUpdateGroup<UpdateGroupA>(0.0f);
-
-    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 6.0f);
-
-    mgr.RunUpdateGroup<UpdateGroupB>(0.0f);
-
-    EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 8.0f);
-}
-
 struct QueuedChangeJob : ecs::Job {
     ECS_READ(ecs::Entity, Ent);
     ECS_READ(test::EntityReference, Ref);
@@ -777,9 +739,7 @@ void TestCorrectness () {
     TestReadWriteOther();
     TestSingletonComponents();
     TestChunkJob();
-    TestUpdateGroups();
     TestManualMultiThreading();
-    TestMultiThreading();
     TestQueuedChanges();
     TestSharedComponents();
     TestSharedComponentJob();

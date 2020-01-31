@@ -8,11 +8,11 @@
 #include "test_correctness.h"
 #include "test_multi_threading.h"
 
+#include <future>
+
 #include "../ecs/ecs.h"
 
 namespace test {
-
-struct UpdateGroupMultiThreading : ecs::IUpdateGroup {};
 
 #define MULTI_THREAD_JOB(Type)                                                      \
 struct MultiThreadJob##Type : public ::ecs::Job {                                   \
@@ -23,8 +23,7 @@ struct MultiThreadJob##Type : public ::ecs::Job {                               
     void ForEach (::ecs::Timestep) override {                                       \
         C->Value = std::max(A->Value, B->Value);                                    \
     }                                                                               \
-};                                                                                  \
-ECS_REGISTER_JOB_FOR_UPDATE_GROUP(MultiThreadJob##Type, UpdateGroupMultiThreading);
+};
 
 #define MULTI_THREAD_SINGLETON_JOB(Type)                                            \
 struct MultiThreadSingletonJob##Type : public ::ecs::Job {                          \
@@ -39,8 +38,7 @@ struct MultiThreadSingletonJob##Type : public ::ecs::Job {                      
     void ForEach (::ecs::Timestep) override {                                       \
         Total->Value += C->Value;                                                   \
     }                                                                               \
-};                                                                                  \
-ECS_REGISTER_JOB_FOR_UPDATE_GROUP(MultiThreadSingletonJob##Type, UpdateGroupMultiThreading);
+};
 
 MULTI_THREAD_JOB(Double);
 MULTI_THREAD_JOB(Float);
@@ -56,7 +54,6 @@ MULTI_THREAD_SINGLETON_JOB(Uint);
 
 void InitMultiThreadingTest (ecs::Manager * mgr) {
     // Run these first to eliminate the first time init costs
-    mgr->RunUpdateGroup<UpdateGroupMultiThreading>(0.0f);
     mgr->RunJob<MultiThreadJobDouble>(0.0f);
     mgr->RunJob<MultiThreadJobFloat>(0.0f);
     mgr->RunJob<MultiThreadJobInt>(0.0f);
@@ -79,10 +76,14 @@ void InitMultiThreadingTest (ecs::Manager * mgr) {
 void ExecuteMultiThreadingTest (ecs::Manager * mgr, EThreadingType threading) {
     switch (threading) {
         case EThreadingType::Single: {
-            mgr->RunUpdateGroup<UpdateGroupMultiThreading>(0.0f, true /* singleThreaded */);
-        } break;
-        case EThreadingType::UpdateGroupMulti: {
-            mgr->RunUpdateGroup<UpdateGroupMultiThreading>(0.0f);
+            mgr->RunJob<MultiThreadJobDouble>(0.0f);
+            mgr->RunJob<MultiThreadSingletonJobDouble>(0.0);
+            mgr->RunJob<MultiThreadJobFloat>(0.0f);
+            mgr->RunJob<MultiThreadSingletonJobFloat>(0.0);
+            mgr->RunJob<MultiThreadJobInt>(0.0f);
+            mgr->RunJob<MultiThreadSingletonJobInt>(0.0);
+            mgr->RunJob<MultiThreadJobUint>(0.0f);
+            mgr->RunJob<MultiThreadSingletonJobUint>(0.0);
         } break;
         case EThreadingType::ManualMulti: {
             std::future<void> handle[4];
@@ -116,12 +117,6 @@ void TestManualMultiThreading () {
     ecs::Manager mgr;
     InitMultiThreadingTest(&mgr);
     ExecuteMultiThreadingTest(&mgr, EThreadingType::ManualMulti);
-}
-
-void TestMultiThreading () {
-    ecs::Manager mgr;
-    InitMultiThreadingTest(&mgr);
-    ExecuteMultiThreadingTest(&mgr, EThreadingType::UpdateGroupMulti);
 }
 
 void TestMultipleManagers () {

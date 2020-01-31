@@ -9,7 +9,6 @@
 #include "entity.h"
 #include "command_queue.h"
 #include "component_access.h"
-#include "job_order.h"
 #include "prefab.h"
 #include "helpers/ref.h"
 
@@ -38,10 +37,6 @@ template<typename T> struct Write;
 template<typename T> struct WriteOther;
 template<typename T> struct WriteSingleton;
 
-struct IJobOrdering;
-template<typename T, typename...Args> struct RunAfter;
-template<typename T, typename...Args> struct RunBefore;
-
 struct JobTree;
 
 } // namespace impl
@@ -58,8 +53,6 @@ struct JobTree;
 //         - Used to do work on each entity
 // - Specify your entity filters using the macros from component_access.h
 // - Run manually using Manager->RunJob<JobType>(Timestep)
-// - Register for an IUpdateGroup using ECS_REGISTER_JOB_FOR_UPDATE_GROUP(JobType, UpdateGroupType)
-// - Specify explicit job ordering within a group using the macros from job_order.h
 struct Job {
     uint32_t GetChunkEntityCount () const;
 
@@ -100,9 +93,6 @@ private:
     uint32_t m_chunkIndex = 0;
     uint32_t m_entityIndex = 0;
     std::vector<impl::Chunk *> m_chunks;
-
-    std::unordered_set<impl::JobId> m_runAfter;
-    std::unordered_set<impl::JobId> m_runBefore;
 
     std::vector<impl::IComponentAccess *> m_dataAccess;
     std::vector<impl::IComponentAccess *> m_singletonAccess;
@@ -146,15 +136,6 @@ private:
     void AddWriteSingleton (impl::IComponentAccess * access);
 
 private:
-    template<typename T, typename...Args> friend struct impl::RunAfter;
-    void AddRunAfter (impl::IJobOrdering * ordering);
-    template<typename T, typename...Args> friend struct impl::RunBefore;
-    void AddRunBefore (impl::IJobOrdering * ordering);
-
-private:
-    friend struct impl::JobTree;
-    const std::unordered_set<impl::JobId> & GetRunAfter () const;
-    const std::unordered_set<impl::JobId> & GetRunBefore () const;
     const impl::ComponentFlags & GetReadFlags () const;
     const impl::ComponentFlags & GetWriteFlags () const;
 };
