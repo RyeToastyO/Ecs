@@ -14,13 +14,13 @@ inline bool Entity::operator!= (const Entity & rhs) const {
 }
 
 inline EntityId Entity::GetId () const {
-    return (static_cast<EntityId>(generation) << 32) | index;
+    return (static_cast<EntityId>(index) << 32) | generation;
 }
 
 inline Entity Entity::FromId (EntityId id) {
     Entity ret;
-    ret.generation = static_cast<uint32_t>((id >> 32) & UINT32_MAX);
-    ret.index = static_cast<uint32_t>(id & UINT32_MAX);
+    ret.index = static_cast<uint32_t>((id >> 32) & UINT32_MAX);
+    ret.generation = static_cast<uint32_t>(id & UINT32_MAX);
 
     return ret;
 }
