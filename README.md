@@ -180,5 +180,10 @@ Potential future features
   - PruneUnusedChunks(time since empty)
   - Support for custom allocators
 
+Known Issues
+  - ComponentId generation doesn't work across dlls since it uses templates.
+    - Not planning on fixing since it would require manual registration of
+      components and turning component declarations into macros.
+
 ## License
 See [LICENSE](LICENSE)
