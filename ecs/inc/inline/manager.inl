@@ -267,7 +267,7 @@ inline void Manager::NotifyChunkCreated (impl::Chunk * chunk) {
 // - Executes a job
 // - Flushes any queued composition changes after running
 template<typename T>
-inline void Manager::RunJob (Timestep dt) {
+inline void Manager::RunJob () {
     static_assert(std::is_base_of<Job, T>::value, "Must inherit from Job");
 
     Job * job = nullptr;
@@ -284,7 +284,7 @@ inline void Manager::RunJob (Timestep dt) {
         job = iter->second;
     }
 
-    job->Run(dt);
+    job->Run();
     job->ApplyQueuedCommands();
 }
 

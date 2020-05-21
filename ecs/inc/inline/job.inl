@@ -106,24 +106,24 @@ inline bool Job::IsValid (const impl::Chunk * chunk) const {
 
 // - Override to do work before and after ForEachChunk or ForEach are run
 // - Make sure to call Job::Run(dt) when you want ForEachChunk and ForEach to run
-inline void Job::Run (Timestep dt) {
+inline void Job::Run () {
     for (m_chunkIndex = 0; m_chunkIndex < m_chunks.size(); ++m_chunkIndex) {
         impl::Chunk * chunk = m_chunks[m_chunkIndex];
         if (chunk->GetCount() == 0)
             continue;
         for (auto dataAccess : m_dataAccess)
             dataAccess->UpdateChunk(chunk);
-        ForEachChunk(dt);
+        ForEachChunk();
     }
 }
 
 // - Override to do batch work on contiguous arrays of entities
 // - Use GetChunkEntityCount() to get the size of the arrays
 // - Use GetChunkComponentArray<T>() on READ/WRITE accessors to get the head of compoennt arrays
-inline void Job::ForEachChunk (Timestep dt) {
+inline void Job::ForEachChunk () {
     impl::Chunk * chunk = m_chunks[m_chunkIndex];
     for (m_entityIndex = 0; m_entityIndex < chunk->GetCount(); ++m_entityIndex)
-        ForEach(dt);
+        ForEach();
 }
 
 // - Queues components to be added or set

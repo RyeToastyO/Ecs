@@ -14,8 +14,8 @@ struct RegenJob : ecs::Job {
     ECS_WRITE(health::Current, Current);
     ECS_READ(health::Regen, Regen);
 
-    void ForEach (ecs::Timestep dt) override {
-        Current->Value += Regen->Value * dt;
+    void ForEach () override {
+        Current->Value += Regen->Value;
     }
 };
 
@@ -23,7 +23,7 @@ int main () {
     ecs::Manager mgr;
     ecs::Entity a = mgr.CreateEntityImmediate(health::Current{10}, health::Regen{1});
 
-    mgr.RunJob<RegenJob>(1.0f /* dt */);
+    mgr.RunJob<RegenJob>();
 
     std::cout << mgr.FindComponent<health::Current>(a)->Value;
     /* 11 */
@@ -75,20 +75,21 @@ struct ExampleJob : public ecs::Job {
     ECS_WRITE_SINGLETON(SingletonL, L);
 
     int m_internalData = 0;
+    float m_timestep = 1.0f / 60;
 
-    void Run (ecs::Timestep dt) override {
+    void Run () override {
         m_internalData = K->Value;
 
         // Executes the ForEach on each entity that matches all
         // WRITE/READ/REQUIRE/EXCLUDE/REQUIRE_ANY filters
-        ecs::Job::Run(dt);
+        ecs::Job::Run();
 
         L->Value = m_internalData;
     }
 
-    void ForEach (ecs::Timestep dt) override {
+    void ForEach () override {
         if (ComponentI * i = I.Find(B->Value))
-            A->Value += i->Value * dt;
+            A->Value += i->Value * m_timestep;
         if (ComponentJ * j = J.Find(B->Value))
             j->Value = A->Value;
         m_internalData += A->Value;
@@ -97,7 +98,7 @@ struct ExampleJob : public ecs::Job {
 
 int main () {
     Manager mgr;
-    mgr->RunJob<ExampleJob>(0.0f /* dt */);
+    mgr->RunJob<ExampleJob>();
 }
 ```
 
@@ -113,7 +114,7 @@ struct ChunkRenderSprite16x16 : ecs::Job {
     ECS_READ(transform::Position, Pos);
     ECS_READ(sprite::Instance16x16, Sprite);
 
-    void ForEachChunk (ecs::Timestep) override {
+    void ForEachChunk () override {
         transform::Position * posArray = Pos.GetChunkComponentArray();
         RenderSystem::RenderInstanced(Sprite->Data, posArray, GetChunkEntityCount());
     }
@@ -126,7 +127,7 @@ int main () {
     for (int i = 0; i < 10000; ++i)
         mgr.CreateEntityImmediate(transform::Position{i % 100, i / 100}, bulletModel);
 
-    mgr->RunJob<ChunkRenderSprite16x16>(0.0f);
+    mgr->RunJob<ChunkRenderSprite16x16>();
 }
 ```
 
@@ -138,7 +139,7 @@ struct QueuedChange : ecs::Job {
 
     ECS_READ_SINGLETON(EnemyPrefab, Prefab);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         QueueAddComponents(*CurrentEntity, ComponentA{1.0f});
         QueueRemoveComponents<ComponentB>(*CurrentEntity);
 
@@ -164,11 +165,10 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 ### Configurable Settings
 ```C++
 #define ECS_MAX_COMPONENTS 256
-#define ECS_TIMESTEP_TYPE float
 ```
 
 ## TODO
-Current Version: v1.0.1
+Current Version: v1.0.2
 
 Potential future features
   - Batch operations (add/destroy/remove by filter/chunk)

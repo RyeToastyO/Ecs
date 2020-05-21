@@ -14,9 +14,4 @@ namespace ecs {
 #define ECS_MAX_COMPONENTS 256
 #endif
 
-#ifndef ECS_TIMESTEP_TYPE
-#define ECS_TIMESTEP_TYPE float
-#endif
-typedef ECS_TIMESTEP_TYPE Timestep;
-
 }

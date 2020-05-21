@@ -52,7 +52,7 @@ struct JobTree;
 //     - ForEach
 //         - Used to do work on each entity
 // - Specify your entity filters using the macros from component_access.h
-// - Run manually using Manager->RunJob<JobType>(Timestep)
+// - Run manually using Manager->RunJob<JobType>()
 struct Job {
     uint32_t GetChunkEntityCount () const;
 
@@ -81,10 +81,10 @@ struct Job {
 public:
     virtual ~Job () {}
 
-    virtual void Run (Timestep dt);
-    virtual void ForEachChunk (Timestep dt);
+    virtual void Run ();
+    virtual void ForEachChunk ();
     // - Override to do work on each entity that satisfies the job's accessors
-    virtual void ForEach (Timestep dt) { ECS_REF(dt); }
+    virtual void ForEach () { }
 
 private:
     bool IsValid (const impl::Chunk * chunk) const;

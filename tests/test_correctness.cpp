@@ -307,7 +307,7 @@ struct AddFloatBToFloatA : ecs::Job {
     ECS_WRITE(test::FloatA, A);
     ECS_READ(test::FloatB, B);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         A->Value += B->Value;
     }
 };
@@ -318,7 +318,7 @@ struct AddFloatBToFloatARequireExclude : ecs::Job {
     ECS_REQUIRE(test::TagA);
     ECS_EXCLUDE(test::TagB);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         A->Value += B->Value;
     }
 };
@@ -328,7 +328,7 @@ struct AddFloatBToFloatARequireAny : ecs::Job {
     ECS_READ(test::FloatB, B);
     ECS_REQUIRE_ANY(test::TagA, test::TagB);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         A->Value += B->Value;
     }
 };
@@ -342,7 +342,7 @@ void TestJob () {
     ecs::Entity d = mgr.CreateEntityImmediate(test::FloatA{ 4 }, test::FloatB{ 4 }, test::TagA{}, test::TagB{});
     ecs::Entity e = mgr.CreateEntityImmediate(test::FloatA{ 5 }, test::FloatB{ 5 });
 
-    mgr.RunJob<AddFloatBToFloatA>(0.0f);
+    mgr.RunJob<AddFloatBToFloatA>();
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(a)->Value == 2);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(b)->Value == 4);
@@ -350,7 +350,7 @@ void TestJob () {
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(d)->Value == 8);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 10);
 
-    mgr.RunJob<AddFloatBToFloatARequireExclude>(0.0f);
+    mgr.RunJob<AddFloatBToFloatARequireExclude>();
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(a)->Value == 2);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(b)->Value == 6);
@@ -358,7 +358,7 @@ void TestJob () {
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(d)->Value == 8);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(e)->Value == 10);
 
-    mgr.RunJob<AddFloatBToFloatARequireAny>(0.0f);
+    mgr.RunJob<AddFloatBToFloatARequireAny>();
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(a)->Value == 2);
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(b)->Value == 8);
@@ -373,7 +373,7 @@ struct ReadOtherTestJob : ecs::Job {
 
     ECS_READ_OTHER(test::FloatC, ReadC);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         A->Value = ReadC.Find(Ref->Value)->Value;
     }
 };
@@ -384,7 +384,7 @@ struct WriteOtherTestJob : ecs::Job {
 
     ECS_WRITE_OTHER(test::FloatC, WriteC);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         if (HasComponent<test::TagA>(Ref->Value))
             WriteC.Find(Ref->Value)->Value = B->Value;
     }
@@ -396,19 +396,19 @@ void TestReadWriteOther () {
     ecs::Entity target = mgr.CreateEntityImmediate(test::FloatC{ 30.0f }, test::TagA{});
     ecs::Entity referencer = mgr.CreateEntityImmediate(test::FloatA{ 10.0f }, test::FloatB{ 20.0f }, test::EntityReference{ target });
 
-    mgr.RunJob<ReadOtherTestJob>(0.0f);
+    mgr.RunJob<ReadOtherTestJob>();
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(referencer)->Value == 30.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatB>(referencer)->Value == 20.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatC>(target)->Value = 30.0f);
 
-    mgr.RunJob<WriteOtherTestJob>(0.0f);
+    mgr.RunJob<WriteOtherTestJob>();
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(referencer)->Value == 30.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatB>(referencer)->Value == 20.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatC>(target)->Value = 20.0f);
 
-    mgr.RunJob<ReadOtherTestJob>(0.0f);
+    mgr.RunJob<ReadOtherTestJob>();
 
     EXPECT_TRUE(mgr.FindComponent<test::FloatA>(referencer)->Value == 20.0f);
     EXPECT_TRUE(mgr.FindComponent<test::FloatB>(referencer)->Value == 20.0f);
@@ -419,12 +419,12 @@ struct SingletonWriteJob : ecs::Job {
     ECS_WRITE_SINGLETON(test::SingletonFloat, Singleton);
     ECS_READ(test::FloatA, A);
 
-    void Run (ecs::Timestep dt) override {
+    void Run () override {
         Singleton->Value = 0.0f;
-        ecs::Job::Run(dt);
+        ecs::Job::Run();
     }
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         Singleton->Value += A->Value;
 
         // Mostly just to make sure this compiles
@@ -437,7 +437,7 @@ struct SingletonReadJob : ecs::Job {
     ECS_READ_SINGLETON(test::SingletonFloat, Singleton);
     ECS_READ(test::FloatA, A);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         EXPECT_TRUE(Singleton->Value == 10.0f);
 
         const test::SingletonFloat & singleton = *Singleton;
@@ -454,13 +454,13 @@ void TestSingletonComponents () {
     ecs::Entity a = mgr.CreateEntityImmediate(test::FloatA{ 5.0f });
     mgr.CreateEntityImmediate(test::FloatA{ 5.0f });
 
-    mgr.RunJob<SingletonWriteJob>(0.0f);
+    mgr.RunJob<SingletonWriteJob>();
     EXPECT_TRUE(singleton && singleton->Value == 10.0f);
 
-    mgr.RunJob<SingletonReadJob>(0.0f);
+    mgr.RunJob<SingletonReadJob>();
 
     mgr.FindComponent<test::FloatA>(a)->Value = 10.0f;
-    mgr.RunJob<SingletonWriteJob>(0.0f);
+    mgr.RunJob<SingletonWriteJob>();
     EXPECT_TRUE(singleton && singleton->Value == 15.0f);
 }
 
@@ -468,7 +468,7 @@ struct ChunkJobExecute : ecs::Job {
     ECS_WRITE(test::FloatA, A);
     ECS_READ(test::FloatB, B);
 
-    void ForEachChunk (ecs::Timestep) override {
+    void ForEachChunk () override {
         auto aArray = A.GetChunkComponentArray();
         auto bArray = B.GetChunkComponentArray();
         for (uint32_t i = 0; i < GetChunkEntityCount(); ++i)
@@ -479,7 +479,7 @@ struct ChunkJobExecute : ecs::Job {
 struct ChunkJobValidate : ecs::Job {
     ECS_READ(test::FloatA, A);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         EXPECT_TRUE(A->Value == 3.0f);
     }
 };
@@ -494,8 +494,8 @@ void TestChunkJob () {
     mgr.CreateEntityImmediate(test::FloatA{ 1.0f }, test::FloatB{ 2.0f }, test::FloatC{ 3.0f });
     mgr.CreateEntityImmediate(test::FloatA{ 3.0f });
 
-    mgr.RunJob<ChunkJobExecute>(0.0f);
-    mgr.RunJob<ChunkJobValidate>(0.0f);
+    mgr.RunJob<ChunkJobExecute>();
+    mgr.RunJob<ChunkJobValidate>();
 }
 
 struct QueuedChangeJob : ecs::Job {
@@ -503,7 +503,7 @@ struct QueuedChangeJob : ecs::Job {
     ECS_READ(test::EntityReference, Ref);
     ECS_REQUIRE(test::TagA);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         QueueAddComponents(*Ent, test::FloatA{ 1.0f });
         QueueRemoveComponents<test::TagA>(*Ent);
         QueueCreateEntity(test::FloatA{ 2.0f });
@@ -516,7 +516,7 @@ struct QueuedChangeTotal: ecs::Job {
 
     ECS_WRITE_SINGLETON(test::SingletonFloat, Total);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         Total->Value += A->Value;
     }
 };
@@ -529,8 +529,8 @@ void TestQueuedChanges () {
     ecs::Entity c = mgr.CreateEntityImmediate(test::TagA{}, test::EntityReference{ a });
     ecs::Entity d = mgr.CreateEntityImmediate(test::TagA{}, test::EntityReference{ b });
 
-    mgr.RunJob<QueuedChangeJob>(0.0f);
-    mgr.RunJob<QueuedChangeTotal>(0.0f);
+    mgr.RunJob<QueuedChangeJob>();
+    mgr.RunJob<QueuedChangeTotal>();
 
     EXPECT_FALSE(mgr.Exists(a));
     EXPECT_FALSE(mgr.Exists(b));
@@ -573,7 +573,7 @@ struct SharedCompJob : ecs::Job {
     ECS_WRITE_SINGLETON(SingletonFloat, Count3);
     ECS_WRITE_SINGLETON(SingletonDouble, Count4);
 
-    void ForEachChunk (ecs::Timestep dt) override {
+    void ForEachChunk () override {
         switch (Shared->Value) {
             case 1:
                 Count1->Value++;
@@ -582,10 +582,10 @@ struct SharedCompJob : ecs::Job {
                 Count2->Value++;
                 break;
         }
-        Job::ForEachChunk(dt);
+        Job::ForEachChunk();
     }
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         switch (Shared->Value) {
             case 1:
                 Count3->Value++;
@@ -611,7 +611,7 @@ void TestSharedComponentJob () {
         mgr.CreateEntityImmediate(SharedA2, FloatA{});
     }
 
-    mgr.RunJob<SharedCompJob>(0.0f);
+    mgr.RunJob<SharedCompJob>();
 
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonInt>()->Value == 3);
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 2);
@@ -625,12 +625,12 @@ struct CloneJob : ecs::Job {
 
     ECS_WRITE_SINGLETON(SingletonUint, Count);
 
-    void Run (ecs::Timestep dt) override {
+    void Run () override {
         Count->Value = 0;
-        Job::Run(dt);
+        Job::Run();
     }
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         QueueCloneEntity(*Ent);
         Count->Value++;
     }
@@ -640,7 +640,7 @@ struct CloneValidateJob : ecs::Job {
     ECS_READ(ecs::Entity, Ent);
     ECS_READ(test::EntityReference, Ref);
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         EXPECT_TRUE(*Ent == Ref->Value);
     }
 };
@@ -654,7 +654,7 @@ void TestEntityCloning () {
     EXPECT_FALSE(og == clone);
     mgr.AddComponents(og, EntityReference{ og });
     mgr.AddComponents(clone, EntityReference{ clone });
-    mgr.RunJob<CloneValidateJob>(0.0f);
+    mgr.RunJob<CloneValidateJob>();
 
     EXPECT_TRUE(mgr.FindComponent<FloatA>(clone)->Value == 1.0f);
     EXPECT_TRUE(mgr.FindComponent<FloatB>(clone)->Value == 2.0f);
@@ -669,10 +669,10 @@ void TestEntityCloning () {
     EXPECT_TRUE(mgr.FindComponent<FloatB>(clone)->Value == 20.0f);
     EXPECT_TRUE(mgr.FindComponent<FloatC>(clone)->Value == 30.0f);
 
-    mgr.RunJob<CloneJob>(0.0f);
+    mgr.RunJob<CloneJob>();
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 2);
 
-    mgr.RunJob<CloneJob>(0.0f);
+    mgr.RunJob<CloneJob>();
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 4);
 }
 
@@ -684,12 +684,12 @@ struct PrefabJob : ecs::Job {
     ECS_READ_SINGLETON(PrefabToSpawn, Prefab);
     ECS_WRITE_SINGLETON(SingletonUint, Count);
 
-    void Run (ecs::Timestep dt) override {
+    void Run () override {
         Count->Value = 0;
-        Job::Run(dt);
+        Job::Run();
     }
 
-    void ForEach (ecs::Timestep) override {
+    void ForEach () override {
         QueueSpawnPrefab(Prefab->Value);
         Count->Value++;
     }
@@ -719,10 +719,10 @@ void TestPrefabs () {
 
     mgr.GetSingletonComponent<PrefabToSpawn>()->Value = prefab;
 
-    mgr.RunJob<PrefabJob>(0.0f);
+    mgr.RunJob<PrefabJob>();
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 2);
 
-    mgr.RunJob<PrefabJob>(0.0f);
+    mgr.RunJob<PrefabJob>();
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 4);
 }
 

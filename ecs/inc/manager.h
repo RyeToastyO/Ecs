@@ -77,7 +77,7 @@ public:
     void RemoveComponents (Entity entity);
 
     template<typename T>
-    void RunJob (Timestep dt);
+    void RunJob ();
 
     Entity SpawnPrefab (Prefab prefab);
 

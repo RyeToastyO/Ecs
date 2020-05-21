@@ -20,7 +20,7 @@ struct MultiThreadJob##Type : public ::ecs::Job {                               
     ECS_READ(::test::Type##B, B);                                                   \
     ECS_WRITE(::test::Type##C, C);                                                  \
                                                                                     \
-    void ForEach (::ecs::Timestep) override {                                       \
+    void ForEach () override {                                                      \
         C->Value = std::max(A->Value, B->Value);                                    \
     }                                                                               \
 };
@@ -30,12 +30,12 @@ struct MultiThreadSingletonJob##Type : public ::ecs::Job {                      
     ECS_READ(::test::Type##C, C);                                                   \
     ECS_WRITE_SINGLETON(::test::Singleton##Type, Total);                            \
                                                                                     \
-    void Run (::ecs::Timestep dt) override {                                        \
+    void Run () override {                                                          \
         Total->Value = 0;                                                           \
-        ::ecs::Job::Run(dt);                                                        \
+        ::ecs::Job::Run();                                                          \
     }                                                                               \
                                                                                     \
-    void ForEach (::ecs::Timestep) override {                                       \
+    void ForEach () override {                                                      \
         Total->Value += C->Value;                                                   \
     }                                                                               \
 };
@@ -54,14 +54,14 @@ MULTI_THREAD_SINGLETON_JOB(Uint);
 
 void InitMultiThreadingTest (ecs::Manager * mgr) {
     // Run these first to eliminate the first time init costs
-    mgr->RunJob<MultiThreadJobDouble>(0.0f);
-    mgr->RunJob<MultiThreadJobFloat>(0.0f);
-    mgr->RunJob<MultiThreadJobInt>(0.0f);
-    mgr->RunJob<MultiThreadJobUint>(0.0f);
-    mgr->RunJob<MultiThreadSingletonJobDouble>(0.0f);
-    mgr->RunJob<MultiThreadSingletonJobFloat>(0.0f);
-    mgr->RunJob<MultiThreadSingletonJobInt>(0.0f);
-    mgr->RunJob<MultiThreadSingletonJobUint>(0.0f);
+    mgr->RunJob<MultiThreadJobDouble>();
+    mgr->RunJob<MultiThreadJobFloat>();
+    mgr->RunJob<MultiThreadJobInt>();
+    mgr->RunJob<MultiThreadJobUint>();
+    mgr->RunJob<MultiThreadSingletonJobDouble>();
+    mgr->RunJob<MultiThreadSingletonJobFloat>();
+    mgr->RunJob<MultiThreadSingletonJobInt>();
+    mgr->RunJob<MultiThreadSingletonJobUint>();
 
     for (auto i = 0; i < MULTI_THREAD_ENTITY_COUNT; ++i) {
         mgr->CreateEntityImmediate(
@@ -76,32 +76,32 @@ void InitMultiThreadingTest (ecs::Manager * mgr) {
 void ExecuteMultiThreadingTest (ecs::Manager * mgr, EThreadingType threading) {
     switch (threading) {
         case EThreadingType::Single: {
-            mgr->RunJob<MultiThreadJobDouble>(0.0f);
-            mgr->RunJob<MultiThreadSingletonJobDouble>(0.0);
-            mgr->RunJob<MultiThreadJobFloat>(0.0f);
-            mgr->RunJob<MultiThreadSingletonJobFloat>(0.0);
-            mgr->RunJob<MultiThreadJobInt>(0.0f);
-            mgr->RunJob<MultiThreadSingletonJobInt>(0.0);
-            mgr->RunJob<MultiThreadJobUint>(0.0f);
-            mgr->RunJob<MultiThreadSingletonJobUint>(0.0);
+            mgr->RunJob<MultiThreadJobDouble>();
+            mgr->RunJob<MultiThreadSingletonJobDouble>();
+            mgr->RunJob<MultiThreadJobFloat>();
+            mgr->RunJob<MultiThreadSingletonJobFloat>();
+            mgr->RunJob<MultiThreadJobInt>();
+            mgr->RunJob<MultiThreadSingletonJobInt>();
+            mgr->RunJob<MultiThreadJobUint>();
+            mgr->RunJob<MultiThreadSingletonJobUint>();
         } break;
         case EThreadingType::ManualMulti: {
             std::future<void> handle[4];
             handle[0] = std::async(std::launch::async, [mgr]() {
-                mgr->RunJob<MultiThreadJobDouble>(0.0f);
-                mgr->RunJob<MultiThreadSingletonJobDouble>(0.0);
+                mgr->RunJob<MultiThreadJobDouble>();
+                mgr->RunJob<MultiThreadSingletonJobDouble>();
             });
             handle[1] = std::async(std::launch::async, [mgr]() {
-                mgr->RunJob<MultiThreadJobFloat>(0.0f);
-                mgr->RunJob<MultiThreadSingletonJobFloat>(0.0);
+                mgr->RunJob<MultiThreadJobFloat>();
+                mgr->RunJob<MultiThreadSingletonJobFloat>();
             });
             handle[2] = std::async(std::launch::async, [mgr]() {
-                mgr->RunJob<MultiThreadJobInt>(0.0f);
-                mgr->RunJob<MultiThreadSingletonJobInt>(0.0);
+                mgr->RunJob<MultiThreadJobInt>();
+                mgr->RunJob<MultiThreadSingletonJobInt>();
             });
             handle[3] = std::async(std::launch::async, [mgr]() {
-                mgr->RunJob<MultiThreadJobUint>(0.0f);
-                mgr->RunJob<MultiThreadSingletonJobUint>(0.0);
+                mgr->RunJob<MultiThreadJobUint>();
+                mgr->RunJob<MultiThreadSingletonJobUint>();
             });
             for (auto i = 0; i < 4; ++i)
                 handle[i].wait();

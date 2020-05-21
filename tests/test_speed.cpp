@@ -11,7 +11,7 @@
 
 namespace test {
 
-void SpeedTestCalculation (ecs::Timestep dt, float & a, const float & b, const float & c) {
+void SpeedTestCalculation (float dt, float & a, const float & b, const float & c) {
     a = std::min(a + c * dt, b);
 }
 
@@ -21,8 +21,10 @@ struct SpeedTestJob : public ecs::Job {
     ECS_READ(test::FloatC, C);
     ECS_EXCLUDE(test::TagA);
 
-    void ForEach (ecs::Timestep dt) override {
-        SpeedTestCalculation(dt, A->Value, B->Value, C->Value);
+    ECS_READ_SINGLETON(test::DeltaTime, Dt);
+
+    void ForEach () override {
+        SpeedTestCalculation(Dt->Value, A->Value, B->Value, C->Value);
     }
 };
 
@@ -30,7 +32,7 @@ void TestJobSpeed () {
     ecs::Manager mgr;
 
     // Run once with no entities to initialize the job outside our profiling
-    mgr.RunJob<SpeedTestJob>(0.0f);
+    mgr.RunJob<SpeedTestJob>();
 
     uint32_t entityCount = 100000;
     uint32_t loopCount = 1 * 60 * 60;
@@ -38,10 +40,12 @@ void TestJobSpeed () {
     for (uint32_t i = 0; i < entityCount; ++i)
         mgr.CreateEntityImmediate(test::FloatA{ 0 }, test::FloatB{ 1000 }, test::FloatC{ 1.0f });
 
-    float timestep = 1 / 60.0f;
+    constexpr float timestep = 1 / 60.0f;
+    mgr.GetSingletonComponent<test::DeltaTime>()->Value = timestep;
+
     auto start = std::chrono::high_resolution_clock::now();
     for (uint32_t i = 0; i < loopCount; ++i)
-        mgr.RunJob<SpeedTestJob>(timestep);
+        mgr.RunJob<SpeedTestJob>();
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsedJob = end - start;
 
