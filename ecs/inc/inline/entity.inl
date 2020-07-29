@@ -1,15 +1,15 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 namespace ecs {
 
-inline bool Entity::operator== (const Entity & rhs) const {
+inline bool Entity::operator== (const Entity& rhs) const {
     return index == rhs.index && generation == rhs.generation;
 }
 
-inline bool Entity::operator!= (const Entity & rhs) const {
+inline bool Entity::operator!= (const Entity& rhs) const {
     return !(*this == rhs);
 }
 
@@ -29,7 +29,7 @@ inline Entity Entity::FromId (EntityId id) {
 
 namespace std {
     template <> struct hash<::ecs::Entity> {
-        size_t operator() (const ::ecs::Entity & entity) const {
+        size_t operator() (const ::ecs::Entity& entity) const {
             std::hash<ecs::EntityId> hasher;
             return hasher(entity.GetId());
         }

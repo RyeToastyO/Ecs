@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 namespace ecs {
 
@@ -13,7 +13,7 @@ inline void Manager::AddComponents (Entity entity, T component, Args...args) {
 
     if (!Exists(entity))
         return;
-    auto & entityData = m_entityData[entity.index];
+    auto& entityData = m_entityData[entity.index];
     auto composition = entityData.chunk->GetComposition();
 
     composition.SetComponents(component, args...);
@@ -48,13 +48,13 @@ inline Entity Manager::CreateEntityImmediate (T component, Args...args) {
 // - One per Manager
 // - Pointer is safe for the Manager's lifetime
 template<typename T>
-inline T * Manager::GetSingletonComponent () {
+inline T* Manager::GetSingletonComponent () {
     static_assert(std::is_base_of<ISingletonComponent, T>::value, "GetSingletonComponent<T> must inherit ISingletonComponent");
     static_assert(!std::is_empty<T>(), "Singleton components must have data, they always exist so they can't be used as tags");
 
     auto iter = m_singletonComponents.find(impl::GetComponentId<T>());
     if (iter == m_singletonComponents.end()) {
-        T * component = new T();
+        T* component = new T();
         m_singletonComponents.emplace(impl::GetComponentId<T>(), component);
         return component;
     }
@@ -70,7 +70,7 @@ inline bool Manager::HasComponent (Entity entity) const {
 
     if (!Exists(entity))
         return false;
-    const auto & entityData = m_entityData[entity.index];
+    const auto& entityData = m_entityData[entity.index];
     return entityData.chunk->GetComponentFlags().Has<T>();
 }
 
@@ -81,13 +81,13 @@ inline bool Manager::HasComponent (Entity entity) const {
 //     - Composition changes to this entity or one with the same composition
 //     - Destruction of this entity or one with the same composition
 template<typename T>
-inline T * Manager::FindComponent (Entity entity) const {
+inline T* Manager::FindComponent (Entity entity) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Why are you finding an Entity with that Entity?");
 
     if (!Exists(entity))
         return nullptr;
-    const auto & entityData = m_entityData[entity.index];
+    const auto& entityData = m_entityData[entity.index];
     return entityData.chunk->Find<T>(entityData.chunkIndex);
 }
 
@@ -100,7 +100,7 @@ inline void Manager::RemoveComponents (Entity entity) {
 
     if (!Exists(entity))
         return;
-    auto & entityData = m_entityData[entity.index];
+    auto& entityData = m_entityData[entity.index];
     auto composition = entityData.chunk->GetComposition();
 
     composition.RemoveComponents<T, Args...>();
@@ -109,14 +109,14 @@ inline void Manager::RemoveComponents (Entity entity) {
 }
 
 template<typename T, typename...Args>
-inline void Manager::SetComponentsInternal (const impl::EntityData & entity, std::shared_ptr<T> component, Args...args) const {
+inline void Manager::SetComponentsInternal (const impl::EntityData& entity, std::shared_ptr<T> component, Args...args) const {
     static_assert(std::is_base_of<ISharedComponent, T>::value, "Shared components must inherit ISharedComponent");
     ECS_REF(component);
     SetComponentsInternal(entity, args...);
 }
 
 template<typename T, typename...Args>
-inline void Manager::SetComponentsInternal (const impl::EntityData & entity, T component, Args...args) const {
+inline void Manager::SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be set on entities");
     static_assert(!std::is_base_of<ISharedComponent, T>::value, "Don't directly add shared components, must be a std::shared_ptr<SharedComponentType>");
     *(entity.chunk->Find<T>(entity.chunkIndex)) = component;
@@ -127,11 +127,11 @@ inline Manager::Manager () {
 }
 
 inline Manager::~Manager () {
-    for (auto & chunk : m_chunks)
+    for (auto& chunk : m_chunks)
         delete chunk.second;
-    for (auto & job : m_jobs)
+    for (auto& job : m_jobs)
         delete job.second;
-    for (auto & singleton : m_singletonComponents)
+    for (auto& singleton : m_singletonComponents)
         delete singleton.second;
     m_chunks.clear();
     m_jobs.clear();
@@ -154,7 +154,7 @@ inline Entity Manager::Clone (Entity entity) {
         return Entity();
 
     // Use the chunk to actually copy component data
-    impl::EntityData & entityData = m_entityData[entity.index];
+    impl::EntityData& entityData = m_entityData[entity.index];
     uint32_t chunkIndex = entityData.chunk->CloneEntity(entityData.chunkIndex);
 
     // Allocate a new entity for the entity we just cloned on the chunk
@@ -181,7 +181,7 @@ inline Entity Manager::CreateEntityImmediate () {
     return CreateEntityImmediateInternal(emptyComposition);
 }
 
-inline Entity Manager::CreateEntityImmediateInternal (impl::Composition & composition) {
+inline Entity Manager::CreateEntityImmediateInternal (impl::Composition& composition) {
     // All entities have their entity handle added as a component
     // This is so that jobs can have the entity array easily passed along
     // using the same APIs as components
@@ -219,13 +219,13 @@ inline Prefab Manager::CreatePrefab (T component, Args...args) {
 inline void Manager::DestroyImmediate (Entity entity) {
     if (!Exists(entity))
         return;
-    const auto & data = m_entityData[entity.index];
+    const auto& data = m_entityData[entity.index];
 
     data.chunk->RemoveEntity(data.chunkIndex);
 
     // This code makes the assumption that removing an entity swaps the tail
     // entity with the removed entity in order to accomplish the removal
-    Entity * swappedEntity = data.chunk->Find<Entity>(data.chunkIndex);
+    Entity* swappedEntity = data.chunk->Find<Entity>(data.chunkIndex);
     if (swappedEntity)
         m_entityData[swappedEntity->index].chunkIndex = data.chunkIndex;
 
@@ -248,7 +248,7 @@ inline uint32_t Manager::AllocateNewEntityInternal () {
     return index;
 }
 
-inline impl::Chunk * Manager::GetOrCreateChunk (const impl::Composition & composition) {
+inline impl::Chunk* Manager::GetOrCreateChunk (const impl::Composition& composition) {
     auto chunkIter = m_chunks.find(composition);
     if (chunkIter == m_chunks.end()) {
         m_chunks.emplace(composition, new impl::Chunk(composition));
@@ -258,8 +258,8 @@ inline impl::Chunk * Manager::GetOrCreateChunk (const impl::Composition & compos
     return chunkIter->second;
 }
 
-inline void Manager::NotifyChunkCreated (impl::Chunk * chunk) {
-    for (const auto & jobIter : m_jobs)
+inline void Manager::NotifyChunkCreated (impl::Chunk* chunk) {
+    for (const auto& jobIter : m_jobs)
         jobIter.second->OnChunkAdded(chunk);
 }
 
@@ -270,7 +270,7 @@ template<typename T>
 inline void Manager::RunJob () {
     static_assert(std::is_base_of<Job, T>::value, "Must inherit from Job");
 
-    Job * job = nullptr;
+    Job* job = nullptr;
 
     auto iter = m_jobs.find(impl::GetJobId<T>());
     if (iter == m_jobs.end()) {
@@ -302,13 +302,13 @@ inline Entity Manager::SpawnPrefab (Prefab prefab) {
     return spawned;
 }
 
-inline void Manager::RegisterJobInternal (Job * job) {
+inline void Manager::RegisterJobInternal (Job* job) {
     job->OnRegistered(this);
-    for (auto & chunk : m_chunks)
+    for (auto& chunk : m_chunks)
         job->OnChunkAdded(chunk.second);
 }
 
-inline void Manager::SetCompositionInternal (impl::EntityData & entityData, const impl::Composition & composition) {
+inline void Manager::SetCompositionInternal (impl::EntityData& entityData, const impl::Composition& composition) {
     auto chunk = GetOrCreateChunk(composition);
     if (chunk == entityData.chunk)
         return;
@@ -322,7 +322,7 @@ inline void Manager::SetCompositionInternal (impl::EntityData & entityData, cons
     // This code makes the assumption that removing an entity swaps the tail
     // entity with the removed entity in order to accomplish the removal
     // TODO: Find a way to make this systemic and the same code path as Delete
-    Entity * swappedEntity = fromChunk->Find<Entity>(fromIndex);
+    Entity* swappedEntity = fromChunk->Find<Entity>(fromIndex);
     if (swappedEntity)
         m_entityData[swappedEntity->index].chunkIndex = fromIndex;
 }

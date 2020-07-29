@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #pragma once
 
@@ -19,20 +19,20 @@ class Manager;
 namespace impl {
 
 struct IComponentRemover {
-    virtual void Apply (Entity entity, Manager * mgr) = 0;
+    virtual void Apply (Entity entity, Manager* mgr) = 0;
 
     virtual ~IComponentRemover () {}
 };
 
 template<typename T>
 struct ComponentRemover : public IComponentRemover {
-    void Apply (Entity entity, Manager * mgr) override;
+    void Apply (Entity entity, Manager* mgr) override;
 
     virtual ~ComponentRemover () {}
 };
 
 struct IQueuedComponentCollection {
-    virtual void Apply (Entity entity, uint32_t index, Manager * mgr) = 0;
+    virtual void Apply (Entity entity, uint32_t index, Manager* mgr) = 0;
     virtual void Clear () = 0;
 
     virtual ~IQueuedComponentCollection () {}
@@ -40,9 +40,9 @@ struct IQueuedComponentCollection {
 
 template<typename T>
 struct QueuedComponentCollection : public IQueuedComponentCollection {
-    void Apply (Entity entity, uint32_t index, Manager * mgr) override;
+    void Apply (Entity entity, uint32_t index, Manager* mgr) override;
     void Clear () override;
-    uint32_t Push (T && component);
+    uint32_t Push (T&& component);
 
     virtual ~QueuedComponentCollection () {}
 
@@ -69,7 +69,7 @@ struct Command {
 struct CommandQueue {
     ~CommandQueue ();
 
-    void Apply (Manager * mgr);
+    void Apply (Manager* mgr);
 
     void AddComponents (Entity) {}
     template<typename T, typename...Args>

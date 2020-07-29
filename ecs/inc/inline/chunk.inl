@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #include <algorithm>
 #include <cassert>
@@ -29,7 +29,7 @@ inline typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>
     if (index >= m_count)
         return nullptr;
 
-    T * arrayStart = Find<T>();
+    T* arrayStart = Find<T>();
     return arrayStart ? arrayStart + index : nullptr;
 }
 
@@ -48,7 +48,7 @@ inline typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>:
     return Find<T>();
 }
 
-inline Chunk::Chunk (const Composition & composition)
+inline Chunk::Chunk (const Composition& composition)
     : m_composition(composition)
     , m_componentInfo(composition.GetComponentFlags().GetComponentInfo())
 {
@@ -73,7 +73,7 @@ inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
     auto arrayStart = m_componentMemory;
     // Assign each component array their location in that allocation
     auto iter = GetComponentFlags().GetIterator();
-    for (const auto & compId : iter) {
+    for (const auto& compId : iter) {
         const auto size = GetComponentSize(compId);
         if (size == 0)
             continue;
@@ -84,18 +84,18 @@ inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
 }
 
 inline void Chunk::InitializeSharedComponents () {
-    const auto & sharedComps = m_composition.GetSharedComponents();
+    const auto& sharedComps = m_composition.GetSharedComponents();
 
-    for (const auto & iter : sharedComps)
+    for (const auto& iter : sharedComps)
         m_sharedComponents.emplace(iter.first, iter.second);
 }
 
 inline void Chunk::Resize (uint32_t capacity) {
-    byte_t * newMemory = new byte_t[m_componentInfo.TotalSize * capacity];
+    byte_t* newMemory = new byte_t[m_componentInfo.TotalSize * capacity];
     m_capacity = capacity;
 
     auto newArrayStart = newMemory;
-    for (auto & compArray : m_componentArrays) {
+    for (auto& compArray : m_componentArrays) {
         auto oldArrayStart = compArray.second;
         auto size = GetComponentSize(compArray.first);
 
@@ -119,7 +119,7 @@ inline uint32_t Chunk::CloneEntity (uint32_t index) {
     assert(index < m_count);
     uint32_t newIndex = AllocateEntity();
 
-    for (auto & compArray : m_componentArrays) {
+    for (auto& compArray : m_componentArrays) {
         auto arrayStart = compArray.second;
         auto size = GetComponentSize(compArray.first);
 
@@ -144,11 +144,11 @@ inline uint32_t Chunk::GetCapacity () const {
     return m_capacity;
 }
 
-inline const Composition & Chunk::GetComposition () const {
+inline const Composition& Chunk::GetComposition () const {
     return m_composition;
 }
 
-inline const ComponentFlags & Chunk::GetComponentFlags () const {
+inline const ComponentFlags& Chunk::GetComponentFlags () const {
     return m_composition.GetComponentFlags();
 }
 
@@ -156,12 +156,12 @@ inline uint32_t Chunk::GetCount () const {
     return m_count;
 }
 
-inline uint32_t Chunk::MoveTo (uint32_t from, Chunk & to) {
+inline uint32_t Chunk::MoveTo (uint32_t from, Chunk& to) {
     // Make space in the chunk we are moving to
     auto newIndex = to.AllocateEntity();
 
     // Copy all our data over
-    for (auto & compIter : m_componentArrays) {
+    for (auto& compIter : m_componentArrays) {
         auto newCompArray = to.m_componentArrays.find(compIter.first);
         if (newCompArray == to.m_componentArrays.end())
             continue;
@@ -189,7 +189,7 @@ inline void Chunk::CopyTo (uint32_t from, uint32_t to) {
     if (from == to)
         return;
 
-    for (const auto & compIter : m_componentArrays) {
+    for (const auto& compIter : m_componentArrays) {
         auto arrayStart = compIter.second;
         auto size = GetComponentSize(compIter.first);
         memcpy(arrayStart + (to * size), arrayStart + (from * size), size);

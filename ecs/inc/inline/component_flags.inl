@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #include "../helpers/hash.h"
 
@@ -9,26 +9,26 @@ namespace ecs {
 namespace impl {
 
 // ComponentFlagIterator
-inline ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags & flags)
+inline ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags& flags)
     : m_current(0)
     , m_flags(flags) {
     if (!m_flags.Has(m_current))
         ++(*this);
 }
 
-inline ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags & flags, ComponentId id)
+inline ComponentFlagIterator::ComponentFlagIterator (const ComponentFlags& flags, ComponentId id)
     : m_current(id)
     , m_flags(flags) {
 }
 
-inline bool ComponentFlagIterator::operator!= (const ComponentFlagIterator & rhs) const {
+inline bool ComponentFlagIterator::operator!= (const ComponentFlagIterator& rhs) const {
     return m_current != rhs.m_current;
 }
-inline ComponentFlagIterator & ComponentFlagIterator::operator++ () {
+inline ComponentFlagIterator& ComponentFlagIterator::operator++ () {
     while (++m_current < ECS_MAX_COMPONENTS && !m_flags.Has(m_current));
     return *this;
 }
-inline const ComponentId & ComponentFlagIterator::operator* () const {
+inline const ComponentId& ComponentFlagIterator::operator* () const {
     return m_current;
 }
 
@@ -55,7 +55,7 @@ inline void ComponentFlags::ClearFlags () {
     ClearFlags<Args...>();
 }
 
-inline void ComponentFlags::ClearFlags (const ComponentFlags & rhs) {
+inline void ComponentFlags::ClearFlags (const ComponentFlags& rhs) {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i)
         flags[i] &= ~rhs.flags[i];
 }
@@ -70,7 +70,7 @@ inline void ComponentFlags::SetFlags () {
     SetFlags<Args...>();
 }
 
-inline void ComponentFlags::SetFlags (const ComponentFlags & rhs) {
+inline void ComponentFlags::SetFlags (const ComponentFlags& rhs) {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i)
         flags[i] |= rhs.flags[i];
 }
@@ -78,7 +78,7 @@ inline void ComponentFlags::SetFlags (const ComponentFlags & rhs) {
 inline ComponentInfo ComponentFlags::GetComponentInfo () const {
     ComponentInfo ret;
     auto iter = GetIterator();
-    for (const auto & compId : iter) {
+    for (const auto& compId : iter) {
         const auto size = GetComponentSize(compId);
         ret.ComponentCount++;
         ret.TotalSize += size;
@@ -98,7 +98,7 @@ inline ComponentFlagIterator ComponentFlags::GetIterator () const {
     return ComponentFlagIterator(*this);
 }
 
-inline bool ComponentFlags::HasAll (const ComponentFlags & rhs) const {
+inline bool ComponentFlags::HasAll (const ComponentFlags& rhs) const {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i) {
         if ((flags[i] & rhs.flags[i]) != rhs.flags[i])
             return false;
@@ -106,7 +106,7 @@ inline bool ComponentFlags::HasAll (const ComponentFlags & rhs) const {
     return true;
 }
 
-inline bool ComponentFlags::HasAny (const ComponentFlags & rhs) const {
+inline bool ComponentFlags::HasAny (const ComponentFlags& rhs) const {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i) {
         if (flags[i] & rhs.flags[i])
             return true;
@@ -114,7 +114,7 @@ inline bool ComponentFlags::HasAny (const ComponentFlags & rhs) const {
     return false;
 }
 
-inline bool ComponentFlags::HasNone (const ComponentFlags & rhs) const {
+inline bool ComponentFlags::HasNone (const ComponentFlags& rhs) const {
     return !HasAny(rhs);
 }
 
@@ -122,7 +122,7 @@ inline bool ComponentFlags::Has (ComponentId id) const {
     return !!(flags[id / COMPONENT_FLAG_DATA_BITS] & static_cast<ComponentFlagDataType>(1) << id % COMPONENT_FLAG_DATA_BITS);
 }
 
-inline bool ComponentFlags::operator== (const ComponentFlags & rhs) const {
+inline bool ComponentFlags::operator== (const ComponentFlags& rhs) const {
     for (auto i = 0; i < COMPONENT_FLAG_DATA_COUNT; ++i) {
         if (flags[i] != rhs.flags[i])
             return false;

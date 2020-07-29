@@ -1,14 +1,14 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 namespace ecs {
 namespace impl {
 
 // QueuedComponentCollection
 template<typename T>
-inline void QueuedComponentCollection<T>::Apply (Entity entity, uint32_t index, Manager * mgr) {
+inline void QueuedComponentCollection<T>::Apply (Entity entity, uint32_t index, Manager* mgr) {
     mgr->AddComponents(entity, m_components[index]);
 }
 
@@ -24,21 +24,21 @@ inline uint32_t QueuedComponentCollection<T>::Push (T && component) {
 }
 
 template<typename T>
-inline void ComponentRemover<T>::Apply (Entity entity, Manager * mgr) {
+inline void ComponentRemover<T>::Apply (Entity entity, Manager* mgr) {
     mgr->RemoveComponents<T>(entity);
 }
 
 // CommandQueue
 inline CommandQueue::~CommandQueue () {
-    for (auto & collection : m_queuedComponents)
+    for (auto& collection : m_queuedComponents)
         delete collection.second;
-    for (auto & remover : m_componentRemovers)
+    for (auto& remover : m_componentRemovers)
         delete remover.second;
 }
 
-inline void CommandQueue::Apply (Manager * mgr) {
+inline void CommandQueue::Apply (Manager* mgr) {
     Entity targetEntity;
-    for (const auto & command : m_commands) {
+    for (const auto& command : m_commands) {
         switch (command.type) {
             case ECommandType::AddComponent: {
                 auto iter = m_queuedComponents.find(command.componentId);
@@ -66,7 +66,7 @@ inline void CommandQueue::Apply (Manager * mgr) {
     }
 
     m_commands.clear();
-    for (auto & collectionIter : m_queuedComponents)
+    for (auto& collectionIter : m_queuedComponents)
         collectionIter.second->Clear();
 }
 
@@ -78,7 +78,7 @@ inline void CommandQueue::AddComponents (Entity entity, T component, Args...args
         iter = m_queuedComponents.find(GetComponentId<T>());
     }
 
-    QueuedComponentCollection<T> * collection = static_cast<QueuedComponentCollection<T>*>(iter->second);
+    QueuedComponentCollection<T>* collection = static_cast<QueuedComponentCollection<T>*>(iter->second);
 
     m_commands.push_back(Command{
         ECommandType::AddComponent,

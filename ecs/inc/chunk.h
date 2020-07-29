@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #pragma once
 
@@ -17,7 +17,7 @@ namespace impl {
 typedef uint8_t byte_t;
 
 struct Chunk {
-    Chunk (const Composition & composition);
+    Chunk (const Composition& composition);
     ~Chunk ();
 
     static const uint32_t kDefaultChunkSize = 1;
@@ -25,8 +25,8 @@ struct Chunk {
 
     uint32_t GetCount () const;
     uint32_t GetCapacity () const;
-    const Composition & GetComposition () const;
-    const ComponentFlags & GetComponentFlags () const;
+    const Composition& GetComposition () const;
+    const ComponentFlags& GetComponentFlags () const;
 
     template<typename T>
     typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>::type Find ();
@@ -40,12 +40,12 @@ struct Chunk {
 
     uint32_t AllocateEntity ();
     uint32_t CloneEntity (uint32_t index);
-    uint32_t MoveTo (uint32_t from, Chunk & to);
+    uint32_t MoveTo (uint32_t from, Chunk& to);
     void RemoveEntity (uint32_t index);
 
 private: // Data
     std::unordered_map<ComponentId, byte_t*> m_componentArrays;
-    byte_t * m_componentMemory = nullptr;
+    byte_t* m_componentMemory = nullptr;
 
     std::unordered_map<ComponentId, ISharedComponentPtr> m_sharedComponents;
 

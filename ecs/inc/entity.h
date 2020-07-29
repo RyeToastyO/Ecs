@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #pragma once
 
@@ -23,8 +23,8 @@ struct Entity {
     EntityId GetId () const;
     static Entity FromId (EntityId id);
 
-    bool operator== (const Entity & rhs) const;
-    bool operator!= (const Entity & rhs) const;
+    bool operator== (const Entity& rhs) const;
+    bool operator!= (const Entity& rhs) const;
 };
 
 } // namespace ecs

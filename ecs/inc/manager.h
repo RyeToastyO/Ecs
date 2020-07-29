@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #pragma once
 
@@ -21,7 +21,7 @@ namespace impl {
 struct EntityData {
     uint32_t generation = UINT32_MAX;
     uint32_t chunkIndex = 0;
-    Chunk * chunk = nullptr;
+    Chunk* chunk = nullptr;
 };
 
 } // namespace impl
@@ -65,13 +65,13 @@ public:
     void DestroyImmediate (Entity entity);
 
     template<typename T>
-    T * GetSingletonComponent ();
+    T* GetSingletonComponent ();
 
     template<typename T>
     bool HasComponent (Entity entity) const;
 
     template<typename T>
-    T * FindComponent (Entity entity) const;
+    T* FindComponent (Entity entity) const;
 
     template<typename T, typename...Args>
     void RemoveComponents (Entity entity);
@@ -91,21 +91,21 @@ private:
 private:
     uint32_t AllocateNewEntityInternal ();
 
-    Entity CreateEntityImmediateInternal (impl::Composition & composition);
+    Entity CreateEntityImmediateInternal (impl::Composition& composition);
 
-    impl::Chunk * GetOrCreateChunk (const impl::Composition & composition);
+    impl::Chunk* GetOrCreateChunk (const impl::Composition& composition);
 
-    void NotifyChunkCreated (impl::Chunk * chunk);
+    void NotifyChunkCreated (impl::Chunk* chunk);
 
-    void SetComponentsInternal (const impl::EntityData &) const {}
+    void SetComponentsInternal (const impl::EntityData&) const {}
     template<typename T, typename...Args>
-    void SetComponentsInternal (const impl::EntityData & entity, std::shared_ptr<T> component, Args...args) const;
+    void SetComponentsInternal (const impl::EntityData& entity, std::shared_ptr<T> component, Args...args) const;
     template<typename T, typename...Args>
-    void SetComponentsInternal (const impl::EntityData & entity, T component, Args...args) const;
+    void SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const;
 
-    void SetCompositionInternal (impl::EntityData & entityData, const impl::Composition & composition);
+    void SetCompositionInternal (impl::EntityData& entityData, const impl::Composition& composition);
 
-    void RegisterJobInternal (Job * job);
+    void RegisterJobInternal (Job* job);
 };
 
 } // namespace ecs

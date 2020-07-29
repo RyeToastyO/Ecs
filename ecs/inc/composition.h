@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #pragma once
 
@@ -14,11 +14,11 @@ namespace ecs {
 namespace impl {
 
 struct Composition {
-    const ComponentFlags & GetComponentFlags () const;
-    const std::map<ComponentId, ISharedComponentPtr> & GetSharedComponents () const;
+    const ComponentFlags& GetComponentFlags () const;
+    const std::map<ComponentId, ISharedComponentPtr>& GetSharedComponents () const;
 
     size_t GetHash () const;
-    bool operator== (const Composition & rhs) const;
+    bool operator== (const Composition& rhs) const;
 
     template<typename...Args>
     typename std::enable_if<(sizeof...(Args) == 0)>::type RemoveComponents () {}
@@ -50,7 +50,7 @@ private:
 
 namespace std {
     template <> struct hash<::ecs::impl::Composition> {
-        size_t operator() (const ::ecs::impl::Composition & composition) const {
+        size_t operator() (const ::ecs::impl::Composition& composition) const {
             return composition.GetHash();
         }
     };

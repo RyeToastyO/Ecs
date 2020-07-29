@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #pragma once
 
@@ -37,8 +37,8 @@ typedef uint32_t ComponentId;
 typedef std::shared_ptr<ISharedComponent> ISharedComponentPtr;
 
 struct ComponentRegistry {
-    static std::unordered_map<ComponentId, size_t> & GetComponentSizeMap ();
-    static ComponentId & GetComponentCounter ();
+    static std::unordered_map<ComponentId, size_t>& GetComponentSizeMap ();
+    static ComponentId& GetComponentCounter ();
     static size_t GetComponentSize (ComponentId id);
     static ComponentId RegisterComponent (size_t size);
 };

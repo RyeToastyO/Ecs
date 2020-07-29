@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #pragma once
 
@@ -15,24 +15,24 @@ namespace ecs {
 namespace impl {
 
 typedef uint64_t ComponentFlagDataType;
-const auto COMPONENT_FLAG_DATA_BITS = sizeof(ComponentFlagDataType) * 8;
-const auto COMPONENT_FLAG_DATA_COUNT = ((ECS_MAX_COMPONENTS - 1 + COMPONENT_FLAG_DATA_BITS) / COMPONENT_FLAG_DATA_BITS);
+const uint32_t COMPONENT_FLAG_DATA_BITS = sizeof(ComponentFlagDataType) * 8;
+const uint32_t COMPONENT_FLAG_DATA_COUNT = ((ECS_MAX_COMPONENTS - 1 + COMPONENT_FLAG_DATA_BITS) / COMPONENT_FLAG_DATA_BITS);
 
 struct ComponentFlags;
 
 struct ComponentFlagIterator {
-    ComponentFlagIterator (const ComponentFlags & flags);
-    ComponentFlagIterator (const ComponentFlags & flags, ComponentId id);
+    ComponentFlagIterator (const ComponentFlags& flags);
+    ComponentFlagIterator (const ComponentFlags& flags, ComponentId id);
 
-    bool operator!= (const ComponentFlagIterator & rhs) const;
-    ComponentFlagIterator & operator++ ();
-    const ComponentId & operator* () const;
+    bool operator!= (const ComponentFlagIterator& rhs) const;
+    ComponentFlagIterator& operator++ ();
+    const ComponentId& operator* () const;
 
     ComponentFlagIterator begin () const;
     ComponentFlagIterator end () const;
 private:
     ComponentId m_current;
-    const ComponentFlags & m_flags;
+    const ComponentFlags& m_flags;
 };
 
 struct ComponentInfo {
@@ -51,28 +51,28 @@ struct ComponentFlags {
     typename std::enable_if<(sizeof...(Args) == 0)>::type ClearFlags () {};
     template<typename T, typename...Args>
     void ClearFlags ();
-    void ClearFlags (const ComponentFlags & flags);
+    void ClearFlags (const ComponentFlags& flags);
 
     void SetFlag (ComponentId id);
     template<typename...Args>
     typename std::enable_if<(sizeof...(Args) == 0)>::type SetFlags () {};
     template<typename T, typename...Args>
     void SetFlags ();
-    void SetFlags (const ComponentFlags & flags);
+    void SetFlags (const ComponentFlags& flags);
 
     ComponentInfo GetComponentInfo () const;
     ComponentFlagIterator GetIterator () const;
 
-    bool HasAll (const ComponentFlags & rhs) const;
-    bool HasAny (const ComponentFlags & rhs) const;
-    bool HasNone (const ComponentFlags & rhs) const;
+    bool HasAll (const ComponentFlags& rhs) const;
+    bool HasAny (const ComponentFlags& rhs) const;
+    bool HasNone (const ComponentFlags& rhs) const;
 
     bool Has (ComponentId id) const;
     template<typename T>
     bool Has () const { return Has(GetComponentId<T>()); }
 
     size_t GetHash () const;
-    bool operator== (const ComponentFlags & rhs) const;
+    bool operator== (const ComponentFlags& rhs) const;
 
 private:
     ComponentFlagDataType flags[COMPONENT_FLAG_DATA_COUNT];
@@ -83,7 +83,7 @@ private:
 
 namespace std {
     template <> struct hash<::ecs::impl::ComponentFlags> {
-        size_t operator() (const ::ecs::impl::ComponentFlags & flags) const {
+        size_t operator() (const ::ecs::impl::ComponentFlags& flags) const {
             return flags.GetHash();
         }
     };

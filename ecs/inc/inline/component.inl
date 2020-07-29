@@ -1,23 +1,23 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #include <cassert>
 
 namespace ecs {
 namespace impl {
 
-inline std::unordered_map<ComponentId, size_t> & ComponentRegistry::GetComponentSizeMap () {
+inline std::unordered_map<ComponentId, size_t>& ComponentRegistry::GetComponentSizeMap () {
     static std::unordered_map<ComponentId, size_t> s_sizeMap;
     return s_sizeMap;
 }
-inline ComponentId & ComponentRegistry::GetComponentCounter () {
+inline ComponentId& ComponentRegistry::GetComponentCounter () {
     static ComponentId s_componentCount = 0;
     return s_componentCount;
 }
 inline size_t ComponentRegistry::GetComponentSize (ComponentId id) {
-    auto & sizeMap = GetComponentSizeMap();
+    auto& sizeMap = GetComponentSizeMap();
     const auto iter = sizeMap.find(id);
     assert(iter != sizeMap.end());
     return iter->second;

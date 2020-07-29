@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #pragma once
 
@@ -87,7 +87,7 @@ public:
     virtual void ForEach () { }
 
 private:
-    bool IsValid (const impl::Chunk * chunk) const;
+    bool IsValid (const impl::Chunk* chunk) const;
 
 private:
     uint32_t m_chunkIndex = 0;
@@ -106,38 +106,38 @@ private:
 
     impl::CommandQueue m_commands;
 
-    Manager * m_manager = nullptr;
+    Manager* m_manager = nullptr;
 
 private:
     friend class Manager;
     void ApplyQueuedCommands ();
-    void OnChunkAdded (impl::Chunk * chunk);
-    void OnRegistered (Manager * manager);
+    void OnChunkAdded (impl::Chunk* chunk);
+    void OnRegistered (Manager* manager);
 
 private:
     template<typename T, typename...Args> friend struct impl::Exclude;
-    void AddExclude (impl::IComponentAccess * access);
+    void AddExclude (impl::IComponentAccess* access);
     template<typename T> friend struct impl::Read;
-    void AddRead (impl::IComponentAccess * access);
+    void AddRead (impl::IComponentAccess* access);
     template<typename T> friend struct impl::ReadOther;
-    void AddReadOther (impl::IComponentAccess * access);
+    void AddReadOther (impl::IComponentAccess* access);
     template<typename T> friend struct impl::SingletonComponentAccess;
     template<typename T> friend struct impl::ReadSingleton;
-    void AddReadSingleton (impl::IComponentAccess * access);
+    void AddReadSingleton (impl::IComponentAccess* access);
     template<typename T, typename...Args> friend struct impl::Require;
-    void AddRequire (impl::IComponentAccess * access);
+    void AddRequire (impl::IComponentAccess* access);
     template<typename T, typename...Args> friend struct impl::RequireAny;
-    void AddRequireAny (impl::IComponentAccess * access);
+    void AddRequireAny (impl::IComponentAccess* access);
     template<typename T> friend struct impl::Write;
-    void AddWrite (impl::IComponentAccess * access);
+    void AddWrite (impl::IComponentAccess* access);
     template<typename T> friend struct impl::WriteOther;
-    void AddWriteOther (impl::IComponentAccess * access);
+    void AddWriteOther (impl::IComponentAccess* access);
     template<typename T> friend struct impl::WriteSingleton;
-    void AddWriteSingleton (impl::IComponentAccess * access);
+    void AddWriteSingleton (impl::IComponentAccess* access);
 
 private:
-    const impl::ComponentFlags & GetReadFlags () const;
-    const impl::ComponentFlags & GetWriteFlags () const;
+    const impl::ComponentFlags& GetReadFlags () const;
+    const impl::ComponentFlags& GetWriteFlags () const;
 };
 
 namespace impl {

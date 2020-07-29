@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #include "test_multi_threading.h"
 #include "test_components.h"
@@ -11,7 +11,7 @@
 
 namespace test {
 
-void SpeedTestCalculation (float dt, float & a, const float & b, const float & c) {
+void SpeedTestCalculation (float dt, float& a, const float& b, const float& c) {
     a = std::min(a + c * dt, b);
 }
 

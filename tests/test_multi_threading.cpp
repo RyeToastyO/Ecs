@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #include "tests.h"
 #include "test_components.h"
@@ -52,7 +52,7 @@ MULTI_THREAD_SINGLETON_JOB(Uint);
 
 #define MULTI_THREAD_ENTITY_COUNT 25000
 
-void InitMultiThreadingTest (ecs::Manager * mgr) {
+void InitMultiThreadingTest (ecs::Manager* mgr) {
     // Run these first to eliminate the first time init costs
     mgr->RunJob<MultiThreadJobDouble>();
     mgr->RunJob<MultiThreadJobFloat>();
@@ -73,7 +73,7 @@ void InitMultiThreadingTest (ecs::Manager * mgr) {
     }
 }
 
-void ExecuteMultiThreadingTest (ecs::Manager * mgr, EThreadingType threading) {
+void ExecuteMultiThreadingTest (ecs::Manager* mgr, EThreadingType threading) {
     switch (threading) {
         case EThreadingType::Single: {
             mgr->RunJob<MultiThreadJobDouble>();

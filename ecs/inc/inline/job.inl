@@ -1,51 +1,51 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 namespace ecs {
 
 // Job
-inline void Job::AddExclude (impl::IComponentAccess * access) {
+inline void Job::AddExclude (impl::IComponentAccess* access) {
     access->ApplyTo(m_exclude);
 }
 
-inline void Job::AddRead (impl::IComponentAccess * access) {
+inline void Job::AddRead (impl::IComponentAccess* access) {
     access->ApplyTo(m_read);
     access->ApplyTo(m_required);
     m_dataAccess.push_back(access);
 }
 
-inline void Job::AddReadOther (impl::IComponentAccess * access) {
+inline void Job::AddReadOther (impl::IComponentAccess* access) {
     access->ApplyTo(m_read);
 }
 
-inline void Job::AddReadSingleton (impl::IComponentAccess * access) {
+inline void Job::AddReadSingleton (impl::IComponentAccess* access) {
     access->ApplyTo(m_read);
     m_singletonAccess.push_back(access);
 }
 
-inline void Job::AddRequire (impl::IComponentAccess * access) {
+inline void Job::AddRequire (impl::IComponentAccess* access) {
     access->ApplyTo(m_required);
 }
 
-inline void Job::AddRequireAny (impl::IComponentAccess * access) {
+inline void Job::AddRequireAny (impl::IComponentAccess* access) {
     impl::ComponentFlags any;
     access->ApplyTo(any);
     m_requireAny.push_back(any);
 }
 
-inline void Job::AddWrite (impl::IComponentAccess * access) {
+inline void Job::AddWrite (impl::IComponentAccess* access) {
     access->ApplyTo(m_write);
     access->ApplyTo(m_required);
     m_dataAccess.push_back(access);
 }
 
-inline void Job::AddWriteOther (impl::IComponentAccess * access) {
+inline void Job::AddWriteOther (impl::IComponentAccess* access) {
     access->ApplyTo(m_write);
 }
 
-inline void Job::AddWriteSingleton (impl::IComponentAccess * access) {
+inline void Job::AddWriteSingleton (impl::IComponentAccess* access) {
     access->ApplyTo(m_write);
     m_singletonAccess.push_back(access);
 }
@@ -54,11 +54,11 @@ inline void Job::ApplyQueuedCommands () {
     m_commands.Apply(m_manager);
 }
 
-inline const impl::ComponentFlags & Job::GetReadFlags () const {
+inline const impl::ComponentFlags& Job::GetReadFlags () const {
     return m_read;
 }
 
-inline const impl::ComponentFlags & Job::GetWriteFlags () const {
+inline const impl::ComponentFlags& Job::GetWriteFlags () const {
     return m_write;
 }
 
@@ -74,13 +74,13 @@ inline bool Job::HasComponent (Entity entity) const {
     return m_manager->HasComponent<T>(entity);
 }
 
-inline void Job::OnChunkAdded (impl::Chunk * chunk) {
+inline void Job::OnChunkAdded (impl::Chunk* chunk) {
     if (!IsValid(chunk))
         return;
     m_chunks.push_back(chunk);
 }
 
-inline void Job::OnRegistered (Manager * manager) {
+inline void Job::OnRegistered (Manager* manager) {
     m_manager = manager;
     m_chunks.clear();
 
@@ -91,13 +91,13 @@ inline void Job::OnRegistered (Manager * manager) {
         singletonAccess->UpdateManager();
 }
 
-inline bool Job::IsValid (const impl::Chunk * chunk) const {
-    const auto & componentFlags = chunk->GetComponentFlags();
+inline bool Job::IsValid (const impl::Chunk* chunk) const {
+    const auto& componentFlags = chunk->GetComponentFlags();
     if (!componentFlags.HasAll(m_required))
         return false;
     if (!componentFlags.HasNone(m_exclude))
         return false;
-    for (const auto & any : m_requireAny) {
+    for (const auto& any : m_requireAny) {
         if (!componentFlags.HasAny(any))
             return false;
     }
@@ -108,7 +108,7 @@ inline bool Job::IsValid (const impl::Chunk * chunk) const {
 // - Make sure to call Job::Run(dt) when you want ForEachChunk and ForEach to run
 inline void Job::Run () {
     for (m_chunkIndex = 0; m_chunkIndex < m_chunks.size(); ++m_chunkIndex) {
-        impl::Chunk * chunk = m_chunks[m_chunkIndex];
+        impl::Chunk* chunk = m_chunks[m_chunkIndex];
         if (chunk->GetCount() == 0)
             continue;
         for (auto dataAccess : m_dataAccess)
@@ -121,7 +121,7 @@ inline void Job::Run () {
 // - Use GetChunkEntityCount() to get the size of the arrays
 // - Use GetChunkComponentArray<T>() on READ/WRITE accessors to get the head of compoennt arrays
 inline void Job::ForEachChunk () {
-    impl::Chunk * chunk = m_chunks[m_chunkIndex];
+    impl::Chunk* chunk = m_chunks[m_chunkIndex];
     for (m_entityIndex = 0; m_entityIndex < chunk->GetCount(); ++m_entityIndex)
         ForEach();
 }

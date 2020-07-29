@@ -1,16 +1,16 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 namespace ecs {
 namespace impl {
 
-inline const ComponentFlags & Composition::GetComponentFlags () const {
+inline const ComponentFlags& Composition::GetComponentFlags () const {
     return m_flags;
 }
 
-inline const std::map<ComponentId, ISharedComponentPtr> & Composition::GetSharedComponents () const {
+inline const std::map<ComponentId, ISharedComponentPtr>& Composition::GetSharedComponents () const {
     return m_shared;
 }
 
@@ -28,7 +28,7 @@ inline size_t Composition::GetHash () const {
     return hash;
 }
 
-inline bool Composition::operator== (const Composition & rhs) const {
+inline bool Composition::operator== (const Composition& rhs) const {
     if (m_shared.size() != rhs.m_shared.size())
         return false;
     if (!(m_flags == rhs.m_flags))

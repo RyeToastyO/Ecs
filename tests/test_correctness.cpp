@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #include "tests.h"
 #include "test_components.h"
@@ -428,7 +428,7 @@ struct SingletonWriteJob : ecs::Job {
         Singleton->Value += A->Value;
 
         // Mostly just to make sure this compiles
-        test::SingletonFloat & singleton = *Singleton;
+        test::SingletonFloat& singleton = *Singleton;
         singleton.Value = Singleton->Value;
     }
 };
@@ -440,7 +440,7 @@ struct SingletonReadJob : ecs::Job {
     void ForEach () override {
         EXPECT_TRUE(Singleton->Value == 10.0f);
 
-        const test::SingletonFloat & singleton = *Singleton;
+        const test::SingletonFloat& singleton = *Singleton;
         EXPECT_TRUE(singleton.Value == 10.0f);
     }
 };

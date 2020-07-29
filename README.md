@@ -88,9 +88,9 @@ struct ExampleJob : public ecs::Job {
     }
 
     void ForEach () override {
-        if (ComponentI * i = I.Find(B->Value))
+        if (ComponentI* i = I.Find(B->Value))
             A->Value += i->Value * m_timestep;
-        if (ComponentJ * j = J.Find(B->Value))
+        if (ComponentJ* j = J.Find(B->Value))
             j->Value = A->Value;
         m_internalData += A->Value;
     }
@@ -115,7 +115,7 @@ struct ChunkRenderSprite16x16 : ecs::Job {
     ECS_READ(sprite::Instance16x16, Sprite);
 
     void ForEachChunk () override {
-        transform::Position * posArray = Pos.GetChunkComponentArray();
+        transform::Position* posArray = Pos.GetChunkComponentArray();
         RenderSystem::RenderInstanced(Sprite->Data, posArray, GetChunkEntityCount());
     }
 };
@@ -168,7 +168,7 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 ```
 
 ## TODO
-Current Version: v1.0.2
+Current Version: v1.0.3
 
 Potential future features
   - Batch operations (add/destroy/remove by filter/chunk)

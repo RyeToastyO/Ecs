@@ -1,7 +1,7 @@
-/*
- * Copyright (c) 2020 Riley Diederich
- * License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
- */
+// ----------------------------------------------------------------------------
+// Copyright (c) 2020 Riley Diederich
+// License (MIT): https://github.com/RyeToastyO/Ecs/blob/master/LICENSE
+// ----------------------------------------------------------------------------
 
 #pragma once
 
@@ -16,8 +16,8 @@ enum EThreadingType : uint8_t {
     ManualMulti
 };
 
-void InitMultiThreadingTest (ecs::Manager * mgr);
-void ExecuteMultiThreadingTest (ecs::Manager * mgr, EThreadingType threading);
+void InitMultiThreadingTest (ecs::Manager* mgr);
+void ExecuteMultiThreadingTest (ecs::Manager* mgr, EThreadingType threading);
 void TestManualMultiThreading ();
 void TestMultipleManagers ();
 
