@@ -168,7 +168,7 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 ```
 
 ## TODO
-Current Version: v1.0.3
+Current Version: v1.0.4
 
 Potential future features
   - Batch operations (add/destroy/remove by filter/chunk)

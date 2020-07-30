@@ -37,8 +37,7 @@ typedef uint32_t ComponentId;
 typedef std::shared_ptr<ISharedComponent> ISharedComponentPtr;
 
 struct ComponentRegistry {
-    static std::unordered_map<ComponentId, size_t>& GetComponentSizeMap ();
-    static ComponentId& GetComponentCounter ();
+    static std::vector<size_t>& GetComponentSizes ();
     static size_t GetComponentSize (ComponentId id);
     static ComponentId RegisterComponent (size_t size);
 };
