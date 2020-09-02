@@ -33,7 +33,7 @@ struct Component {
 template<typename T>
 inline ComponentId Component<T>::GetId () {
     // We say a shared component is a size of 0, since 0 memory is allocated for them per entity
-    static ComponentId id = ComponentRegistry::RegisterComponent(std::is_base_of<ISharedComponent, T>::value || std::is_empty<T>() ? 0 : sizeof(T));
+    static ComponentId id = ComponentRegistry::RegisterComponent(std::is_empty<T>() ? 0 : sizeof(T));
     return id;
 }
 

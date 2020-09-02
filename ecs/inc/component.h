@@ -13,16 +13,6 @@
 
 namespace ecs {
 
-// - Create a struct that inherits ecs::ISharedComponent
-// - Make instances of that struct as std::shared_ptr<T> with the desired contents
-// - Assign those std::shared_ptr<T> to Entitys
-// - Groups entities with other entities that have the same shared components
-//     - Use when you can get large benefits from batch operations in ForEachChunk
-//       or to store large pieces of data, like raw model or sprite data you don't want to duplicate
-struct ISharedComponent {
-    virtual ~ISharedComponent () {}
-};
-
 // - Create a struct that inherits ecs::ISingletonComponent
 // - Guaranteed to exist
 // - One per Manager, use Manager->GetSingletonComponent<T>()
@@ -34,7 +24,6 @@ struct ISingletonComponent {
 namespace impl {
 
 typedef uint32_t ComponentId;
-typedef std::shared_ptr<ISharedComponent> ISharedComponentPtr;
 
 struct ComponentRegistry {
     static std::vector<size_t>& GetComponentSizes ();

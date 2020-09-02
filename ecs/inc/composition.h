@@ -15,7 +15,6 @@ namespace impl {
 
 struct Composition {
     const ComponentFlags& GetComponentFlags () const;
-    const std::map<ComponentId, ISharedComponentPtr>& GetSharedComponents () const;
 
     size_t GetHash () const;
     bool operator== (const Composition& rhs) const;
@@ -30,7 +29,6 @@ struct Composition {
 
 private:
     ComponentFlags m_flags;
-    std::map<ComponentId, ISharedComponentPtr> m_shared;
 
 private:
     template<typename...Args>

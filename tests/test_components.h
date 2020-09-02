@@ -41,18 +41,4 @@ struct DeltaTime : ecs::ISingletonComponent {
     float Value = 0.0f;
 };
 
-struct SharedA : ecs::ISharedComponent {
-    SharedA (uint32_t value) : Value(value) {}
-    uint32_t Value;
-};
-struct SharedB : ecs::ISharedComponent {
-    SharedB (uint32_t value) : Value(value) {}
-    uint32_t Value;
-};
-
-extern std::shared_ptr<SharedA> SharedA1;
-extern std::shared_ptr<SharedA> SharedA2;
-extern std::shared_ptr<SharedB> SharedB1;
-extern std::shared_ptr<SharedB> SharedB2;
-
 } // namespace test

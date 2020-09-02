@@ -99,8 +99,6 @@ private:
 
     void SetComponentsInternal (const impl::EntityData&) const {}
     template<typename T, typename...Args>
-    void SetComponentsInternal (const impl::EntityData& entity, std::shared_ptr<T> component, Args...args) const;
-    template<typename T, typename...Args>
     void SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const;
 
     void SetCompositionInternal (impl::EntityData& entityData, const impl::Composition& composition);
