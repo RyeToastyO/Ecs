@@ -11,6 +11,7 @@
 #include "prefab.h"
 
 #include <cstdint>
+#include <shared_mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -36,8 +37,10 @@ struct EntityData {
 //     - Create a single, global ecs::Manager (Multiple managers existing is supported)
 //     - Call jobs from a single location so you can see the order in which they execute
 // - Warnings:
-//     - The Manager itself is not thread-safe
-//         - Do not call non-const functions if there could be another thread also accessing the Manager
+//     - The Manager itself is thread-safe *but*
+//         - Pointers to non-singleton components can be invalidated by actions
+//           on *other* entities.  It is not recommended that you create,
+//           destroy, or change composition of entities during multi-threaded access
 //         - Jobs must satisfy the following to be safely run at the same time:
 //             - Do not read and write from the same components
 //             - Do not create/destroy/change composition of entities
@@ -47,7 +50,7 @@ public:
     ~Manager ();
 
 public:
-    bool Exists (Entity entity) const;
+    bool Exists (Entity entity);
 
     template<typename T, typename...Args>
     void AddComponents (Entity entity, T component, Args...args);
@@ -68,10 +71,10 @@ public:
     T* GetSingletonComponent ();
 
     template<typename T>
-    bool HasComponent (Entity entity) const;
+    bool HasComponent (Entity entity);
 
     template<typename T>
-    T* FindComponent (Entity entity) const;
+    T* FindComponent (Entity entity);
 
     template<typename T, typename...Args>
     void RemoveComponents (Entity entity);
@@ -87,6 +90,10 @@ private:
     std::unordered_map<impl::JobId, Job*> m_jobs;
     std::unordered_map<impl::Composition, impl::Chunk*> m_chunks;
     std::unordered_map<impl::ComponentId, ISingletonComponent*> m_singletonComponents;
+
+    std::shared_mutex m_jobMutex;
+    std::shared_mutex m_singletonMutex;
+    std::shared_mutex m_entityMutex;
 
 private:
     uint32_t AllocateNewEntityInternal ();
