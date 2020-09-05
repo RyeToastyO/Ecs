@@ -67,18 +67,11 @@ struct Read : public DataComponentAccess<T> {
     inline void OnCreate () override { this->m_job.AddRead(this); }
     // Normal accessors
     template<typename T2 = T>
-    inline typename std::enable_if<!std::is_base_of<ISharedComponent, T2>::value, const T *>::type GetChunkComponentArray () const { return this->m_componentArray; }
+    inline const T* GetChunkComponentArray () const { return this->m_componentArray; }
     template<typename T2 = T>
-    inline typename std::enable_if<!std::is_base_of<ISharedComponent, T2>::value, const T &>::type operator* () const { return this->m_componentArray[this->m_job.m_entityIndex]; }
+    inline const T& operator* () const { return this->m_componentArray[this->m_job.m_entityIndex]; }
     template<typename T2 = T>
-    inline typename std::enable_if<!std::is_base_of<ISharedComponent, T2>::value, const T *>::type operator-> () const { return this->m_componentArray + this->m_job.m_entityIndex; }
-    // Shared component accessors
-    template<typename T2 = T>
-    inline typename std::enable_if<std::is_base_of<ISharedComponent, T2>::value, const T *>::type GetChunkComponentArray () const { static_assert(false, "Shared components do not have arrays"); }
-    template<typename T2 = T>
-    inline typename std::enable_if<std::is_base_of<ISharedComponent, T2>::value, const T &>::type operator* () const { return *(this->m_componentArray); }
-    template<typename T2 = T>
-    inline typename std::enable_if<std::is_base_of<ISharedComponent, T2>::value, const T *>::type operator-> () const { return this->m_componentArray; }
+    inline const T* operator-> () const { return this->m_componentArray + this->m_job.m_entityIndex; }
 };
 
 template<typename T>

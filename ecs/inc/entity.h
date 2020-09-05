@@ -17,6 +17,8 @@ typedef uint64_t EntityId;
 // - Safe to hold on to
 // - Should only be used with the Manager that created it
 struct Entity {
+    ECS_COMPONENT(EcsImplEntity)
+
     uint32_t index = 0;
     uint32_t generation = 0;
 

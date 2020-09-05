@@ -13,8 +13,6 @@
 #include "helpers/ref.h"
 
 #include <cstdint>
-#include <unordered_set>
-#include <type_traits>
 #include <vector>
 
 namespace ecs {
@@ -111,6 +109,7 @@ private:
 private:
     friend class Manager;
     void ApplyQueuedCommands ();
+    bool HasQueuedCommands () const;
     void OnChunkAdded (impl::Chunk* chunk);
     void OnRegistered (Manager* manager);
 

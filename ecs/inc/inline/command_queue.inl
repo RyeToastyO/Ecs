@@ -36,6 +36,10 @@ inline CommandQueue::~CommandQueue () {
         delete remover.second;
 }
 
+inline bool CommandQueue::IsEmpty () const {
+    return m_commands.empty();
+}
+
 inline void CommandQueue::Apply (Manager* mgr) {
     Entity targetEntity;
     for (const auto& command : m_commands) {

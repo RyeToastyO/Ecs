@@ -139,40 +139,44 @@ void TestComponentFlags () {
 
 void TestComposition () {
     ecs::impl::Composition compA1;
-    compA1.SetComponents(FloatA{ 1.0f }, SharedA1);
+    compA1.SetComponents(FloatA{ 1.0f });
 
     EXPECT_TRUE(compA1.GetComponentFlags().Has<FloatA>());
-    EXPECT_TRUE(compA1.GetComponentFlags().Has<SharedA>());
-    EXPECT_FALSE(compA1.GetSharedComponents().find(ecs::impl::GetComponentId<SharedA>()) == compA1.GetSharedComponents().end());
+    EXPECT_TRUE(compA1.GetComponentSize(ecs::impl::GetComponentId<FloatA>()) == ecs::impl::GetComponentSize<FloatA>());
+    EXPECT_TRUE(compA1.GetComponentInfo().ComponentCount == 1);
+    EXPECT_TRUE(compA1.GetComponentInfo().DataComponentCount == 1);
+    EXPECT_TRUE(compA1.GetComponentInfo().TotalSize == ecs::impl::GetComponentSize<FloatA>());
 
     ecs::impl::Composition compA2;
-    compA2.SetComponents(FloatA{ 2.0f }, SharedA2);
+    compA2.SetComponents(FloatA{ 2.0f }, FloatB{ 4.0f });
 
-    EXPECT_TRUE(compA1.GetComponentFlags() == compA2.GetComponentFlags());
+    EXPECT_FALSE(compA1.GetComponentFlags() == compA2.GetComponentFlags());
     EXPECT_FALSE(compA1.GetHash() == compA2.GetHash());
     EXPECT_FALSE(compA1 == compA2);
+    EXPECT_TRUE(compA2.GetComponentSize(ecs::impl::GetComponentId<FloatA>()) == ecs::impl::GetComponentSize<FloatA>());
+    EXPECT_TRUE(compA2.GetComponentSize(ecs::impl::GetComponentId<FloatB>()) == ecs::impl::GetComponentSize<FloatB>());
+    EXPECT_TRUE(compA2.GetComponentInfo().ComponentCount == 2);
+    EXPECT_TRUE(compA2.GetComponentInfo().DataComponentCount == 2);
+    EXPECT_TRUE(compA2.GetComponentInfo().TotalSize == ecs::impl::GetComponentSize<FloatA>() + ecs::impl::GetComponentSize<FloatB>());
 
     ecs::impl::Composition compA1Dupe;
-    compA1Dupe.SetComponents(SharedA1);
     compA1Dupe.SetComponents(FloatA{ 11.0f });
 
     ecs::impl::Composition compA2Dupe;
-    compA2Dupe.SetComponents(FloatA{ 22.0f });
-    compA2Dupe.SetComponents(SharedA2);
+    compA2Dupe.SetComponents(FloatA{ 22.0f }, FloatB{ 44.0f });
 
     EXPECT_TRUE(compA1.GetHash() == compA1Dupe.GetHash());
     EXPECT_TRUE(compA1 == compA1Dupe);
     EXPECT_TRUE(compA2.GetHash() == compA2Dupe.GetHash());
     EXPECT_TRUE(compA2 == compA2Dupe);
 
-    compA1.RemoveComponents<SharedA>();
-    compA2.RemoveComponents<SharedA>();
+    ecs::impl::Composition compWithFlag;
+    compWithFlag.SetComponents(FloatA{ 3.0f }, FloatB{ 6.0f }, TagA{}, TagB{});
 
-    EXPECT_TRUE(compA1 == compA2);
-
-    compA1Dupe.SetComponents(SharedA2);
-
-    EXPECT_TRUE(compA1Dupe == compA2Dupe);
+    EXPECT_TRUE(compWithFlag.GetComponentSize(ecs::impl::GetComponentId<TagA>()) == ecs::impl::GetComponentSize<TagA>());
+    EXPECT_TRUE(compWithFlag.GetComponentInfo().ComponentCount == 4);
+    EXPECT_TRUE(compWithFlag.GetComponentInfo().DataComponentCount == 2);
+    EXPECT_TRUE(compWithFlag.GetComponentInfo().TotalSize == ecs::impl::GetComponentSize<FloatA>() + ecs::impl::GetComponentSize<FloatB>());
 }
 
 void TestFindingComponents () {
@@ -539,86 +543,6 @@ void TestQueuedChanges () {
     EXPECT_TRUE(mgr.GetSingletonComponent<test::SingletonFloat>()->Value == 6.0f);
 }
 
-void TestSharedComponents () {
-    ecs::Manager mgr;
-
-    ecs::Entity entity = mgr.CreateEntityImmediate(SharedA1);
-
-    auto compId = ecs::impl::GetComponentId<SharedA>();
-    ECS_REF(compId);
-
-    EXPECT_TRUE(mgr.HasComponent<SharedA>(entity));
-    EXPECT_TRUE(mgr.FindComponent<SharedA>(entity)->Value == 1);
-
-    mgr.RemoveComponents<SharedA>(entity);
-
-    EXPECT_FALSE(mgr.HasComponent<SharedA>(entity));
-
-    mgr.AddComponents(entity, SharedA2);
-
-    EXPECT_TRUE(mgr.HasComponent<SharedA>(entity));
-    EXPECT_TRUE(mgr.FindComponent<SharedA>(entity)->Value == 2);
-
-    mgr.AddComponents(entity, SharedA1);
-
-    EXPECT_TRUE(mgr.HasComponent<SharedA>(entity));
-    EXPECT_TRUE(mgr.FindComponent<SharedA>(entity)->Value == 1);
-}
-
-struct SharedCompJob : ecs::Job {
-    ECS_READ(SharedA, Shared);
-
-    ECS_WRITE_SINGLETON(SingletonInt, Count1);
-    ECS_WRITE_SINGLETON(SingletonUint, Count2);
-    ECS_WRITE_SINGLETON(SingletonFloat, Count3);
-    ECS_WRITE_SINGLETON(SingletonDouble, Count4);
-
-    void ForEachChunk () override {
-        switch (Shared->Value) {
-            case 1:
-                Count1->Value++;
-                break;
-            case 2:
-                Count2->Value++;
-                break;
-        }
-        Job::ForEachChunk();
-    }
-
-    void ForEach () override {
-        switch (Shared->Value) {
-            case 1:
-                Count3->Value++;
-                break;
-            case 2:
-                Count4->Value++;
-                break;
-        }
-    }
-};
-
-void TestSharedComponentJob () {
-    ecs::Manager mgr;
-
-    for (auto i = 0; i < 10; ++i) {
-        mgr.CreateEntityImmediate(SharedA1);
-        mgr.CreateEntityImmediate(SharedA1, FloatA{});
-        mgr.CreateEntityImmediate(SharedA1, TagA{});
-    }
-
-    for (uint32_t i = 0; i < 20; ++i) {
-        mgr.CreateEntityImmediate(SharedA2, TagB{});
-        mgr.CreateEntityImmediate(SharedA2, FloatA{});
-    }
-
-    mgr.RunJob<SharedCompJob>();
-
-    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonInt>()->Value == 3);
-    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 2);
-    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonFloat>()->Value == 30.0f);
-    EXPECT_TRUE(mgr.GetSingletonComponent<SingletonDouble>()->Value == 40.0);
-}
-
 struct CloneJob : ecs::Job {
     ECS_READ(ecs::Entity, Ent);
     ECS_REQUIRE(FloatA, FloatB, FloatC);
@@ -676,7 +600,7 @@ void TestEntityCloning () {
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 4);
 }
 
-struct PrefabToSpawn : ecs::ISingletonComponent { ecs::Prefab Value; };
+struct PrefabToSpawn : ecs::ISingletonComponent { ECS_COMPONENT(PrefabToSpawn) ecs::Prefab Value; };
 
 struct PrefabJob : ecs::Job {
     ECS_REQUIRE(FloatA, FloatB, FloatC);
@@ -741,8 +665,6 @@ void TestCorrectness () {
     TestChunkJob();
     TestManualMultiThreading();
     TestQueuedChanges();
-    TestSharedComponents();
-    TestSharedComponentJob();
     TestEntityCloning();
     TestPrefabs();
 }

@@ -34,15 +34,13 @@ static_assert(std::is_base_of<::ecs::ISingletonComponent, componentType>::value,
 ::ecs::impl::Write<componentType> variableName = ::ecs::impl::Write<componentType>(*this);                                                      \
 static_assert(!std::is_empty<componentType>(), "Cannot write access an empty/tag component, use ECS_REQUIRE");                                  \
 static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entity>::value, "Don't write to Entity, you will break everything"); \
-static_assert(!std::is_base_of<::ecs::ISingletonComponent, componentType>::value, "Use ECS_WRITE_SINGLETON");                                   \
-static_assert(!std::is_base_of<::ecs::ISharedComponent, componentType>::value, "Writing to shared components is not supported");
+static_assert(!std::is_base_of<::ecs::ISingletonComponent, componentType>::value, "Use ECS_WRITE_SINGLETON");
 
 #define ECS_WRITE_OTHER(componentType, variableName)                                                                                            \
 ::ecs::impl::WriteOther<componentType> variableName = ::ecs::impl::WriteOther<componentType>(*this);                                            \
 static_assert(!std::is_empty<componentType>(), "Cannot write access an empty/tag component, use HasComponent<T>(entity)");                      \
 static_assert(!std::is_same<std::remove_const<componentType>::type, ::ecs::Entity>::value, "Don't write to Entity, you will break everything"); \
-static_assert(!std::is_base_of<::ecs::ISingletonComponent, componentType>::value, "Use ECS_WRITE_SINGLETON");                                   \
-static_assert(!std::is_base_of<::ecs::ISharedComponent, componentType>::value, "Writing to shared components is not supported");
+static_assert(!std::is_base_of<::ecs::ISingletonComponent, componentType>::value, "Use ECS_WRITE_SINGLETON");
 
 #define ECS_WRITE_SINGLETON(componentType, variableName)                                                        \
 ::ecs::impl::WriteSingleton<componentType> variableName = ::ecs::impl::WriteSingleton<componentType>(*this);    \

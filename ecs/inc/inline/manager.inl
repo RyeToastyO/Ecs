@@ -13,12 +13,15 @@ inline void Manager::AddComponents (Entity entity, T component, Args...args) {
 
     if (!Exists(entity))
         return;
+
+    std::unique_lock<std::shared_mutex> lock(m_entityMutex);
+
     auto& entityData = m_entityData[entity.index];
-    auto composition = entityData.chunk->GetComposition();
+    m_scratchComposition = entityData.chunk->GetComposition();
 
-    composition.SetComponents(component, args...);
+    m_scratchComposition.SetComponents(component, args...);
 
-    SetCompositionInternal(entityData, composition);
+    SetCompositionInternal(entityData, m_scratchComposition);
     SetComponentsInternal(entityData, component, args...);
 }
 
@@ -29,12 +32,14 @@ inline Entity Manager::CreateEntityImmediate (T component, Args...args) {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be added to entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Do not add Entity as a component");
 
+    std::unique_lock<std::shared_mutex> lock(m_entityMutex);
+
     // Compile the composition
-    impl::Composition composition;
-    composition.SetComponents(component, args...);
+    m_scratchComposition.Clear();
+    m_scratchComposition.SetComponents(component, args...);
 
     // Create the entity
-    Entity entity = CreateEntityImmediateInternal(composition);
+    Entity entity = CreateEntityImmediateInternal(m_scratchComposition);
 
     // Apply all the components to the chunk's memory
     SetComponentsInternal(m_entityData[entity.index], component, args...);
@@ -52,24 +57,41 @@ inline T* Manager::GetSingletonComponent () {
     static_assert(std::is_base_of<ISingletonComponent, T>::value, "GetSingletonComponent<T> must inherit ISingletonComponent");
     static_assert(!std::is_empty<T>(), "Singleton components must have data, they always exist so they can't be used as tags");
 
-    auto iter = m_singletonComponents.find(impl::GetComponentId<T>());
-    if (iter == m_singletonComponents.end()) {
-        T* component = new T();
-        m_singletonComponents.emplace(impl::GetComponentId<T>(), component);
-        return component;
+    T* singleton = nullptr;
+    {
+        std::shared_lock<std::shared_mutex> lock(m_singletonMutex);
+
+        auto iter = m_singletonComponents.find(impl::GetComponentId<T>());
+        singleton = iter != m_singletonComponents.end() ? static_cast<T*>(iter->second) : nullptr;
     }
-    return static_cast<T*>(iter->second);
+
+    if (!singleton) {
+        std::unique_lock<std::shared_mutex> lock(m_singletonMutex);
+
+        // We have to check again, in case this component was requested again after we released the shared lock.
+        auto iter = m_singletonComponents.find(impl::GetComponentId<T>());
+        singleton = iter != m_singletonComponents.end() ? static_cast<T*>(iter->second) : nullptr;
+
+        if (!singleton) {
+            singleton = new T();
+            m_singletonComponents.emplace(impl::GetComponentId<T>(), singleton);
+        }
+    }
+    return singleton;
 }
 
 
 // - Checks for existance of a component on an entity
 template<typename T>
-inline bool Manager::HasComponent (Entity entity) const {
+inline bool Manager::HasComponent (Entity entity) {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Yes, it does. Use Exists to check for deletion");
 
     if (!Exists(entity))
         return false;
+
+    std::shared_lock<std::shared_mutex> lock(m_entityMutex);
+
     const auto& entityData = m_entityData[entity.index];
     return entityData.chunk->GetComponentFlags().Has<T>();
 }
@@ -81,12 +103,15 @@ inline bool Manager::HasComponent (Entity entity) const {
 //     - Composition changes to this entity or one with the same composition
 //     - Destruction of this entity or one with the same composition
 template<typename T>
-inline T* Manager::FindComponent (Entity entity) const {
+inline T* Manager::FindComponent (Entity entity) {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Why are you finding an Entity with that Entity?");
 
     if (!Exists(entity))
         return nullptr;
+
+    std::shared_lock<std::shared_mutex> lock(m_entityMutex);
+
     const auto& entityData = m_entityData[entity.index];
     return entityData.chunk->Find<T>(entityData.chunkIndex);
 }
@@ -100,25 +125,20 @@ inline void Manager::RemoveComponents (Entity entity) {
 
     if (!Exists(entity))
         return;
+
+    std::unique_lock<std::shared_mutex> lock(m_entityMutex);
+
     auto& entityData = m_entityData[entity.index];
-    auto composition = entityData.chunk->GetComposition();
+    m_scratchComposition = entityData.chunk->GetComposition();
 
-    composition.RemoveComponents<T, Args...>();
+    m_scratchComposition.RemoveComponents<T, Args...>();
 
-    SetCompositionInternal(entityData, composition);
-}
-
-template<typename T, typename...Args>
-inline void Manager::SetComponentsInternal (const impl::EntityData& entity, std::shared_ptr<T> component, Args...args) const {
-    static_assert(std::is_base_of<ISharedComponent, T>::value, "Shared components must inherit ISharedComponent");
-    ECS_REF(component);
-    SetComponentsInternal(entity, args...);
+    SetCompositionInternal(entityData, m_scratchComposition);
 }
 
 template<typename T, typename...Args>
 inline void Manager::SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be set on entities");
-    static_assert(!std::is_base_of<ISharedComponent, T>::value, "Don't directly add shared components, must be a std::shared_ptr<SharedComponentType>");
     *(entity.chunk->Find<T>(entity.chunkIndex)) = component;
     SetComponentsInternal(entity, args...);
 }
@@ -140,7 +160,9 @@ inline Manager::~Manager () {
 
 
 // - Checks if a created entity has been destroyed
-inline bool Manager::Exists (Entity entity) const {
+inline bool Manager::Exists (Entity entity) {
+    std::shared_lock<std::shared_mutex> lock(m_entityMutex);
+
     if (!entity.generation || m_entityData.size() <= entity.index)
         return false;
     return m_entityData[entity.index].generation == entity.generation;
@@ -152,6 +174,8 @@ inline bool Manager::Exists (Entity entity) const {
 inline Entity Manager::Clone (Entity entity) {
     if (!Exists(entity))
         return Entity();
+
+    std::unique_lock<std::shared_mutex> lock(m_entityMutex);
 
     // Use the chunk to actually copy component data
     impl::EntityData& entityData = m_entityData[entity.index];
@@ -177,8 +201,10 @@ inline Entity Manager::Clone (Entity entity) {
 // - Creates an empty entity
 // - Prefer initializing with components as it is more efficient than adding after creation
 inline Entity Manager::CreateEntityImmediate () {
-    auto emptyComposition = impl::Composition();
-    return CreateEntityImmediateInternal(emptyComposition);
+    std::unique_lock<std::shared_mutex> lock(m_entityMutex);
+
+    m_scratchComposition.Clear();
+    return CreateEntityImmediateInternal(m_scratchComposition);
 }
 
 inline Entity Manager::CreateEntityImmediateInternal (impl::Composition& composition) {
@@ -219,6 +245,9 @@ inline Prefab Manager::CreatePrefab (T component, Args...args) {
 inline void Manager::DestroyImmediate (Entity entity) {
     if (!Exists(entity))
         return;
+
+    std::unique_lock<std::shared_mutex> lock(m_entityMutex);
+
     const auto& data = m_entityData[entity.index];
 
     data.chunk->RemoveEntity(data.chunkIndex);
@@ -259,6 +288,8 @@ inline impl::Chunk* Manager::GetOrCreateChunk (const impl::Composition& composit
 }
 
 inline void Manager::NotifyChunkCreated (impl::Chunk* chunk) {
+    std::unique_lock<std::shared_mutex> lock(m_jobMutex);
+
     for (const auto& jobIter : m_jobs)
         jobIter.second->OnChunkAdded(chunk);
 }
@@ -271,21 +302,42 @@ inline void Manager::RunJob () {
     static_assert(std::is_base_of<Job, T>::value, "Must inherit from Job");
 
     Job* job = nullptr;
+    {
+        std::shared_lock<std::shared_mutex> lock(m_jobMutex);
 
-    auto iter = m_jobs.find(impl::GetJobId<T>());
-    if (iter == m_jobs.end()) {
-        job = new T();
-
-        RegisterJobInternal(job);
-
-        m_jobs.emplace(impl::GetJobId<T>(), job);
-    }
-    else {
-        job = iter->second;
+        auto iter = m_jobs.find(impl::GetJobId<T>());
+        job = iter != m_jobs.end() ? iter->second : nullptr;
     }
 
-    job->Run();
-    job->ApplyQueuedCommands();
+    if (!job) {
+        std::unique_lock<std::shared_mutex> lock(m_jobMutex);
+
+        // Make sure that the job wasn't created when we released this lock for a few lines
+        auto iter = m_jobs.find(impl::GetJobId<T>());
+        job = iter != m_jobs.end() ? iter->second : nullptr;
+
+        if (!job) {
+            job = new T();
+
+            RegisterJobInternal(job);
+
+            m_jobs.emplace(impl::GetJobId<T>(), job);
+        }
+    }
+
+    bool hasQueuedCommands = false;
+    {
+        // Don't allow entities changes or queued commands to run while we are running
+        std::shared_lock<std::shared_mutex> entityLock(m_entityMutex);
+        std::shared_lock<std::shared_mutex> queuedCommandLock(m_queuedCommandMutex);
+        job->Run();
+        hasQueuedCommands = job->HasQueuedCommands();
+    }
+    if (hasQueuedCommands) {
+        // Don't allow other jobs to run while we are applying queued commands
+        std::unique_lock<std::shared_mutex> lock(m_queuedCommandMutex);
+        job->ApplyQueuedCommands();
+    }
 }
 
 

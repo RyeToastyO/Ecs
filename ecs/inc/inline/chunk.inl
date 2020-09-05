@@ -10,9 +10,7 @@ namespace ecs {
 namespace impl {
 
 template<typename T>
-inline typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>::type Chunk::Find () {
-    static_assert(!std::is_base_of<ISharedComponent, T>::value, "The shared component version should have picked this up");
-
+inline T* Chunk::Find () {
     // Give a valid pointer if a tag component is requested, but don't
     // bother looking it up in the component arrays since we didn't allocate memory for it
     if (std::is_empty<T>())
@@ -25,7 +23,7 @@ inline typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>
 }
 
 template<typename T>
-inline typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>::type Chunk::Find (uint32_t index) {
+inline T* Chunk::Find (uint32_t index) {
     if (index >= m_count)
         return nullptr;
 
@@ -33,27 +31,10 @@ inline typename std::enable_if<!std::is_base_of<ISharedComponent, T>::value, T*>
     return arrayStart ? arrayStart + index : nullptr;
 }
 
-template<typename T>
-inline typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>::type Chunk::Find () const {
-    auto iter = m_sharedComponents.find(GetComponentId<T>());
-    if (iter == m_sharedComponents.end())
-        return nullptr;
-    return static_cast<T*>(iter->second.get());
-}
-
-template<typename T>
-inline typename std::enable_if<std::is_base_of<ISharedComponent, T>::value, T*>::type Chunk::Find (uint32_t index) const {
-    // There's just one shared component on a chunk
-    ECS_REF(index);
-    return Find<T>();
-}
-
 inline Chunk::Chunk (const Composition& composition)
     : m_composition(composition)
-    , m_componentInfo(composition.GetComponentFlags().GetComponentInfo())
 {
     AllocateComponentArrays(kDefaultChunkSize);
-    InitializeSharedComponents();
 }
 
 inline Chunk::~Chunk () {
@@ -64,17 +45,17 @@ inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
     Clear();
 
     // Allocate all memory for this chunk as one allocation
-    m_componentArrays.reserve(m_componentInfo.DataComponentCount);
-    m_componentMemory = new byte_t[m_componentInfo.TotalSize * capacity];
+    const ComponentInfo& componentInfo = m_composition.GetComponentInfo();
+    m_componentArrays.reserve(componentInfo.DataComponentCount);
+    m_componentMemory = new byte_t[componentInfo.TotalSize * capacity];
     m_capacity = capacity;
 
     assert(m_componentMemory);
 
     auto arrayStart = m_componentMemory;
     // Assign each component array their location in that allocation
-    auto iter = GetComponentFlags().GetIterator();
-    for (const auto& compId : iter) {
-        const auto size = GetComponentSize(compId);
+    for (const auto& compId : GetComponentFlags()) {
+        const auto size = m_composition.GetComponentSize(compId);
         if (size == 0)
             continue;
 
@@ -83,21 +64,14 @@ inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
     }
 }
 
-inline void Chunk::InitializeSharedComponents () {
-    const auto& sharedComps = m_composition.GetSharedComponents();
-
-    for (const auto& iter : sharedComps)
-        m_sharedComponents.emplace(iter.first, iter.second);
-}
-
 inline void Chunk::Resize (uint32_t capacity) {
-    byte_t* newMemory = new byte_t[m_componentInfo.TotalSize * capacity];
+    byte_t* newMemory = new byte_t[m_composition.GetComponentInfo().TotalSize * capacity];
     m_capacity = capacity;
 
     auto newArrayStart = newMemory;
     for (auto& compArray : m_componentArrays) {
         auto oldArrayStart = compArray.second;
-        auto size = GetComponentSize(compArray.first);
+        auto size = m_composition.GetComponentSize(compArray.first);
 
         memcpy(newArrayStart, oldArrayStart, size * std::min(m_count, m_capacity));
 
@@ -121,7 +95,7 @@ inline uint32_t Chunk::CloneEntity (uint32_t index) {
 
     for (auto& compArray : m_componentArrays) {
         auto arrayStart = compArray.second;
-        auto size = GetComponentSize(compArray.first);
+        auto size = m_composition.GetComponentSize(compArray.first);
 
         memcpy(arrayStart + newIndex * size, arrayStart + index * size, size);
     }
@@ -166,7 +140,7 @@ inline uint32_t Chunk::MoveTo (uint32_t from, Chunk& to) {
         if (newCompArray == to.m_componentArrays.end())
             continue;
         auto newData = newCompArray->second;
-        auto size = GetComponentSize(compIter.first);
+        auto size = m_composition.GetComponentSize(compIter.first);
         memcpy(newData + newIndex * size, compIter.second + from * size, size);
     }
 
@@ -191,7 +165,7 @@ inline void Chunk::CopyTo (uint32_t from, uint32_t to) {
 
     for (const auto& compIter : m_componentArrays) {
         auto arrayStart = compIter.second;
-        auto size = GetComponentSize(compIter.first);
+        auto size = m_composition.GetComponentSize(compIter.first);
         memcpy(arrayStart + (to * size), arrayStart + (from * size), size);
     }
 }
