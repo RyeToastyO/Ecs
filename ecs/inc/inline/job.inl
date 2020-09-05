@@ -54,6 +54,10 @@ inline void Job::ApplyQueuedCommands () {
     m_commands.Apply(m_manager);
 }
 
+inline bool Job::HasQueuedCommands () const {
+    return !m_commands.IsEmpty();
+}
+
 inline const impl::ComponentFlags& Job::GetReadFlags () const {
     return m_read;
 }

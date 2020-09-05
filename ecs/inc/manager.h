@@ -91,9 +91,10 @@ private:
     std::unordered_map<impl::Composition, impl::Chunk*> m_chunks;
     std::unordered_map<impl::ComponentId, ISingletonComponent*> m_singletonComponents;
 
-    std::shared_mutex m_jobMutex;
-    std::shared_mutex m_singletonMutex;
     std::shared_mutex m_entityMutex;
+    std::shared_mutex m_jobMutex;
+    std::shared_mutex m_queuedCommandMutex;
+    std::shared_mutex m_singletonMutex;
 
     // Used to prevent allocations, since composition contains a std container
     impl::Composition m_scratchComposition;

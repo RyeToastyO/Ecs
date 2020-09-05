@@ -109,6 +109,7 @@ private:
 private:
     friend class Manager;
     void ApplyQueuedCommands ();
+    bool HasQueuedCommands () const;
     void OnChunkAdded (impl::Chunk* chunk);
     void OnRegistered (Manager* manager);
 

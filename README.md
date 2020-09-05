@@ -45,8 +45,7 @@ mgr.DestroyEntityImmediate(entity);
 ```
 
 ### Component Manipulation
-Note: Standard components must be plain old data
-      They do not run destructors, and are moved using direct memcpy
+Note: Standard components must be plain old data. They do not run destructors and are moved using direct memcpy
 ```C++
 mgr.AddComponents(entity, ComponentC{30.0f}, ComponentD{1});
 mgr.RemoveComponents<ComponentA, ComponentB>(entity);
@@ -92,7 +91,7 @@ struct ExampleJob : public ecs::Job {
 
         // Executes the ForEach on each entity that matches all
         // WRITE/READ/REQUIRE/EXCLUDE/REQUIRE_ANY filters
-        ecs::Job::Run();
+        Job::Run();
 
         L->Value = m_internalData;
     }
@@ -185,10 +184,9 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 ```
 
 ## TODO
-Current Version: v2.0.1
+Current Version: v2.0.2
 
 Potential future features
-  - Better multi-threading safety for jobs
   - Running destructors and assignment operators for components
   - Batch operations (add/destroy/remove by filter/chunk)
   - QueueCreate/Spawn should return an entity to act on

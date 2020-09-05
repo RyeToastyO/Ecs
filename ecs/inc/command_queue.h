@@ -69,6 +69,8 @@ struct Command {
 struct CommandQueue {
     ~CommandQueue ();
 
+    bool IsEmpty () const;
+
     void Apply (Manager* mgr);
 
     void AddComponents (Entity) {}

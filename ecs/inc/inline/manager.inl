@@ -325,8 +325,19 @@ inline void Manager::RunJob () {
         }
     }
 
-    job->Run();
-    job->ApplyQueuedCommands();
+    bool hasQueuedCommands = false;
+    {
+        // Don't allow entities changes or queued commands to run while we are running
+        std::shared_lock<std::shared_mutex> entityLock(m_entityMutex);
+        std::shared_lock<std::shared_mutex> queuedCommandLock(m_queuedCommandMutex);
+        job->Run();
+        hasQueuedCommands = job->HasQueuedCommands();
+    }
+    if (hasQueuedCommands) {
+        // Don't allow other jobs to run while we are applying queued commands
+        std::unique_lock<std::shared_mutex> lock(m_queuedCommandMutex);
+        job->ApplyQueuedCommands();
+    }
 }
 
 
