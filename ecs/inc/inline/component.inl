@@ -7,10 +7,10 @@ namespace ecs {
 namespace impl {
 
 template<typename T>
-inline size_t GetComponentId () {
+inline ComponentId GetComponentId () {
     // If you get a compile error on this function,
     // it means you forgot ECS_COMPONENT(name) macro in your component struct
-    return T::GetComponentId();
+    return T::GetEcsComponentId();
 }
 
 template<typename T>

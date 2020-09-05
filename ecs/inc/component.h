@@ -16,7 +16,7 @@ namespace ecs {
 // hash function is implemented manually so that it is consistent between
 // executions and platforms.
 #define ECS_COMPONENT(uniqueName)                                                       \
-    static ::ecs::impl::ComponentId GetComponentId () {                                 \
+    static ::ecs::impl::ComponentId GetEcsComponentId () {                              \
         static ::ecs::impl::ComponentId s_id = ::ecs::impl::StringHash(#uniqueName);    \
         return s_id;                                                                    \
     }

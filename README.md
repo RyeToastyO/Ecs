@@ -184,7 +184,7 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 ```
 
 ## TODO
-Current Version: v2.0.2
+Current Version: v2.0.3
 
 Potential future features
   - Running destructors and assignment operators for components
