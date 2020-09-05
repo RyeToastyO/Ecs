@@ -95,6 +95,9 @@ private:
     std::shared_mutex m_singletonMutex;
     std::shared_mutex m_entityMutex;
 
+    // Used to prevent allocations, since composition contains a std container
+    impl::Composition m_scratchComposition;
+
 private:
     uint32_t AllocateNewEntityInternal ();
 

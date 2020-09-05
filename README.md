@@ -6,8 +6,14 @@ Entity Component System - A data-oriented solution for storing and processing st
 #include "ecs/ecs.h"
 
 namespace health {
-struct Current { float Value; };
-struct Regen { float Value; };
+struct Current {
+    ECS_COMPONENT(CurrentHealth);
+    float Value;
+};
+struct Regen {
+    ECS_COMPONENT(HealthRegen);
+    float Value;
+};
 }
 
 struct RegenJob : ecs::Job {
@@ -39,7 +45,8 @@ mgr.DestroyEntityImmediate(entity);
 ```
 
 ### Component Manipulation
-Note: Standard components must be plain old data and do not run destructors
+Note: Standard components must be plain old data
+      They do not run destructors, and are moved using direct memcpy
 ```C++
 mgr.AddComponents(entity, ComponentC{30.0f}, ComponentD{1});
 mgr.RemoveComponents<ComponentA, ComponentB>(entity);
@@ -50,7 +57,10 @@ mgr.HasComponent<ComponentD>(entity) == true;
 ### Singleton Components
 Note: Singleton Components do run destructors
 ```C++
-struct CameraPosition : ecs::ISingletonComponent { float3 Value; };
+struct CameraPosition : ecs::ISingletonComponent {
+    ECS_COMPONENT(CameraPosition);
+    float3 Value;
+};
 
 mgr.GetSingletonComponent<CameraPosition>()->Value = float3(1.0f, 1.0f, 1.0f);
 ```
@@ -102,32 +112,39 @@ int main () {
 }
 ```
 
-### Shared Components and Chunk Iteration
+### Chunk Iteration
 Useful when you can get large benefits from operating on entities in batches, such as rendering all entities with the same sprite/model.
 Example renders 10,000 bullets in a 100x100 grid with a single draw call
 ```C++
 namespace sprite {
-struct Instance16x16 : ecs::ISharedComponent { Color Data[256]; }
+struct Textures : ecs::ISingletonComponent {
+    ECS_COMPONENT(SpriteTextures);
+    Sprite Bullet;
 }
 
-struct ChunkRenderSprite16x16 : ecs::Job {
+struct TagBullet { ECS_COMPONENT(BulletSprite); }
+}
+
+struct ChunkRenderBullets : ecs::Job {
+    ECS_READ_SINGLETON(sprite::Textures, Textures);
     ECS_READ(transform::Position, Pos);
-    ECS_READ(sprite::Instance16x16, Sprite);
+    ECS_REQUIRE(sprite::TagBullet);
 
     void ForEachChunk () override {
         transform::Position* posArray = Pos.GetChunkComponentArray();
-        RenderSystem::RenderInstanced(Sprite->Data, posArray, GetChunkEntityCount());
+        RenderSystem::RenderInstanced(Textures->Bullet, posArray, GetChunkEntityCount());
     }
 };
 
 int main () {
-    std::shared_ptr<sprite::Instance16x16> bulletModel = std::make_shared<sprite::Instance16x16>(LoadSprite(...));
-
     ecs::Manager mgr;
-    for (int i = 0; i < 10000; ++i)
-        mgr.CreateEntityImmediate(transform::Position{i % 100, i / 100}, bulletModel);
 
-    mgr->RunJob<ChunkRenderSprite16x16>();
+    mgr.GetSingletonComponent<sprite::Textures>()->Bullet = LoadTexture("bullet.bmp");
+
+    for (int i = 0; i < 10000; ++i)
+        mgr.CreateEntityImmediate(transform::Position{i % 100, i / 100}, sprite::TagBullet{});
+
+    mgr->RunJob<ChunkRenderBullets>();
 }
 ```
 
@@ -164,13 +181,15 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 
 ### Configurable Settings
 ```C++
-#define ECS_MAX_COMPONENTS 256
+// Currently none
 ```
 
 ## TODO
-Current Version: v1.0.4
+Current Version: v2.0.1
 
 Potential future features
+  - Better multi-threading safety for jobs
+  - Running destructors and assignment operators for components
   - Batch operations (add/destroy/remove by filter/chunk)
   - QueueCreate/Spawn should return an entity to act on
   - Improved cache alignment of chunks
@@ -179,11 +198,6 @@ Potential future features
   - RunJobsMultithreaded<JobA, JobB>() helper
   - PruneUnusedChunks(time since empty)
   - Support for custom allocators
-
-Known Issues
-  - ComponentId generation doesn't work across dlls since it uses templates.
-    - Not planning on fixing since it would require manual registration of
-      components and turning component declarations into macros.
 
 ## License
 See [LICENSE](LICENSE)

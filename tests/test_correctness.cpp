@@ -142,6 +142,10 @@ void TestComposition () {
     compA1.SetComponents(FloatA{ 1.0f });
 
     EXPECT_TRUE(compA1.GetComponentFlags().Has<FloatA>());
+    EXPECT_TRUE(compA1.GetComponentSize(ecs::impl::GetComponentId<FloatA>()) == ecs::impl::GetComponentSize<FloatA>());
+    EXPECT_TRUE(compA1.GetComponentInfo().ComponentCount == 1);
+    EXPECT_TRUE(compA1.GetComponentInfo().DataComponentCount == 1);
+    EXPECT_TRUE(compA1.GetComponentInfo().TotalSize == ecs::impl::GetComponentSize<FloatA>());
 
     ecs::impl::Composition compA2;
     compA2.SetComponents(FloatA{ 2.0f }, FloatB{ 4.0f });
@@ -149,6 +153,11 @@ void TestComposition () {
     EXPECT_FALSE(compA1.GetComponentFlags() == compA2.GetComponentFlags());
     EXPECT_FALSE(compA1.GetHash() == compA2.GetHash());
     EXPECT_FALSE(compA1 == compA2);
+    EXPECT_TRUE(compA2.GetComponentSize(ecs::impl::GetComponentId<FloatA>()) == ecs::impl::GetComponentSize<FloatA>());
+    EXPECT_TRUE(compA2.GetComponentSize(ecs::impl::GetComponentId<FloatB>()) == ecs::impl::GetComponentSize<FloatB>());
+    EXPECT_TRUE(compA2.GetComponentInfo().ComponentCount == 2);
+    EXPECT_TRUE(compA2.GetComponentInfo().DataComponentCount == 2);
+    EXPECT_TRUE(compA2.GetComponentInfo().TotalSize == ecs::impl::GetComponentSize<FloatA>() + ecs::impl::GetComponentSize<FloatB>());
 
     ecs::impl::Composition compA1Dupe;
     compA1Dupe.SetComponents(FloatA{ 11.0f });
@@ -160,6 +169,14 @@ void TestComposition () {
     EXPECT_TRUE(compA1 == compA1Dupe);
     EXPECT_TRUE(compA2.GetHash() == compA2Dupe.GetHash());
     EXPECT_TRUE(compA2 == compA2Dupe);
+
+    ecs::impl::Composition compWithFlag;
+    compWithFlag.SetComponents(FloatA{ 3.0f }, FloatB{ 6.0f }, TagA{}, TagB{});
+
+    EXPECT_TRUE(compWithFlag.GetComponentSize(ecs::impl::GetComponentId<TagA>()) == ecs::impl::GetComponentSize<TagA>());
+    EXPECT_TRUE(compWithFlag.GetComponentInfo().ComponentCount == 4);
+    EXPECT_TRUE(compWithFlag.GetComponentInfo().DataComponentCount == 2);
+    EXPECT_TRUE(compWithFlag.GetComponentInfo().TotalSize == ecs::impl::GetComponentSize<FloatA>() + ecs::impl::GetComponentSize<FloatB>());
 }
 
 void TestFindingComponents () {
@@ -583,7 +600,7 @@ void TestEntityCloning () {
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 4);
 }
 
-struct PrefabToSpawn : ecs::ISingletonComponent { ecs::Prefab Value; };
+struct PrefabToSpawn : ecs::ISingletonComponent { ECS_COMPONENT(PrefabToSpawn) ecs::Prefab Value; };
 
 struct PrefabJob : ecs::Job {
     ECS_REQUIRE(FloatA, FloatB, FloatC);

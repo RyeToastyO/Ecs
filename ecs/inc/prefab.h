@@ -28,7 +28,7 @@ private:
 
 namespace impl {
 
-struct PrefabComponent {};
+struct PrefabComponent { ECS_COMPONENT(EcsImplPrefabComponent) };
 
 } // namespace impl
 } // namespace ecs

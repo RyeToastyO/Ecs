@@ -33,7 +33,6 @@ inline T* Chunk::Find (uint32_t index) {
 
 inline Chunk::Chunk (const Composition& composition)
     : m_composition(composition)
-    , m_componentInfo(composition.GetComponentFlags().GetComponentInfo())
 {
     AllocateComponentArrays(kDefaultChunkSize);
 }
@@ -46,17 +45,17 @@ inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
     Clear();
 
     // Allocate all memory for this chunk as one allocation
-    m_componentArrays.reserve(m_componentInfo.DataComponentCount);
-    m_componentMemory = new byte_t[m_componentInfo.TotalSize * capacity];
+    const ComponentInfo& componentInfo = m_composition.GetComponentInfo();
+    m_componentArrays.reserve(componentInfo.DataComponentCount);
+    m_componentMemory = new byte_t[componentInfo.TotalSize * capacity];
     m_capacity = capacity;
 
     assert(m_componentMemory);
 
     auto arrayStart = m_componentMemory;
     // Assign each component array their location in that allocation
-    auto iter = GetComponentFlags().GetIterator();
-    for (const auto& compId : iter) {
-        const auto size = GetComponentSize(compId);
+    for (const auto& compId : GetComponentFlags()) {
+        const auto size = m_composition.GetComponentSize(compId);
         if (size == 0)
             continue;
 
@@ -66,13 +65,13 @@ inline void Chunk::AllocateComponentArrays (uint32_t capacity) {
 }
 
 inline void Chunk::Resize (uint32_t capacity) {
-    byte_t* newMemory = new byte_t[m_componentInfo.TotalSize * capacity];
+    byte_t* newMemory = new byte_t[m_composition.GetComponentInfo().TotalSize * capacity];
     m_capacity = capacity;
 
     auto newArrayStart = newMemory;
     for (auto& compArray : m_componentArrays) {
         auto oldArrayStart = compArray.second;
-        auto size = GetComponentSize(compArray.first);
+        auto size = m_composition.GetComponentSize(compArray.first);
 
         memcpy(newArrayStart, oldArrayStart, size * std::min(m_count, m_capacity));
 
@@ -96,7 +95,7 @@ inline uint32_t Chunk::CloneEntity (uint32_t index) {
 
     for (auto& compArray : m_componentArrays) {
         auto arrayStart = compArray.second;
-        auto size = GetComponentSize(compArray.first);
+        auto size = m_composition.GetComponentSize(compArray.first);
 
         memcpy(arrayStart + newIndex * size, arrayStart + index * size, size);
     }
@@ -141,7 +140,7 @@ inline uint32_t Chunk::MoveTo (uint32_t from, Chunk& to) {
         if (newCompArray == to.m_componentArrays.end())
             continue;
         auto newData = newCompArray->second;
-        auto size = GetComponentSize(compIter.first);
+        auto size = m_composition.GetComponentSize(compIter.first);
         memcpy(newData + newIndex * size, compIter.second + from * size, size);
     }
 
@@ -166,7 +165,7 @@ inline void Chunk::CopyTo (uint32_t from, uint32_t to) {
 
     for (const auto& compIter : m_componentArrays) {
         auto arrayStart = compIter.second;
-        auto size = GetComponentSize(compIter.first);
+        auto size = m_composition.GetComponentSize(compIter.first);
         memcpy(arrayStart + (to * size), arrayStart + (from * size), size);
     }
 }

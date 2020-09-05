@@ -5,13 +5,21 @@
 
 #pragma once
 
-#include "../config.h"
-
 #include <cstdint>
-#include <memory>
-#include <unordered_map>
+#include "helpers/hash.h"
 
 namespace ecs {
+
+// Must be included in any struct that is to be used as a component, including
+// singletons. The name is used for hashing to a unique ID. If you run into the
+// situation of hash collisions, changing just this name can fix the issue. The
+// hash function is implemented manually so that it is consistent between
+// executions and platforms.
+#define ECS_COMPONENT(uniqueName)                                                       \
+    static ::ecs::impl::ComponentId GetComponentId () {                                 \
+        static ::ecs::impl::ComponentId s_id = ::ecs::impl::StringHash(#uniqueName);    \
+        return s_id;                                                                    \
+    }
 
 // - Create a struct that inherits ecs::ISingletonComponent
 // - Guaranteed to exist
@@ -23,18 +31,13 @@ struct ISingletonComponent {
 
 namespace impl {
 
-typedef uint32_t ComponentId;
-
-struct ComponentRegistry {
-    static std::vector<size_t>& GetComponentSizes ();
-    static size_t GetComponentSize (ComponentId id);
-    static ComponentId RegisterComponent (size_t size);
-};
+typedef uint64_t ComponentId;
 
 template<typename T>
-static ComponentId GetComponentId ();
+ComponentId GetComponentId ();
 
-static size_t GetComponentSize (ComponentId id);
+template<typename T>
+size_t GetComponentSize ();
 
 } // namespace impl
 } // namespace ecs

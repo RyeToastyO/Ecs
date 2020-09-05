@@ -17,11 +17,11 @@ inline void Manager::AddComponents (Entity entity, T component, Args...args) {
     std::unique_lock<std::shared_mutex> lock(m_entityMutex);
 
     auto& entityData = m_entityData[entity.index];
-    auto composition = entityData.chunk->GetComposition();
+    m_scratchComposition = entityData.chunk->GetComposition();
 
-    composition.SetComponents(component, args...);
+    m_scratchComposition.SetComponents(component, args...);
 
-    SetCompositionInternal(entityData, composition);
+    SetCompositionInternal(entityData, m_scratchComposition);
     SetComponentsInternal(entityData, component, args...);
 }
 
@@ -35,11 +35,11 @@ inline Entity Manager::CreateEntityImmediate (T component, Args...args) {
     std::unique_lock<std::shared_mutex> lock(m_entityMutex);
 
     // Compile the composition
-    impl::Composition composition;
-    composition.SetComponents(component, args...);
+    m_scratchComposition.Clear();
+    m_scratchComposition.SetComponents(component, args...);
 
     // Create the entity
-    Entity entity = CreateEntityImmediateInternal(composition);
+    Entity entity = CreateEntityImmediateInternal(m_scratchComposition);
 
     // Apply all the components to the chunk's memory
     SetComponentsInternal(m_entityData[entity.index], component, args...);
@@ -129,11 +129,11 @@ inline void Manager::RemoveComponents (Entity entity) {
     std::unique_lock<std::shared_mutex> lock(m_entityMutex);
 
     auto& entityData = m_entityData[entity.index];
-    auto composition = entityData.chunk->GetComposition();
+    m_scratchComposition = entityData.chunk->GetComposition();
 
-    composition.RemoveComponents<T, Args...>();
+    m_scratchComposition.RemoveComponents<T, Args...>();
 
-    SetCompositionInternal(entityData, composition);
+    SetCompositionInternal(entityData, m_scratchComposition);
 }
 
 template<typename T, typename...Args>
@@ -203,8 +203,8 @@ inline Entity Manager::Clone (Entity entity) {
 inline Entity Manager::CreateEntityImmediate () {
     std::unique_lock<std::shared_mutex> lock(m_entityMutex);
 
-    auto emptyComposition = impl::Composition();
-    return CreateEntityImmediateInternal(emptyComposition);
+    m_scratchComposition.Clear();
+    return CreateEntityImmediateInternal(m_scratchComposition);
 }
 
 inline Entity Manager::CreateEntityImmediateInternal (impl::Composition& composition) {

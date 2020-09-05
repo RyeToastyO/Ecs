@@ -7,17 +7,26 @@
 
 #include "component_flags.h"
 
-#include <map>
-#include <memory>
+#include <unordered_map>
 
 namespace ecs {
 namespace impl {
 
+struct ComponentInfo {
+    size_t ComponentCount = 0;
+    size_t DataComponentCount = 0;
+    size_t TotalSize = 0;
+};
+
 struct Composition {
     const ComponentFlags& GetComponentFlags () const;
+    const ComponentInfo& GetComponentInfo () const;
+    size_t GetComponentSize (ComponentId id) const;
 
     size_t GetHash () const;
     bool operator== (const Composition& rhs) const;
+
+    void Clear ();
 
     template<typename...Args>
     typename std::enable_if<(sizeof...(Args) == 0)>::type RemoveComponents () {}
@@ -29,16 +38,11 @@ struct Composition {
 
 private:
     ComponentFlags m_flags;
+    ComponentInfo m_componentInfo;
+    std::unordered_map<ComponentId, size_t> m_componentSizes;
 
 private:
-    template<typename...Args>
-    typename std::enable_if<(sizeof...(Args) == 0)>::type RemoveSharedComponentsInternal () {}
-    template<typename T, typename...Args>
-    void RemoveSharedComponentsInternal ();
-
     void SetComponentsInternal ();
-    template<typename T, typename...Args>
-    void SetComponentsInternal (std::shared_ptr<T> component, Args...args);
     template<typename T, typename...Args>
     void SetComponentsInternal (T component, Args...args);
 };

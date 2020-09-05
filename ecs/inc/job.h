@@ -13,8 +13,6 @@
 #include "helpers/ref.h"
 
 #include <cstdint>
-#include <unordered_set>
-#include <type_traits>
 #include <vector>
 
 namespace ecs {

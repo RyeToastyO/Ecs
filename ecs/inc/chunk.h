@@ -9,7 +9,6 @@
 
 #include <cstdint>
 #include <unordered_map>
-#include <vector>
 
 namespace ecs {
 namespace impl {
@@ -45,7 +44,6 @@ private: // Data
     uint32_t m_count = 0;
     uint32_t m_capacity = 0;
     Composition m_composition;
-    ComponentInfo m_componentInfo;
 
 private: // Helpers
     void AllocateComponentArrays (uint32_t capacity);

@@ -5,41 +5,16 @@
 
 #pragma once
 
-#include "../config.h"
 #include "component.h"
 
 #include <cstdint>
 #include <functional>
+#include <unordered_set>
 
 namespace ecs {
 namespace impl {
 
-typedef uint64_t ComponentFlagDataType;
-const uint32_t COMPONENT_FLAG_DATA_BITS = sizeof(ComponentFlagDataType) * 8;
-const uint32_t COMPONENT_FLAG_DATA_COUNT = ((ECS_MAX_COMPONENTS - 1 + COMPONENT_FLAG_DATA_BITS) / COMPONENT_FLAG_DATA_BITS);
-
-struct ComponentFlags;
-
-struct ComponentFlagIterator {
-    ComponentFlagIterator (const ComponentFlags& flags);
-    ComponentFlagIterator (const ComponentFlags& flags, ComponentId id);
-
-    bool operator!= (const ComponentFlagIterator& rhs) const;
-    ComponentFlagIterator& operator++ ();
-    const ComponentId& operator* () const;
-
-    ComponentFlagIterator begin () const;
-    ComponentFlagIterator end () const;
-private:
-    ComponentId m_current;
-    const ComponentFlags& m_flags;
-};
-
-struct ComponentInfo {
-    size_t ComponentCount = 0;
-    size_t DataComponentCount = 0;
-    size_t TotalSize = 0;
-};
+using ComponentFlagIterator = std::unordered_set<ComponentId>::const_iterator;
 
 struct ComponentFlags {
     ComponentFlags ();
@@ -60,8 +35,8 @@ struct ComponentFlags {
     void SetFlags ();
     void SetFlags (const ComponentFlags& flags);
 
-    ComponentInfo GetComponentInfo () const;
-    ComponentFlagIterator GetIterator () const;
+    ComponentFlagIterator begin () const;
+    ComponentFlagIterator end () const;
 
     bool HasAll (const ComponentFlags& rhs) const;
     bool HasAny (const ComponentFlags& rhs) const;
@@ -75,7 +50,7 @@ struct ComponentFlags {
     bool operator== (const ComponentFlags& rhs) const;
 
 private:
-    ComponentFlagDataType flags[COMPONENT_FLAG_DATA_COUNT];
+    std::unordered_set<ComponentId> m_flags;
 };
 
 } // namespace impl
