@@ -8,21 +8,17 @@
 namespace ecs {
 namespace impl {
 
+template<typename T>
+inline IComponentCollection* AllocComponentCollection () {
+    return new TComponentCollection<T>();
+}
+
 inline const ComponentFlags& Composition::GetComponentFlags () const {
     return m_flags;
 }
 
-inline const ComponentInfo& Composition::GetComponentInfo () const {
-    return m_componentInfo;
-}
-
-inline size_t Composition::GetComponentSize (ComponentId id) const {
-    auto iter = m_componentSizes.find(id);
-
-    // This function is only valid for components contained in this composition
-    assert(iter != m_componentSizes.end());
-
-    return iter->second;
+inline const ComponentCollectionFactory& Composition::GetComponentCollectionFactory () const {
+    return m_componentCollectionFactory;
 }
 
 inline size_t Composition::GetHash () const {
@@ -35,8 +31,7 @@ inline bool Composition::operator== (const Composition& rhs) const {
 
 inline void Composition::Clear () {
     m_flags.Clear();
-    m_componentSizes.clear();
-    m_componentInfo = ComponentInfo();
+    m_componentCollectionFactory.clear();
 }
 
 template<typename T, typename...Args>
@@ -44,12 +39,8 @@ inline void Composition::RemoveComponents () {
     if (m_flags.Has<T>()) {
         m_flags.ClearFlags<T>();
 
-        size_t size = ::ecs::impl::GetComponentSize<T>();
-        m_componentInfo.ComponentCount--;
-        m_componentInfo.DataComponentCount -= size > 0 ? 1 : 0;
-        m_componentInfo.TotalSize -= size;
-
-        m_componentSizes.erase(GetComponentId<T>());
+        if (!std::is_empty<T>())
+            m_componentCollectionFactory.erase(GetComponentId<T>());
     }
     RemoveComponents<Args...>();
     m_flags.ClearFlags<T, Args...>();
@@ -68,12 +59,8 @@ inline void Composition::SetComponentsInternal (T component, Args...args) {
     if (!m_flags.Has<T>()) {
         m_flags.SetFlags<T>();
 
-        size_t size = ::ecs::impl::GetComponentSize<T>();
-        m_componentInfo.ComponentCount++;
-        m_componentInfo.DataComponentCount += size > 0 ? 1 : 0;
-        m_componentInfo.TotalSize += size;
-
-        m_componentSizes.emplace(GetComponentId<T>(), size);
+        if (!std::is_empty<T>())
+            m_componentCollectionFactory.emplace(GetComponentId<T>(), &AllocComponentCollection<T>);
     }
     SetComponentsInternal(args...);
 }

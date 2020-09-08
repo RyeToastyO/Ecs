@@ -45,7 +45,6 @@ mgr.DestroyEntityImmediate(entity);
 ```
 
 ### Component Manipulation
-Note: Standard components must be plain old data. They do not run destructors and are moved using direct memcpy
 ```C++
 mgr.AddComponents(entity, ComponentC{30.0f}, ComponentD{1});
 mgr.RemoveComponents<ComponentA, ComponentB>(entity);
@@ -184,10 +183,9 @@ mgr.FindComponent<ComponentB>(spawned)->Value;  // 2.0f
 ```
 
 ## TODO
-Current Version: v2.0.3
+Current Version: v2.1.0
 
 Potential future features
-  - Running destructors and assignment operators for components
   - Batch operations (add/destroy/remove by filter/chunk)
   - QueueCreate/Spawn should return an entity to act on
   - Improved cache alignment of chunks

@@ -110,7 +110,9 @@ private:
 
     void SetComponentsInternal (const impl::EntityData&) const {}
     template<typename T, typename...Args>
-    void SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const;
+    typename std::enable_if<std::is_empty<T>::value == 0>::type SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const;
+    template<typename T, typename...Args>
+    typename std::enable_if<std::is_empty<T>::value>::type SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const;
 
     void SetCompositionInternal (impl::EntityData& entityData, const impl::Composition& composition);
 

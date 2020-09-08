@@ -106,6 +106,7 @@ template<typename T>
 inline T* Manager::FindComponent (Entity entity) {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be exist on entities");
     static_assert(!std::is_same<std::remove_const<T>::type, ::ecs::Entity>::value, "Why are you finding an Entity with that Entity?");
+    static_assert(!std::is_empty<T>(), "Use HasComponent for tag components");
 
     if (!Exists(entity))
         return nullptr;
@@ -137,9 +138,15 @@ inline void Manager::RemoveComponents (Entity entity) {
 }
 
 template<typename T, typename...Args>
-inline void Manager::SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const {
+inline typename std::enable_if<std::is_empty<T>::value == 0>::type Manager::SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const {
     static_assert(!std::is_base_of<ISingletonComponent, T>::value, "Singleton components cannot be set on entities");
     *(entity.chunk->Find<T>(entity.chunkIndex)) = component;
+    SetComponentsInternal(entity, args...);
+}
+
+template<typename T, typename...Args>
+inline typename std::enable_if<std::is_empty<T>::value>::type Manager::SetComponentsInternal (const impl::EntityData& entity, T component, Args...args) const {
+    ECS_REF(component);
     SetComponentsInternal(entity, args...);
 }
 

@@ -142,10 +142,6 @@ void TestComposition () {
     compA1.SetComponents(FloatA{ 1.0f });
 
     EXPECT_TRUE(compA1.GetComponentFlags().Has<FloatA>());
-    EXPECT_TRUE(compA1.GetComponentSize(ecs::impl::GetComponentId<FloatA>()) == ecs::impl::GetComponentSize<FloatA>());
-    EXPECT_TRUE(compA1.GetComponentInfo().ComponentCount == 1);
-    EXPECT_TRUE(compA1.GetComponentInfo().DataComponentCount == 1);
-    EXPECT_TRUE(compA1.GetComponentInfo().TotalSize == ecs::impl::GetComponentSize<FloatA>());
 
     ecs::impl::Composition compA2;
     compA2.SetComponents(FloatA{ 2.0f }, FloatB{ 4.0f });
@@ -153,11 +149,6 @@ void TestComposition () {
     EXPECT_FALSE(compA1.GetComponentFlags() == compA2.GetComponentFlags());
     EXPECT_FALSE(compA1.GetHash() == compA2.GetHash());
     EXPECT_FALSE(compA1 == compA2);
-    EXPECT_TRUE(compA2.GetComponentSize(ecs::impl::GetComponentId<FloatA>()) == ecs::impl::GetComponentSize<FloatA>());
-    EXPECT_TRUE(compA2.GetComponentSize(ecs::impl::GetComponentId<FloatB>()) == ecs::impl::GetComponentSize<FloatB>());
-    EXPECT_TRUE(compA2.GetComponentInfo().ComponentCount == 2);
-    EXPECT_TRUE(compA2.GetComponentInfo().DataComponentCount == 2);
-    EXPECT_TRUE(compA2.GetComponentInfo().TotalSize == ecs::impl::GetComponentSize<FloatA>() + ecs::impl::GetComponentSize<FloatB>());
 
     ecs::impl::Composition compA1Dupe;
     compA1Dupe.SetComponents(FloatA{ 11.0f });
@@ -172,11 +163,12 @@ void TestComposition () {
 
     ecs::impl::Composition compWithFlag;
     compWithFlag.SetComponents(FloatA{ 3.0f }, FloatB{ 6.0f }, TagA{}, TagB{});
+    const ecs::impl::ComponentCollectionFactory& factory = compWithFlag.GetComponentCollectionFactory();
 
-    EXPECT_TRUE(compWithFlag.GetComponentSize(ecs::impl::GetComponentId<TagA>()) == ecs::impl::GetComponentSize<TagA>());
-    EXPECT_TRUE(compWithFlag.GetComponentInfo().ComponentCount == 4);
-    EXPECT_TRUE(compWithFlag.GetComponentInfo().DataComponentCount == 2);
-    EXPECT_TRUE(compWithFlag.GetComponentInfo().TotalSize == ecs::impl::GetComponentSize<FloatA>() + ecs::impl::GetComponentSize<FloatB>());
+    EXPECT_FALSE(factory.find(ecs::impl::GetComponentId<FloatA>()) == factory.end());
+    EXPECT_FALSE(factory.find(ecs::impl::GetComponentId<FloatB>()) == factory.end());
+    EXPECT_TRUE(factory.find(ecs::impl::GetComponentId<TagA>()) == factory.end());
+    EXPECT_TRUE(factory.find(ecs::impl::GetComponentId<TagB>()) == factory.end());
 }
 
 void TestFindingComponents () {
@@ -650,6 +642,60 @@ void TestPrefabs () {
     EXPECT_TRUE(mgr.GetSingletonComponent<SingletonUint>()->Value == 4);
 }
 
+struct DynamicMemoryComponent {
+    ECS_COMPONENT(DynamicMemoryComponent)
+
+    std::vector<int> IntVector;
+};
+
+void TestDynamicMemoryComponent () {
+    ecs::Manager ecs;
+
+    ecs::Entity e1 = ecs.CreateEntityImmediate(DynamicMemoryComponent());
+    ecs::Entity e2 = ecs.CreateEntityImmediate(DynamicMemoryComponent(), FloatA{ 100.0f });
+
+    DynamicMemoryComponent* dmc1 = ecs.FindComponent<DynamicMemoryComponent>(e1);
+    dmc1->IntVector.push_back(1);
+    dmc1->IntVector.push_back(2);
+    dmc1->IntVector.push_back(3);
+
+    DynamicMemoryComponent* dmc2 = ecs.FindComponent<DynamicMemoryComponent>(e2);
+    dmc2->IntVector.push_back(10);
+    dmc2->IntVector.push_back(20);
+
+    // Move to the same chunk as e2
+    ecs.AddComponents(e1, FloatA{ 10.0f });
+
+    dmc1 = ecs.FindComponent<DynamicMemoryComponent>(e1);
+
+    EXPECT_TRUE(dmc1->IntVector.size() == 3);
+    EXPECT_TRUE(dmc1->IntVector[0] == 1);
+    EXPECT_TRUE(dmc1->IntVector[1] == 2);
+    EXPECT_TRUE(dmc1->IntVector[2] == 3);
+
+    dmc2 = ecs.FindComponent<DynamicMemoryComponent>(e2);
+
+    EXPECT_TRUE(dmc2->IntVector.size() == 2);
+    EXPECT_TRUE(dmc2->IntVector[0] == 10);
+    EXPECT_TRUE(dmc2->IntVector[1] == 20);
+
+    // Move e2 back to the chunk where e1 was
+    ecs.RemoveComponents<FloatA>(e2);
+
+    dmc1 = ecs.FindComponent<DynamicMemoryComponent>(e1);
+
+    EXPECT_TRUE(dmc1->IntVector.size() == 3);
+    EXPECT_TRUE(dmc1->IntVector[0] == 1);
+    EXPECT_TRUE(dmc1->IntVector[1] == 2);
+    EXPECT_TRUE(dmc1->IntVector[2] == 3);
+
+    dmc2 = ecs.FindComponent<DynamicMemoryComponent>(e2);
+
+    EXPECT_TRUE(dmc2->IntVector.size() == 2);
+    EXPECT_TRUE(dmc2->IntVector[0] == 10);
+    EXPECT_TRUE(dmc2->IntVector[1] == 20);
+}
+
 void TestCorrectness () {
     TestAssumptions();
     TestEntityComparison();
@@ -667,6 +713,7 @@ void TestCorrectness () {
     TestQueuedChanges();
     TestEntityCloning();
     TestPrefabs();
+    TestDynamicMemoryComponent();
 }
 
 }

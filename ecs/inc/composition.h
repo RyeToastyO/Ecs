@@ -6,22 +6,19 @@
 #pragma once
 
 #include "component_flags.h"
+#include "component_collection.h"
 
 #include <unordered_map>
 
 namespace ecs {
 namespace impl {
 
-struct ComponentInfo {
-    size_t ComponentCount = 0;
-    size_t DataComponentCount = 0;
-    size_t TotalSize = 0;
-};
+typedef IComponentCollection* (*ComponentCollectionAllocateFunc)();
+typedef std::unordered_map<ComponentId, ComponentCollectionAllocateFunc> ComponentCollectionFactory;
 
 struct Composition {
     const ComponentFlags& GetComponentFlags () const;
-    const ComponentInfo& GetComponentInfo () const;
-    size_t GetComponentSize (ComponentId id) const;
+    const ComponentCollectionFactory& GetComponentCollectionFactory () const;
 
     size_t GetHash () const;
     bool operator== (const Composition& rhs) const;
@@ -38,8 +35,7 @@ struct Composition {
 
 private:
     ComponentFlags m_flags;
-    ComponentInfo m_componentInfo;
-    std::unordered_map<ComponentId, size_t> m_componentSizes;
+    ComponentCollectionFactory m_componentCollectionFactory;
 
 private:
     void SetComponentsInternal ();
